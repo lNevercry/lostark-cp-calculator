@@ -140,6 +140,7 @@ for (const [bosses, difficulties] of RAIDS) for (const boss of bosses) for (cons
   const targets = new Set(targetsFor(boss, stats.map(x => x.spec)));
   // Les plus jouées d'abord : leurs logs apportent aussi des coéquipiers des autres spés visées.
   for (const s of stats.filter(x => targets.has(x.spec)).sort((x, y) => y.count - x.count)) {
+    if (downloads >= MAX_DOWNLOADS) break; // plafond atteint : plus d'appel inutile (la liste de combats coûte 15 s)
     const spec = s.spec;
     const needMedian = PER_MEDIAN - have(spec, boss, difficulty, 'median'), needBest = PER_BEST - have(spec, boss, difficulty, 'best');
     if (needMedian <= 0 && needBest <= 0) continue;

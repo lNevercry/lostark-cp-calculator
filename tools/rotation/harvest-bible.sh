@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Récolte des logs lostark.bible pour les références de rotation, en sessions courtes : lancé toutes les 2 h par cron
-# (crontab de l'utilisateur dev). Chaque session : fetch-bible-ref.mjs (60 logs au plus, 15 s entre deux appels,
+# (crontab de l'utilisateur dev). Chaque session : fetch-bible-ref.mjs (90 logs au plus, 15 s entre deux appels,
 # reprise automatique). Garde-fous :
 # - verrou : jamais deux sessions à la fois ;
 # - refus 429 de lostark.bible : plus aucune session pendant COOLDOWN_H heures ;
@@ -32,7 +32,7 @@ cd "$REPO"
 if [ -f .env ]; then set -a; . ./.env; set +a; fi
 
 echo "=== $(date '+%F %T') session de récolte lostark.bible"
-OUT=$(node --no-warnings tools/rotation/fetch-bible-ref.mjs --specs auto --median 10 --best 5 2>&1)
+OUT=$(node --no-warnings tools/rotation/fetch-bible-ref.mjs --specs auto --median 10 --best 3 --max-logs 90 2>&1)
 CODE=$?
 echo "$OUT"
 
