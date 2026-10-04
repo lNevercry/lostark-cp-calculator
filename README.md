@@ -5,6 +5,7 @@
   [![Live Website](https://img.shields.io/badge/🌐_Website-lostark--cp.pages.dev-00C7B7?style=for-the-badge&logo=googlechrome&logoColor=white)](https://lostark-cp.pages.dev/)
   [![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?style=for-the-badge&logo=cloudflare)](https://pages.cloudflare.com/)
   [![Vanilla JS](https://img.shields.io/badge/Vanilla-JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
   <br />
 
@@ -198,3 +199,11 @@ Issues and pull requests are welcome!
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
 3. Run the syntax check and the audit bench (see above).
 4. Commit your changes and open a Pull Request.
+
+---
+
+## 📄 License
+
+The original code of this repository is released under the [MIT License](LICENSE).
+
+Third-party models, data and assets (Loseii, bebkok, Arsonistic, game data from Smilegate RPG / Amazon Games, LOA Logs metadata, SQLite…) are **not** covered by this license and remain the property of their respective authors. See the [Credits](#-credits-sources--inspiration) and the third-party notice in [`LICENSE`](LICENSE).
