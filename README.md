@@ -155,18 +155,39 @@ The client is picked automatically: production on the public site, development o
 
 ---
 
-## 🙏 Credits & Special Thanks
+## 🙏 Credits, Sources & Inspiration
 
-This tool would not exist without the work shared by the Lost Ark theorycrafting community:
+This project stands on the shoulders of the Lost Ark theorycrafting community. A lot of its logic is **directly inspired by, ported from, or checked against** the work below. Thank you all, and please visit and support the original projects.
 
-- **📈 Loseii (loseii.com)**: GPD methodology, support contribution model, bracelet and astrogem ladders and graders, which the Smart Advisor follows and is checked against.
-- **🔥 Arsonistic**: author of the *Lost Ark Arsonistic DPS Calculator*, whose accessory scaling and support buff tables are used for accessory lines.
-- **📊 Cracine, Portia & Riyon**: creators of the *Automatic Gold to DMG Efficiency* spreadsheet, which inspired the roadmap and the Benchmark.
-- **🌐 lostark.bible**: character profiles, Battle Point data, raid rankings and the OAuth API.
-- **📖 Maxroll.gg**: the planner data feed (honing recipes, game tables, item names).
-- **💎 Loa-Buddy**: live EUC Auction House prices.
-- **🪵 LOA Logs**: the open-source DPS meter whose logs power the Rotation Analysis and the Raid Tracker.
-- **🇰🇷 Inven community**: early Tier 4 data mining and Belgardin bracer measurements.
+### 🧠 Models & methodology
+| Source | What this project owes it |
+|---|---|
+| **[Loseii](https://www.loseii.com/)** ([GPD](https://www.loseii.com/loa-gpd), astrogem calculator) | The main inspiration for the Smart Advisor: the Gold-per-Damage method and its ranking, the support contribution model (ported and checked to give identical results), the bracelet and astrogem ladders, the astrogem grader (loaded live from their site), accessory slopes and the reference character used for Atk. Power pools. |
+| **bebkok**, *LOA Sup buff calc* spreadsheet | Serca gear data, baseline stat constants and the support Ark Grid core measurements (via Loseii's research notes). |
+| **Arsonistic**, *Lost Ark Arsonistic DPS Calculator* | Accessory line scaling and support buff tables (`buffDmg`), and the bracelet model coefficients. |
+| **Cracine, Portia & Riyon**, *Automatic Gold to DMG Efficiency* spreadsheet | The gold-to-damage ROI approach that inspired the roadmap and the Benchmark purchase plan. |
+
+### 📚 Game data
+| Source | Used for |
+|---|---|
+| **[lostark.bible](https://lostark.bible/)** | Character profiles and their Battle Point breakdown, OAuth roster sync, raid rankings (pool of real players for the Benchmark), rotation references, and the idea of "Buff Performance" for supports. |
+| **[Maxroll.gg](https://maxroll.gg/lost-ark)** (Lost Ark planner data) | The game's own tables: honing recipes (Aegir & Serka), item level stats, Illumination Karma, Battle Point values (DPS & support), Ark Passive values, Ark Grid core options and item names. |
+| **Lost Ark Wiki** (community wiki) | Weapon quality upgrade odds, advanced honing, ability stone and relic book bonuses per engraving. |
+| **[Lost Ark Codex](https://lostarkcodex.com/)** | Stronghold fusion recipes. |
+| **[Smilegate / Stove](https://m-lostark.game.onstove.com/News/GMNote/Views/1225)** (official KR GM note) | Official Belgardin bracer honing rates and costs. |
+| **[Inven](https://lostark.inven.co.kr/)**, **[Arca.live](https://arca.live/b/lostark)**, **[loa.kakao.gg](https://www.loa.kakao.gg/)** (Korean community) | Belgardin bracer measurements and community estimates, early Tier 4 data mining. Every estimated value in the Belgardin tab links back to its post. |
+
+### 🔧 Tools & services
+| Source | Used for |
+|---|---|
+| **Loa-Buddy** market API | Live EUC Auction House prices used by every gold calculation. |
+| **[LOA Logs](https://github.com/snoww/loa-logs)** (snoww) | The open-source DPS meter whose `encounters.db` powers the Rotation Analysis and the Raid Tracker; skill and boss metadata come from its `meter-data`. |
+| **[SQLite WebAssembly](https://sqlite.org/wasm)** | Reading LOA Logs databases directly in the browser (bundled, see its license in `js/rotation/vendor/`). |
+| **Class guide authors** | Rotation targets quoted from community guides, each one cited in the app, e.g. *Dimensionalist – Community Advanced Guide* by Mariabetaniah & Hhôpe (Nexus Discord). |
+
+> Lost Ark and all related names, data and images are the property of **Smilegate RPG** and **Amazon Games**. This is an unofficial fan project, not affiliated with or endorsed by them or by any of the sites above.
+
+If you are one of these authors and something is credited wrongly or you would like it presented differently, please open an issue.
 
 ---
 
