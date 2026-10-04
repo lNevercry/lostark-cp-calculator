@@ -120,16 +120,29 @@ const bracerGradeOf = level => BRACER_GRADES.find(g => level >= g.min);
 function initBelgardinTab() {
   const range = document.getElementById('belgLevel');
   if (!range) return;
-  range.addEventListener('input', e => { belgState.level = parseInt(e.target.value, 10) || 0; updateBelgardinView(); });
+  range.addEventListener('input', e => { belgState.level = parseInt(e.target.value, 10) || 0; updateBracerView(); });
   document.querySelectorAll('[data-belg-level]').forEach(btn => btn.addEventListener('click', () => {
     belgState.level = parseInt(btn.getAttribute('data-belg-level'), 10) || 0;
-    updateBelgardinView();
+    updateBracerView();
   }));
   const from = document.getElementById('belgFrom');
-  if (from) from.addEventListener('change', e => { belgState.from = parseInt(e.target.value, 10); updateBelgardinView(); });
+  if (from) from.addEventListener('change', e => { belgState.from = parseInt(e.target.value, 10); updateBracerView(); });
+  const ready = document.getElementById('belgReady');
+  if (ready) ready.addEventListener('click', e => {
+    const d = e.target.closest('[data-belg-diff]'), g = e.target.closest('[data-belg-goal]');
+    if (d) belgReadyState.diff = d.getAttribute('data-belg-diff');
+    else if (g) belgReadyState.goal = g.getAttribute('data-belg-goal');
+    else return;
+    renderBelgardinReadiness();
+  });
 }
 
 function updateBelgardinView() {
+  renderBelgardinReadiness();
+  updateBracerView();
+}
+
+function updateBracerView() {
   const results = document.getElementById('belgResults');
   if (!results) return;
   const isEn = isEnLang();
@@ -276,4 +289,189 @@ function updateBelgardinView() {
         : "Repères de la communauté KR : +6,21 % de dégâts à +10 et +19,05 % à +25 (guide kakao.gg), au moins +6,37 % pour +10 sur un personnage 1800 (Inven #3954479, environ 1,6 M d'or en tout : 363 k d'or, 122 k pierres de gardien et 40 k de destruction cristallisées, moitié moins que notre estimation). Ils ne disent pas depuis quel état ils comptent ; nos niveaux bas sont estimés, la tranche +0 → +10 est donc la moins sûre."}</p>`;
     insight.innerHTML = h;
   }
+}
+
+// === PRÊT POUR BELGARDIN ? (seuils de CP par difficulté, axes d'amélioration) ===
+// Seuils sourcés dans data.js (BELGARDIN_RAID) : CP des groupes publics KR de la première semaine, et pour un DPS le
+// DPS minimum (Nightmare ~6 000-6 500 CP, Normal / Hard au rapport des PV porte par porte, même chrono). Le CP support
+// ne mesure pas des dégâts : seulement le seuil des groupes publics. Plan : affinage le moins cher jusqu'à l'iLvl
+// d'entrée (predictHoningPath), puis feuille de route du Smart Advisor (buildGpdRoadmap) jusqu'au CP visé.
+const belgReadyState = { diff: null, goal: 'pf' };
+// Étapes au-delà de 20 M d'or / 1 % (plus de trois fois le rang D du GPD) écartées : sinon un objectif hors de portée
+// déroule les échelles jusqu'au bout (bracelet S ➔ S+ à plusieurs milliards d'or)
+const BELG_MAX_RATE = 20e6;
+
+function belgardinThresholds(diff, isSupport) {
+  const R = window.BELGARDIN_RAID;
+  const nm = R.difficulties.find(d => d.key === 'nightmare');
+  let min = null;
+  if (!isSupport) {
+    const ratio = Math.max(...diff.hp.map((hp, i) => hp / nm.hp[i]));
+    min = R.nightmareMinCp.map(v => Math.round(v * ratio / 10) * 10);
+  }
+  return { pf: diff.pf[isSupport ? 'support' : 'dps'], min };
+}
+
+// État d'un personnage pour chaque difficulté : 'ready' (CP des groupes publics), 'enough' (DPS minimum atteint),
+// 'tight' (dans la fourchette du DPS minimum), 'short' (en dessous) ; ilvlGap > 0 = iLvl d'entrée pas atteint
+function belgardinReadiness(c, isSupport = c.role === 'support') {
+  const cp = raidCombatPowerOf(c) || c.cp || 0;
+  const ilvl = c.ilvl || 0;
+  return window.BELGARDIN_RAID.difficulties.map(diff => {
+    const th = belgardinThresholds(diff, isSupport);
+    let status = 'short';
+    if (cp >= th.pf) status = 'ready';
+    else if (th.min && cp >= th.min[1]) status = 'enough';
+    else if (th.min && cp >= th.min[0]) status = 'tight';
+    return { diff, th, cp, ilvlGap: Math.max(0, diff.ilvl - ilvl), status };
+  });
+}
+
+function renderBelgardinReadiness() {
+  const el = document.getElementById('belgReady');
+  if (!el || !window.BELGARDIN_RAID) return;
+  const isEn = isEnLang();
+  const fmt = (v, d = 0) => Number(v).toLocaleString(isEn ? 'en-US' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const R = window.BELGARDIN_RAID;
+  const dName = d => (isEn ? d.en : d.fr);
+  const STATUS = {
+    ready: [isEn ? 'Ready' : 'Prêt', isEn ? 'public party CP reached' : 'CP des groupes publics atteint'],
+    enough: [isEn ? 'Enough DPS' : 'DPS suffisant', isEn ? 'above the minimum DPS, below public party CP' : 'au-dessus du DPS minimum, sous le CP des groupes publics'],
+    tight: [isEn ? 'Tight' : 'Juste', isEn ? 'within the minimum DPS range: clean execution needed' : "dans la fourchette du DPS minimum : exécution propre exigée"],
+    short: [isEn ? 'Not enough CP' : 'CP insuffisant', ''],
+    ilvl: [isEn ? 'Item level too low' : 'iLvl insuffisant', '']
+  };
+  const chip = (r, withGap) => {
+    const key = r.ilvlGap > 0 ? 'ilvl' : r.status;
+    const gap = r.ilvlGap > 0 ? `−${fmt(r.ilvlGap, 2)} iLvl` : (r.status === 'ready' ? '' : `−${fmt(Math.ceil(r.th.pf - r.cp))} CP`);
+    return `<span class="belg-st belg-st-${key}" title="${escapeHtml(STATUS[key][1])}">${STATUS[key][0]}${withGap && gap ? ` <span class="belg-st-gap">${gap}</span>` : ''}</span>`;
+  };
+  const charObj = getCurrentActiveCharacter();
+  const isSupport = state.role === 'support';
+
+  let h = `<h3>${isEn ? 'Ready for Belgardin?' : 'Prêt pour Belgardin ?'}</h3>`;
+  // 1. Seuils par difficulté
+  h += `<table class="market-table belg-table"><thead><tr><th>${isEn ? 'Difficulty' : 'Difficulté'}</th><th>iLvl</th>
+      <th title="${isEn ? 'Party damage per second to beat the enrage, gate 1 / gate 2' : 'Dégâts par seconde du groupe pour battre l\'enrage, porte 1 / porte 2'}">${isEn ? 'Party DPS (G1 / G2)' : 'DPS du groupe (P1 / P2)'}</th>
+      ${isSupport ? '' : `<th>${isEn ? 'Minimum DPS' : 'DPS minimum'}</th>`}<th>${isEn ? 'Public parties' : 'Groupes publics'}</th>${charObj ? `<th>${escapeHtml(charObj.name)}</th>` : ''}</tr></thead><tbody>`;
+  const mine = charObj ? belgardinReadiness(charObj, isSupport) : null;
+  R.difficulties.forEach((d, i) => {
+    const th = belgardinThresholds(d, isSupport);
+    const dps = d.hp.map((hp, g) => fmt(hp / (R.gates[g].minutes * 60) / 1e9, 1)).join(' / ');
+    h += `<tr><td>${dName(d)}</td><td class="market-num">${d.ilvl}</td><td class="market-num">${dps} ${isEn ? 'B/s' : 'Md/s'}</td>
+        ${isSupport ? '' : `<td class="market-num">${fmt(th.min[0])}–${fmt(th.min[1])}</td>`}<td class="market-num">${fmt(th.pf)}</td>
+        ${mine ? `<td>${chip(mine[i], true)}</td>` : ''}</tr>`;
+  });
+  h += `</tbody></table>`;
+  h += `<p class="belg-note">${isEn
+      ? `Combat Power in the raid profile. <strong>Public parties</strong>: CP asked in Korean party listings the first week (mostly trial groups, not a clear guarantee)${isSupport ? '; a support\'s CP measures its buffs, not damage, so there is no minimum DPS for supports' : ''}. ${isSupport ? '' : `<strong>Minimum DPS</strong>: Nightmare cleared around ${fmt(R.nightmareMinCp[0])}–${fmt(R.nightmareMinCp[1])} average CP with clean mechanics (KR feedback), Normal and Hard scaled by boss HP (same timers, DPS Combat Power is proportional to damage). `}First Nightmare clear: 4 h 53, about ${fmt(R.firstClearCp)} average CP.`
+      : `Combat Power du profil raid. <strong>Groupes publics</strong> : CP demandé dans les annonces de groupe coréennes la première semaine (surtout des groupes d'essai, pas une garantie de clear)${isSupport ? " ; le CP d'un support mesure ses buffs, pas des dégâts : pas de DPS minimum pour un support" : ''}. ${isSupport ? '' : `<strong>DPS minimum</strong> : Nightmare tombé vers ${fmt(R.nightmareMinCp[0])}–${fmt(R.nightmareMinCp[1])} CP de moyenne avec des mécaniques propres (retours KR), Normal et Hard au rapport des PV du boss (même chrono, CP d'un DPS proportionnel à ses dégâts). `}Premier clear Nightmare : 4 h 53, environ ${fmt(R.firstClearCp)} CP de moyenne.`}</p>`;
+
+  // 2. Roster
+  const roster = getActiveRosterList();
+  if (roster.length > 1) {
+    h += `<table class="market-table belg-table belg-roster"><thead><tr><th>${isEn ? 'Roster' : 'Roster'}</th><th>iLvl</th><th>CP</th>${R.difficulties.map(d => `<th>${dName(d)}</th>`).join('')}</tr></thead><tbody>`;
+    roster.forEach(c => {
+      const rr = belgardinReadiness(c);
+      h += `<tr><td>${escapeHtml(c.name)} <span class="belg-dim">${escapeHtml(c.className || '')}${c.role === 'support' ? ' · support' : ''}</span></td>
+          <td class="market-num">${fmt(c.ilvl || 0, 2)}</td><td class="market-num">${fmt(rr[0].cp)}</td>${rr.map(r => `<td>${chip(r, false)}</td>`).join('')}</tr>`;
+    });
+    h += `</tbody></table>`;
+  }
+
+  // 3. Axes d'amélioration du personnage actif
+  if (!charObj) {
+    h += `<p class="belg-empty">${isEn ? 'Import a character to check it against each difficulty.' : 'Importe un personnage pour le comparer à chaque difficulté.'}</p>`;
+    el.innerHTML = h;
+    return;
+  }
+  if (!R.difficulties.some(d => d.key === belgReadyState.diff)) {
+    // Par défaut : la première difficulté où le personnage n'est pas prêt
+    const first = mine.find(r => r.ilvlGap > 0 || r.status !== 'ready');
+    belgReadyState.diff = (first || mine[mine.length - 1]).diff.key;
+  }
+  if (isSupport) belgReadyState.goal = 'pf';
+  const sel = mine.find(r => r.diff.key === belgReadyState.diff);
+  const target = belgReadyState.goal === 'min' && sel.th.min ? sel.th.min[1] : sel.th.pf;
+  h += `<h3 class="belg-plan-title">${isEn ? 'How to get there' : 'Comment y arriver'}</h3><div class="belg-quick">`;
+  R.difficulties.forEach(d => {
+    h += `<button type="button" class="belg-quick-btn${d.key === belgReadyState.diff ? ' active' : ''}" data-belg-diff="${d.key}">${dName(d)}</button>`;
+  });
+  if (!isSupport) {
+    h += `<span class="belg-quick-sep"></span>`;
+    [['pf', isEn ? 'Public parties' : 'Groupes publics'], ['min', isEn ? 'Minimum DPS' : 'DPS minimum']].forEach(([k, l]) => {
+      h += `<button type="button" class="belg-quick-btn${k === belgReadyState.goal ? ' active' : ''}" data-belg-goal="${k}">${l}</button>`;
+    });
+  }
+  h += `</div>`;
+
+  const cp = sel.cp;
+  let honing = null;
+  if (sel.ilvlGap > 0) {
+    honing = predictHoningPath(charObj, sel.diff.ilvl, isSupport);
+    const slotName = s => (isEn
+      ? { weapon: 'Weapon', head: 'Helmet', shoulder: 'Shoulders', chest: 'Chest', pants: 'Pants', gloves: 'Gloves' }
+      : { weapon: 'Arme', head: 'Casque', shoulder: 'Épaulières', chest: 'Plastron', pants: 'Jambières', gloves: 'Gants' })[s] || s;
+    if (honing && honing.reached) {
+      h += `<p class="belg-step"><strong>1. ${isEn ? `Item level ${sel.diff.ilvl}` : `iLvl ${sel.diff.ilvl}`}</strong> — ${honing.steps.map(st => `${slotName(st.slot)} +${st.from} ➔ +${st.to}`).join(', ')} :
+          ${fmt(Math.round(honing.gold))} ${isEn ? 'gold (expected, market prices)' : 'or (moyenne attendue, prix du marché)'}, ${isSupport ? '~' : ''}+${fmt(Math.round(honing.cpGain))} CP.</p>`;
+    } else if (honing) {
+      // Stuff Aegir : l'affinage normal plafonne à +25 (1715 + affinage avancé)
+      h += `<p class="belg-step"><strong>1. ${isEn ? `Item level ${sel.diff.ilvl}` : `iLvl ${sel.diff.ilvl}`}</strong> — ${isEn
+          ? `${fmt(sel.ilvlGap, 2)} item levels missing; normal honing of this gear stops at ${fmt(honing.reachedIlvl, 2)}: move to Serka gear (or advanced honing on the Aegir pieces).`
+          : `il manque ${fmt(sel.ilvlGap, 2)} iLvl ; l'affinage normal de ce stuff s'arrête à ${fmt(honing.reachedIlvl, 2)} : passer au stuff Serka (ou à l'affinage avancé des pièces Aegir).`}</p>`;
+    } else {
+      h += `<p class="belg-step"><strong>1. ${isEn ? `Item level ${sel.diff.ilvl}` : `iLvl ${sel.diff.ilvl}`}</strong> — ${isEn ? `${fmt(sel.ilvlGap, 2)} item levels missing; honing path unavailable (honing table or gear unreadable).` : `il manque ${fmt(sel.ilvlGap, 2)} iLvl ; chemin d'affinage indisponible (table d'affinage ou stuff illisible).`}</p>`;
+    }
+  }
+  const honingDone = !!(honing && honing.reached);
+  const cpAfterIlvl = cp + (honingDone ? honing.cpGain : 0);
+  const gap = target - cpAfterIlvl;
+  const n = sel.ilvlGap > 0 ? 2 : 1;
+  if (gap <= 0) {
+    h += `<p class="belg-step"><strong>${n}. Combat Power</strong> — ${isEn
+        ? `${fmt(Math.round(cpAfterIlvl))} CP${honingDone ? ' after honing' : ''}, target ${fmt(target)} reached.`
+        : `${fmt(Math.round(cpAfterIlvl))} CP${honingDone ? " après l'affinage" : ''}, objectif ${fmt(target)} atteint.`}</p>`;
+  } else {
+    let road = null;
+    try {
+      const rows = buildMasterGpdData(charObj, isSupport, isEn);
+      // Affinage de l'étape 1 déjà compté : les chaînes d'affinage repartent de l'état atteint (armures : +1 sur
+      // chaque pièce par étape, on part du plus petit gain de niveau des pièces encore sous +25)
+      const startK = {};
+      if (honingDone) {
+        const ctx = gearStatContext(charObj);
+        const raise = slot => { const st = honing.steps.find(x => x.slot === slot); return st ? st.to - st.from : 0; };
+        startK.dyn_weapon = raise('weapon') + 1;
+        const armor = GEAR_ARMOR_SLOTS.filter(sl => ctx && ctx.gear[sl] < 25).map(raise);
+        if (armor.length) startK.dyn_armor = Math.min(...armor) + 1;
+      }
+      if (rows.length) road = buildGpdRoadmap(charObj, isSupport, isEn, rows, Infinity, { cpGoal: gap, maxSteps: 80, startK, maxRate: BELG_MAX_RATE * (isSupport ? 0.01 : 1) });
+    } catch (e) {
+      console.warn('[BELGARDIN] Feuille de route indisponible :', e.message);
+    }
+    h += `<p class="belg-step"><strong>${n}. Combat Power</strong> — ${isEn
+        ? `${fmt(Math.round(cpAfterIlvl))} CP${honingDone ? ' after honing' : ''}, target ${fmt(target)}: <strong>+${fmt(Math.ceil(gap))} CP</strong> to find. Best gold per gain first (Smart Advisor roadmap):`
+        : `${fmt(Math.round(cpAfterIlvl))} CP${honingDone ? " après l'affinage" : ''}, objectif ${fmt(target)} : <strong>+${fmt(Math.ceil(gap))} CP</strong> à trouver. Meilleur ratio or / gain d'abord (feuille de route du Smart Advisor) :`}</p>`;
+    if (!road || !road.plan.length) {
+      h += `<p class="belg-empty">${isEn ? 'No priced upgrade available for this character.' : 'Aucune amélioration chiffrée pour ce personnage.'}</p>`;
+    } else {
+      let cum = 0;
+      h += `<table class="market-table belg-table"><thead><tr><th>#</th><th>${isEn ? 'System' : 'Système'}</th><th>${isEn ? 'Step' : 'Étape'}</th><th>${isEn ? 'Gold' : 'Or'}</th><th>+CP</th><th>${isEn ? 'CP reached' : 'CP atteint'}</th></tr></thead><tbody>`;
+      road.plan.forEach((r, i) => {
+        if (r.cpGain > 0) cum += r.cpGain;
+        h += `<tr><td>${i + 1}</td><td>${r.system}</td><td>${r.nextStep}${r.stepDetail ? `<span class="belg-dim belg-step-detail">${r.stepDetail}</span>` : ''}</td>
+            <td class="market-num">${fmt(Math.round(r.cost))}</td><td class="market-num">${Number.isFinite(r.cpGain) ? `${isSupport ? '~' : ''}${fmtCpGain(r.cpGain)}` : '—'}</td>
+            <td class="market-num">${fmt(Math.round(cpAfterIlvl + cum))}</td></tr>`;
+      });
+      const totalGold = road.gold + (honingDone ? honing.gold : 0);
+      h += `</tbody></table><p class="belg-note"><strong>${isEn ? 'Total' : 'Total'} : ${fmt(Math.round(totalGold))} ${isEn ? 'gold' : 'or'}</strong>${honingDone ? (isEn ? ' (honing included)' : " (affinage compris)") : ''}, ${isSupport ? '~' : ''}${fmt(Math.round(cpAfterIlvl + road.cumCp))} CP. ${road.reached ? '' : (isEn
+          ? `Target out of reach with these ${road.plan.length} steps.`
+          : `Objectif hors de portée avec ces ${road.plan.length} étapes.`)}</p>`;
+    }
+    h += `<p class="belg-note">${isEn
+        ? `Same rows, costs and gains as the GPD and the Smart Advisor, chained on the current profile${honingDone ? ', honing continuing from step 1' : ''}; steps above 20 M gold per 1 % ${isSupport ? '(200 k per 0.01 %) ' : ''}left out. ${isSupport ? 'Support CP per step is an estimate from the support Battle Point. ' : ''}The bracer is not counted (no game tables yet, see the projection below).`
+        : `Mêmes lignes, coûts et gains que le GPD et le Smart Advisor, enchaînés sur le profil actuel${honingDone ? ", l'affinage repartant de l'étape 1" : ''} ; étapes au-delà de 20 M d'or par 1 % ${isSupport ? '(200 k par 0,01 %) ' : ''}écartées. ${isSupport ? 'CP support de chaque étape estimé par le Battle Point support. ' : ''}Le brassard n'est pas compté (pas encore de tables du jeu, voir la projection plus bas).`}</p>`;
+  }
+  el.innerHTML = h;
 }

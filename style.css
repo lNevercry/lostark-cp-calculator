@@ -7822,3 +7822,23 @@ body.no-character .main-content {
     flex: 1 1 auto;
   }
 }
+
+/* Belgardin : prêt pour le raid ? */
+.belg-ready { margin-bottom: 16px; }
+.belg-plan-title { margin-top: 18px !important; }
+.belg-st {
+  display: inline-block; font-size: 12px; padding: 2px 6px; border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm); white-space: nowrap; color: var(--text-muted);
+}
+.belg-st-gap { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-dim); }
+.belg-st-ready { color: var(--gain); border-color: rgba(140, 192, 132, 0.45); }
+.belg-st-enough { color: var(--text-main); border-color: var(--border-active); }
+.belg-st-tight { color: var(--accent-gold); border-color: rgba(224, 164, 58, 0.45); }
+.belg-st-short, .belg-st-ilvl { color: var(--loss); border-color: rgba(224, 122, 99, 0.4); }
+.belg-quick-sep { width: 1px; align-self: stretch; background: var(--border-medium); margin: 0 4px; }
+.belg-step { font-size: 13px; color: var(--text-soft); line-height: 1.5; margin: 8px 0 0; }
+.belg-step-detail { display: block; }
+.belg-ready .belg-table { width: 100%; }
+@media (max-width: 640px) {
+  .belg-ready .belg-table { display: block; overflow-x: auto; }
+}

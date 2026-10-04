@@ -469,3 +469,24 @@ window.STRONGHOLD_FUSION_RECIPES = [
   { slug: 'superior-abidos-fusion-material', fr: "Fusion d'Abidos supérieure", en: 'Superior Abidos Fusion Material',
     qty: [43, 59, 112], gold: 520, minutes: 75, out: 10 }
 ];
+
+// Raid de l'ombre Belgardin (sorti en Corée le 2026-08-04). Sources :
+// - iLvl d'entrée et PV / chrono de chaque porte : lobal.kr (guide du raid), iLvl confirmés par Stove / MMOHuts.
+// - groupes publics (pf) : CP demandés dans les annonces de groupe KR la première semaine (Inven 6271/3976146 et
+//   3976548, 2026-08-05 ; surtout des groupes d'essai, pas une garantie de clear). Hard DPS : 5 000 à 5 500 selon le
+//   relevé, on garde le plus haut. Même Battle Point qu'en Europe, brassard pas encore monté à ces dates.
+// - DPS minimum (DPS seulement) : Nightmare ~6 000-6 500 CP de moyenne avec une exécution propre (retours KR relayés
+//   sur r/lostarkgame) ; Normal / Hard en sont déduits au rapport des PV, porte par porte (même chrono dans les trois
+//   modes, CP DPS proportionnel aux dégâts : chaque partie du Battle Point est un multiplicateur).
+// - premier clear Nightmare : 4 h 53, six joueurs sur huit à 1800 (Inven Global 24475) ; ~8 300 CP de moyenne (relayé
+//   sur r/lostarkgame, non vérifié).
+window.BELGARDIN_RAID = {
+  gates: [{ minutes: 10 }, { minutes: 13 }],
+  nightmareMinCp: [6000, 6500],
+  firstClearCp: 8300,
+  difficulties: [
+    { key: 'normal', fr: 'Normal', en: 'Normal', ilvl: 1750, hp: [1.7393e12, 1.9506e12], pf: { dps: 4000, support: 4000 } },
+    { key: 'hard', fr: 'Hard', en: 'Hard', ilvl: 1770, hp: [2.7686e12, 3.1340e12], pf: { dps: 5500, support: 5000 } },
+    { key: 'nightmare', fr: 'Nightmare', en: 'Nightmare', ilvl: 1780, hp: [4.9516e12, 5.6051e12], pf: { dps: 7000, support: 6500 } }
+  ]
+};

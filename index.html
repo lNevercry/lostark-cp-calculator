@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=28.3">
+  <link rel="stylesheet" href="style.css?v=28.4">
 </head>
 <body>
   <div class="app-container">
@@ -230,7 +230,7 @@
         <span class="badge-tab-new" data-i18n="tab_badge_beta">Bêta</span>
       </button>
       <button class="tab-btn" data-tab="tab-belgardin">
-        <span data-i18n="tab_belgardin">Projection Belgardin (Brassards)</span>
+        <span data-i18n="tab_belgardin">Belgardin : préparation et brassard</span>
         <span class="badge-tab-new" data-i18n="tab_badge_soon">Bientôt</span>
       </button>
     </div>
@@ -1393,9 +1393,10 @@
 <!-- ONGLET PROJECTION BELGARDIN : brassard T4 (완갑), avant sa sortie en Europe -->
       <section class="tab-pane" id="tab-belgardin">
         <header class="belg-header">
-          <h2 data-i18n="belg_title">Projection Belgardin : brassard T4</h2>
-          <p data-i18n="belg_subtitle">Le brassard (완갑) arrive avec le raid de l'ombre Belgardin (Normal 1750, Hard 1770, Nightmare 1780). Il s'obtient en Héroïque au premier clear de la porte 2, s'affine de +0 à +25 et change de rareté à +10, +15 et +20. Aucun joueur européen ne l'a encore : cet onglet le projette sur ton personnage, sans toucher au roster.</p>
+          <h2 data-i18n="belg_title">Belgardin : préparation et brassard T4</h2>
+          <p data-i18n="belg_subtitle">Le brassard (완갑) arrive avec le raid de l'ombre Belgardin (Normal 1750, Hard 1770, Nightmare 1780). Il s'obtient en Héroïque au premier clear de la porte 2, s'affine de +0 à +25 et change de rareté à +10, +15 et +20. Cet onglet dit si tes personnages ont le CP pour chaque difficulté, ce qu'il reste à améliorer, et projette le brassard, qu'aucun joueur européen n'a encore.</p>
         </header>
+        <div class="belg-panel belg-ready" id="belgReady"></div>
         <div class="belg-grid">
           <div class="belg-panel">
             <h3 data-i18n="bracer_slider_title">Niveau d'affinage projeté</h3>
@@ -1431,6 +1432,11 @@
           <a href="https://arca.live/b/lostark/178285665" target="_blank" rel="noopener">Arca 178285665</a> ·
           <a href="https://www.inven.co.kr/board/lostark/6271/3954479" target="_blank" rel="noopener">Inven #3954479</a> ·
           <a href="https://lostark.inven.co.kr/dataninfo/item/?code=52810002" target="_blank" rel="noopener">Inven DB 52810002</a> ·
+          <a href="https://www.lobal.kr/tips/raid/raid-boss-guide/belgardin" target="_blank" rel="noopener">lobal.kr</a> ·
+          <a href="https://www.inven.co.kr/board/lostark/6271/3976146" target="_blank" rel="noopener">Inven #3976146</a> ·
+          <a href="https://www.inven.co.kr/board/lostark/6271/3976548" target="_blank" rel="noopener">Inven #3976548</a> ·
+          <a href="https://www.invenglobal.com/articles/24475/belgardin-first-clear-achieved-in-4-hours-and-53-minutes" target="_blank" rel="noopener">Inven Global 24475</a> ·
+          <a href="https://www.reddit.com/r/lostarkgame/comments/1vxypz7/preparing_for_belgardin_specup_tips/" target="_blank" rel="noopener">r/lostarkgame</a> ·
           <a href="https://www.loa.kakao.gg/guides/%EB%A1%9C%EC%8A%A4%ED%8A%B8%EC%95%84%ED%81%AC-%EC%99%84%EA%B0%91-%ED%9A%A8%EC%9C%A8-%EA%B3%B5%EB%9E%B5-10%EA%B0%9520%EA%B0%9525%EA%B0%95-%EA%B0%95%ED%99%94-%EC%9A%B0%EC%84%A0%EC%88%9C%EC%9C%84%EC%99%80-%EC%A4%80%EB%B9%84-%EC%9E%AC%EB%A3%8C" target="_blank" rel="noopener">kakao.gg</a>
         </p>
       </section>
@@ -1637,8 +1643,8 @@
             <div data-i18n="help_benchmark">Compare-toi à de vrais joueurs de ta classe et de ton iLvl : écart par système en % et en CP, plan d'achat classé par or par % gagné.</div>
           </div>
           <div class="help-card">
-            <strong data-i18n="help_belg_title">Projection Belgardin</strong>
-            <div data-i18n="help_belg">Projection du brassard T4 avant sa sortie EU : coût et gain estimés par niveau, avec la source de chaque valeur.</div>
+            <strong data-i18n="help_belg_title">Belgardin</strong>
+            <div data-i18n="help_belg">CP requis par difficulté (groupes publics KR, DPS minimum), état du roster et plan d'amélioration chiffré ; projection du brassard T4 avant sa sortie EU : coût et gain estimés par niveau, avec la source de chaque valeur.</div>
           </div>
           <div class="help-card">
             <strong data-i18n="help_rotation_title">Analyse de rotation</strong>
@@ -1890,44 +1896,44 @@
     </div>
   </div>
 
-  <script src="i18n.js?v=9.4"></script>
-  <script src="data.js?v=3.0"></script>
+  <script src="i18n.js?v=9.5"></script>
+  <script src="data.js?v=3.1"></script>
   <script src="bracelet-data.js?v=1.0"></script>
   <script src="gear-data.js?v=1.0"></script>
   <script src="bracelet-model.js?v=1.0"></script>
   <script src="subrank.js?v=1.0"></script>
   <!-- Appli : scripts de js/, dans cet ordre (ils partagent leurs déclarations de premier niveau) -->
-  <script src="js/core.js?v=55.8"></script>
-  <script src="js/app-state.js?v=55.8"></script>
-  <script src="js/game-tables.js?v=55.8"></script>
-  <script src="js/models.js?v=55.8"></script>
-  <script src="js/honing.js?v=55.8"></script>
-  <script src="js/upgrades.js?v=55.8"></script>
-  <script src="js/tab-predictor.js?v=55.8"></script>
-  <script src="js/optimization.js?v=55.8"></script>
-  <script src="js/gpd.js?v=55.8"></script>
-  <script src="js/ark-grid.js?v=55.8"></script>
-  <script src="js/bracelet.js?v=55.8"></script>
-  <script src="js/advisor.js?v=55.8"></script>
-  <script src="js/ark-passive.js?v=55.8"></script>
-  <script src="js/astrogem-grader.js?v=55.8"></script>
-  <script src="js/bible-import.js?v=55.8"></script>
-  <script src="js/oauth-roster.js?v=55.8"></script>
-  <script src="js/app-ui.js?v=55.8"></script>
-  <script src="js/raid-tracker.js?v=55.8"></script>
-  <script src="js/benchmark-core.js?v=55.8"></script>
-  <script src="js/accessories.js?v=55.8"></script>
-  <script src="js/benchmark-systems.js?v=55.8"></script>
-  <script src="js/benchmark-gains.js?v=55.8"></script>
-  <script src="js/breakdown-acc-bracelet.js?v=55.8"></script>
-  <script src="js/breakdown-character.js?v=55.8"></script>
-  <script src="js/breakdown-cores.js?v=55.8"></script>
-  <script src="js/benchmark-peers.js?v=55.8"></script>
-  <script src="js/benchmark-tab.js?v=55.8"></script>
-  <script src="js/market.js?v=55.8"></script>
-  <script src="js/belgardin.js?v=55.8"></script>
-  <script src="js/tab-rotation.js?v=55.8"></script>
-  <script src="js/main.js?v=55.8"></script>
+  <script src="js/core.js?v=55.9"></script>
+  <script src="js/app-state.js?v=55.9"></script>
+  <script src="js/game-tables.js?v=55.9"></script>
+  <script src="js/models.js?v=55.9"></script>
+  <script src="js/honing.js?v=55.9"></script>
+  <script src="js/upgrades.js?v=55.9"></script>
+  <script src="js/tab-predictor.js?v=55.9"></script>
+  <script src="js/optimization.js?v=55.9"></script>
+  <script src="js/gpd.js?v=55.9"></script>
+  <script src="js/ark-grid.js?v=55.9"></script>
+  <script src="js/bracelet.js?v=55.9"></script>
+  <script src="js/advisor.js?v=55.9"></script>
+  <script src="js/ark-passive.js?v=55.9"></script>
+  <script src="js/astrogem-grader.js?v=55.9"></script>
+  <script src="js/bible-import.js?v=55.9"></script>
+  <script src="js/oauth-roster.js?v=55.9"></script>
+  <script src="js/app-ui.js?v=55.9"></script>
+  <script src="js/raid-tracker.js?v=55.9"></script>
+  <script src="js/benchmark-core.js?v=55.9"></script>
+  <script src="js/accessories.js?v=55.9"></script>
+  <script src="js/benchmark-systems.js?v=55.9"></script>
+  <script src="js/benchmark-gains.js?v=55.9"></script>
+  <script src="js/breakdown-acc-bracelet.js?v=55.9"></script>
+  <script src="js/breakdown-character.js?v=55.9"></script>
+  <script src="js/breakdown-cores.js?v=55.9"></script>
+  <script src="js/benchmark-peers.js?v=55.9"></script>
+  <script src="js/benchmark-tab.js?v=55.9"></script>
+  <script src="js/market.js?v=55.9"></script>
+  <script src="js/belgardin.js?v=55.9"></script>
+  <script src="js/tab-rotation.js?v=55.9"></script>
+  <script src="js/main.js?v=55.9"></script>
 
   <!-- Cloudflare Web Analytics -->
   <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ab628174dd6d4aec9cb0a47449a6b62f"}'></script>

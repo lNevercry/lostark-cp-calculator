@@ -127,13 +127,24 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
  * Feuille de route vers un objectif : à chaque tour, l'étape au meilleur ratio parmi les premières étapes du GPD et
  * les étapes suivantes des chaînes déjà engagées. Taille d'épiques et de rares = deux chemins vers la même grille :
  * le premier retenu exclut l'autre. Objectif en CP (DPS, gains en % de dégâts × CP actuel) ou en % de buff (support).
+ * opts.cpGoal : objectif en CP cumulé, y compris pour un support (onglet Belgardin) ; opts.maxSteps : 40 par défaut ;
+ * opts.startK : { id de ligne: k } pour partir de la k-ième étape d'une chaîne (affinage déjà prévu ailleurs) ;
+ * opts.maxRate : étapes au-delà de ce ratio écartées, chaîne arrêtée (objectif hors de portée : bout des échelles).
  */
-function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal) {
-  const avail = masterRows.map(r => ({ row: Object.assign({ chain: r.id, step: 1 }, r), k: 1 }));
+function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal, opts = {}) {
+  const maxSteps = opts.maxSteps || 40;
+  const cpGoal = opts.cpGoal > 0 ? opts.cpGoal : null;
+  const startK = opts.startK || {};
+  const avail = masterRows.map(r => {
+    const k = startK[r.id] > 1 ? startK[r.id] : 1;
+    if (k === 1) return { row: Object.assign({ chain: r.id, step: 1 }, r), k: 1 };
+    const row = gpdFollowUp(charObj, isSupport, isEn, r, k);
+    return row ? { row, k } : null;
+  }).filter(Boolean);
   const plan = [];
   let cum = 0, cumCp = 0, gold = 0, arkChain = null;
   const currentCp = characterCp(charObj);
-  while (avail.length && cum < goal && plan.length < 40) {
+  while (avail.length && (cpGoal ? cumCp < cpGoal : cum < goal) && plan.length < maxSteps) {
     avail.sort((a, b) => a.row.rate - b.row.rate);
     const it = avail.shift();
     if (it.row.category === 'arkGrid') {
@@ -141,6 +152,7 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal) {
       arkChain = it.row.chain;
     }
     const row = it.row;
+    if (opts.maxRate && row.rate > opts.maxRate) continue;
     // Gain non arrondi (dmgGain est arrondi à 0,01 % pour l'affichage)
     const gain = row.gainRaw !== undefined ? row.gainRaw : row.dmgGain;
     if (it.k > 1 || row.cpGain === undefined) {
@@ -156,7 +168,7 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal) {
     const next = base && gpdFollowUp(charObj, isSupport, isEn, base, it.k + 1);
     if (next) avail.push({ row: next, k: it.k + 1 });
   }
-  return { plan, gold, cum, cumCp, reached: cum >= goal };
+  return { plan, gold, cum, cumCp, reached: cpGoal ? cumCp >= cpGoal : cum >= goal };
 }
 
 /**
