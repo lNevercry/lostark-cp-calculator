@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-The MIT License above covers the original code of this repository only. It does
+The MIT License (see LICENSE) covers the original code of this repository only. It does
 not grant any rights over third-party work included in or used by this project,
 which remains the property of its respective authors and is used under their own
 terms:
