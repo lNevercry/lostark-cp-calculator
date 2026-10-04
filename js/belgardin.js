@@ -336,14 +336,15 @@ function renderBelgardinReadiness() {
   const dName = d => (isEn ? d.en : d.fr);
   const STATUS = {
     ready: [isEn ? 'Ready' : 'Prêt', isEn ? 'public party CP reached' : 'CP des groupes publics atteint'],
-    enough: [isEn ? 'Enough DPS' : 'DPS suffisant', isEn ? 'above the minimum DPS, below public party CP' : 'au-dessus du DPS minimum, sous le CP des groupes publics'],
-    tight: [isEn ? 'Tight' : 'Juste', isEn ? 'within the minimum DPS range: clean execution needed' : "dans la fourchette du DPS minimum : exécution propre exigée"],
+    enough: [isEn ? 'Enough DPS' : 'DPS suffisant', isEn ? 'enough damage for a clean run, below public party CP' : 'assez de dégâts pour une exécution propre, sous le CP des groupes publics'],
+    tight: [isEn ? 'Tight' : 'Juste', isEn ? 'within the minimum CP range: no room for mistakes' : "dans la fourchette du CP minimum : aucune marge d'erreur"],
     short: [isEn ? 'Not enough CP' : 'CP insuffisant', ''],
     ilvl: [isEn ? 'Item level too low' : 'iLvl insuffisant', '']
   };
   const chip = (r, withGap) => {
     const key = r.ilvlGap > 0 ? 'ilvl' : r.status;
-    const gap = r.ilvlGap > 0 ? `−${fmt(r.ilvlGap, 2)} iLvl` : (r.status === 'ready' ? '' : `−${fmt(Math.ceil(r.th.pf - r.cp))} CP`);
+    const gap = r.ilvlGap > 0 ? `−${fmt(r.ilvlGap, 2)} iLvl`
+      : (r.status === 'ready' ? '' : `${r.status === 'short' ? '' : (isEn ? 'public parties ' : 'groupes publics ')}−${fmt(Math.ceil(r.th.pf - r.cp))} CP`);
     return `<span class="belg-st belg-st-${key}" title="${escapeHtml(STATUS[key][1])}">${STATUS[key][0]}${withGap && gap ? ` <span class="belg-st-gap">${gap}</span>` : ''}</span>`;
   };
   const charObj = getCurrentActiveCharacter();
@@ -351,9 +352,9 @@ function renderBelgardinReadiness() {
 
   let h = `<h3>${isEn ? 'Ready for Belgardin?' : 'Prêt pour Belgardin ?'}</h3>`;
   // 1. Seuils par difficulté
-  h += `<table class="market-table belg-table"><thead><tr><th>${isEn ? 'Difficulty' : 'Difficulté'}</th><th>iLvl</th>
-      <th title="${isEn ? 'Party damage per second to beat the enrage, gate 1 / gate 2' : 'Dégâts par seconde du groupe pour battre l\'enrage, porte 1 / porte 2'}">${isEn ? 'Party DPS (G1 / G2)' : 'DPS du groupe (P1 / P2)'}</th>
-      ${isSupport ? '' : `<th>${isEn ? 'Minimum DPS' : 'DPS minimum'}</th>`}<th>${isEn ? 'Public parties' : 'Groupes publics'}</th>${charObj ? `<th>${escapeHtml(charObj.name)}</th>` : ''}</tr></thead><tbody>`;
+  h += `<table class="market-table belg-table"><thead><tr><th>${isEn ? 'Difficulty' : 'Difficulté'}</th><th class="market-num">iLvl</th>
+      <th class="market-num" title="${isEn ? 'Party damage per second to beat the enrage, gate 1 / gate 2' : 'Dégâts par seconde du groupe pour battre l\'enrage, porte 1 / porte 2'}">${isEn ? 'Party damage needed (G1 / G2)' : 'Dégâts requis du groupe (P1 / P2)'}</th>
+      ${isSupport ? '' : `<th class="market-num" title="${isEn ? 'Lowest average DPS Combat Power with enough damage to beat the enrage, with clean mechanics' : "CP moyen le plus bas d'un DPS dont les dégâts suffisent à battre l'enrage, avec des mécaniques propres"}">${isEn ? 'Min. CP (clean run)' : 'CP min. (exécution propre)'}</th>`}<th class="market-num" title="${isEn ? 'CP asked in Korean public party listings' : 'CP demandé dans les annonces de groupe coréennes'}">${isEn ? 'Public party CP' : 'CP groupes publics'}</th>${charObj ? `<th>${escapeHtml(charObj.name)}</th>` : ''}</tr></thead><tbody>`;
   const mine = charObj ? belgardinReadiness(charObj, isSupport) : null;
   R.difficulties.forEach((d, i) => {
     const th = belgardinThresholds(d, isSupport);
@@ -364,13 +365,13 @@ function renderBelgardinReadiness() {
   });
   h += `</tbody></table>`;
   h += `<p class="belg-note">${isEn
-      ? `Combat Power in the raid profile. <strong>Public parties</strong>: CP asked in Korean party listings the first week (mostly trial groups, not a clear guarantee)${isSupport ? '; a support\'s CP measures its buffs, not damage, so there is no minimum DPS for supports' : ''}. ${isSupport ? '' : `<strong>Minimum DPS</strong>: Nightmare cleared around ${fmt(R.nightmareMinCp[0])}–${fmt(R.nightmareMinCp[1])} average CP with clean mechanics (KR feedback), Normal and Hard scaled by boss HP (same timers, DPS Combat Power is proportional to damage). `}First Nightmare clear: 4 h 53, about ${fmt(R.firstClearCp)} average CP.`
-      : `Combat Power du profil raid. <strong>Groupes publics</strong> : CP demandé dans les annonces de groupe coréennes la première semaine (surtout des groupes d'essai, pas une garantie de clear)${isSupport ? " ; le CP d'un support mesure ses buffs, pas des dégâts : pas de DPS minimum pour un support" : ''}. ${isSupport ? '' : `<strong>DPS minimum</strong> : Nightmare tombé vers ${fmt(R.nightmareMinCp[0])}–${fmt(R.nightmareMinCp[1])} CP de moyenne avec des mécaniques propres (retours KR), Normal et Hard au rapport des PV du boss (même chrono, CP d'un DPS proportionnel à ses dégâts). `}Premier clear Nightmare : 4 h 53, environ ${fmt(R.firstClearCp)} CP de moyenne.`}</p>`;
+      ? `Combat Power in the raid profile. <strong>Public party CP</strong>: CP asked in Korean party listings the first week (mostly trial groups, not a clear guarantee)${isSupport ? '; a support\'s CP measures its buffs, not damage, so there is no minimum CP for supports' : ''}. ${isSupport ? '' : `<strong>Min. CP (clean run)</strong>: lowest average CP whose damage beats the enrage. Nightmare cleared around ${fmt(R.nightmareMinCp[0])}–${fmt(R.nightmareMinCp[1])} average CP with clean mechanics (KR feedback), Normal and Hard scaled by boss HP (same timers, DPS Combat Power is proportional to damage). `}First Nightmare clear: 4 h 53, about ${fmt(R.firstClearCp)} average CP.`
+      : `Combat Power du profil raid. <strong>CP groupes publics</strong> : CP demandé dans les annonces de groupe coréennes la première semaine (surtout des groupes d'essai, pas une garantie de clear)${isSupport ? " ; le CP d'un support mesure ses buffs, pas des dégâts : pas de CP minimum pour un support" : ''}. ${isSupport ? '' : `<strong>CP min. (exécution propre)</strong> : CP moyen le plus bas dont les dégâts battent l'enrage. Nightmare tombé vers ${fmt(R.nightmareMinCp[0])}–${fmt(R.nightmareMinCp[1])} CP de moyenne avec des mécaniques propres (retours KR), Normal et Hard au rapport des PV du boss (même chrono, CP d'un DPS proportionnel à ses dégâts). `}Premier clear Nightmare : 4 h 53, environ ${fmt(R.firstClearCp)} CP de moyenne.`}</p>`;
 
   // 2. Roster
   const roster = getActiveRosterList();
   if (roster.length > 1) {
-    h += `<table class="market-table belg-table belg-roster"><thead><tr><th>${isEn ? 'Roster' : 'Roster'}</th><th>iLvl</th><th>CP</th>${R.difficulties.map(d => `<th>${dName(d)}</th>`).join('')}</tr></thead><tbody>`;
+    h += `<table class="market-table belg-table belg-roster"><thead><tr><th>${isEn ? 'Roster' : 'Roster'}</th><th class="market-num">iLvl</th><th class="market-num">CP</th>${R.difficulties.map(d => `<th>${dName(d)}</th>`).join('')}</tr></thead><tbody>`;
     roster.forEach(c => {
       const rr = belgardinReadiness(c);
       h += `<tr><td>${escapeHtml(c.name)} <span class="belg-dim">${escapeHtml(c.className || '')}${c.role === 'support' ? ' · support' : ''}</span></td>
@@ -399,7 +400,7 @@ function renderBelgardinReadiness() {
   });
   if (!isSupport) {
     h += `<span class="belg-quick-sep"></span>`;
-    [['pf', isEn ? 'Public parties' : 'Groupes publics'], ['min', isEn ? 'Minimum DPS' : 'DPS minimum']].forEach(([k, l]) => {
+    [['pf', isEn ? 'Public party CP' : 'CP groupes publics'], ['min', isEn ? 'Min. CP (clean run)' : 'CP min. (exécution propre)']].forEach(([k, l]) => {
       h += `<button type="button" class="belg-quick-btn${k === belgReadyState.goal ? ' active' : ''}" data-belg-goal="${k}">${l}</button>`;
     });
   }
@@ -457,7 +458,7 @@ function renderBelgardinReadiness() {
       h += `<p class="belg-empty">${isEn ? 'No priced upgrade available for this character.' : 'Aucune amélioration chiffrée pour ce personnage.'}</p>`;
     } else {
       let cum = 0;
-      h += `<table class="market-table belg-table"><thead><tr><th>#</th><th>${isEn ? 'System' : 'Système'}</th><th>${isEn ? 'Step' : 'Étape'}</th><th>${isEn ? 'Gold' : 'Or'}</th><th>+CP</th><th>${isEn ? 'CP reached' : 'CP atteint'}</th></tr></thead><tbody>`;
+      h += `<table class="market-table belg-table"><thead><tr><th>#</th><th>${isEn ? 'System' : 'Système'}</th><th>${isEn ? 'Step' : 'Étape'}</th><th class="market-num">${isEn ? 'Gold' : 'Or'}</th><th class="market-num">+CP</th><th class="market-num">${isEn ? 'CP reached' : 'CP atteint'}</th></tr></thead><tbody>`;
       road.plan.forEach((r, i) => {
         if (r.cpGain > 0) cum += r.cpGain;
         h += `<tr><td>${i + 1}</td><td>${r.system}</td><td>${r.nextStep}${r.stepDetail ? `<span class="belg-dim belg-step-detail">${r.stepDetail}</span>` : ''}</td>

@@ -407,7 +407,7 @@
     "btn_close": "Compris.",
     "agent_compatibility_notice": "Compatible avec LOA Logs / Lost Ark Logs (%LOCALAPPDATA%\\LOA Logs\\encounters.db).",
     "help_belg_title": "Belgardin",
-    "help_belg": "CP requis par difficulté (groupes publics KR, DPS minimum), état du roster et plan d'amélioration chiffré ; projection du brassard T4 avant sa sortie EU : coût et gain estimés par niveau, avec la source de chaque valeur.",
+    "help_belg": "CP requis par difficulté (groupes publics KR, CP minimum), état du roster et plan d'amélioration chiffré ; projection du brassard T4 avant sa sortie EU : coût et gain estimés par niveau, avec la source de chaque valeur.",
     "help_rotation_title": "Analyse de rotation",
     "help_rotation": "Charge ton encounters.db de LOA Logs (lu dans ton navigateur, jamais envoyé) : note d'exécution par raid comparée à ta spé, et conseils pour progresser.",
     "char_active_default": "Personnage Actif"
@@ -814,7 +814,7 @@
     "btn_close": "Got it.",
     "agent_compatibility_notice": "Compatible with LOA Logs / Lost Ark Logs (%LOCALAPPDATA%\\LOA Logs\\encounters.db).",
     "help_belg_title": "Belgardin",
-    "help_belg": "CP needed per difficulty (KR public parties, minimum DPS), roster status and a priced upgrade plan; T4 bracer projection before its EU release: estimated cost and gain per level, with the source of each value.",
+    "help_belg": "CP needed per difficulty (KR public parties, minimum CP), roster status and a priced upgrade plan; T4 bracer projection before its EU release: estimated cost and gain per level, with the source of each value.",
     "help_rotation_title": "Rotation analysis",
     "help_rotation": "Load your LOA Logs encounters.db (read in your browser, never uploaded): an execution score per raid compared with your spec, and advice to improve.",
     "char_active_default": "Active Character"
