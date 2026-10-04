@@ -9,8 +9,10 @@ const abilityStonePrice = () => ABILITY_STONE_PHEONS * gpdUnitPrice('pheon');
 const STONE_LEVEL_NODES = [6, 7, 9, 10];
 // Somme des niveaux positifs >= 5 : Puissance d'attaque de base +1,5 %
 const STONE_BASE_AP_BONUS = 0.015;
-// Autres sources de Puissance d'attaque % supposées cumulées avec une gravure « PA » (Adrénaline, etc.)
-const STONE_OTHER_AP_PCT = 20;
+// Pool « Atk. Power +X % » du DPS de référence de Loseii hors Adrénaline (loa-gpd/docs/research/reference-character.md :
+// gemmes niv. 9 11 %, pierre 1,5 %, 2 boucles PA % 3,1 %, cœur Attaque ancien 2,68 %, nœud PA niv. 60 2,2 %).
+// Repli quand le profil ne se lit pas (otherAttackPowerPct).
+const REF_OTHER_AP_PCT = 20.48;
 const stoneSuccessCache = new Map();
 // Au-delà de ce nombre de pierres, un palier n'est plus un achat réaliste (un 10/x s'achète taillé à l'hôtel
 // des ventes, sans prix connu) : pas de ligne GPD. Loseii ne chiffre que le palier niveau 5 (1 sur ~725).
@@ -156,13 +158,50 @@ function getAbilityStone(charObj) {
   return { positives, negative: lines.find(l => l.negative) || null };
 }
 
+// Cœur Chaos Étoile « Attaque » (ID 6731200xx, dernier chiffre = rang) : % de PA des options du jeu (arkGridCoreOptions
+// 3156100-3156400) : 14 pts +0,55 % ; 17 pts +1,10 % (rang 5) ou +1,65 % (rang 6) ; 18 à 20 : +0,16 % chacun.
+// Rang 4 : options 10 et 14 seulement. Les fixes (+900 / +1 800 / +2 700) ne sont pas dans le pool de %.
+const ATTACK_CORE_PREFIX = '6731200';
+function attackCoreApPct(id, points) {
+  const grade = Number(id.toString().slice(-1));
+  let pct = points >= 14 ? 0.55 : 0;
+  if (grade < 5) return pct;
+  if (points >= 17) pct += grade >= 6 ? 1.65 : 1.10;
+  [18, 19, 20].forEach(t => { if (points >= t) pct += 0.16; });
+  return pct;
+}
+
+/**
+ * % de PA du personnage hors gravure évaluée : tout ce que le jeu affiche « Atk. Power +X % » partage un seul pool
+ * additif (Loseii, reference-character.md) : gemmes + pierre (Battle Point type 1, attackPowerMultiplier), lignes
+ * PA % des bijoux (stat 49), cœur « Attaque », nœuds PA des astrogemmes (option 2001, table arkGridGemOptions).
+ * Non lus : une 2e gravure PA (rare). REF_OTHER_AP_PCT si le profil n'a pas de Battle Point.
+ */
+function otherAttackPowerPct(charObj) {
+  const lo = (charObj && charObj.rawProfile && charObj.rawProfile.loadout) || {};
+  const p1 = battlePointPartsOf(charObj).find(p => p.type === 1);
+  if (!p1) return REF_OTHER_AP_PCT;
+  let pct = p1.attackPowerMultiplier || 0;
+  (lo.items || []).forEach(it => ((it.data && it.data.stats) || []).forEach(st => {
+    if (st.type === 2 && st.index === 49) pct += (st.value || 0) / 100;
+  }));
+  const core = getArkGridCoreIds(charObj).chaosStar;
+  if (core && core.id.toString().startsWith(ATTACK_CORE_PREFIX)) pct += attackCoreApPct(core.id, core.points);
+  const vals = astroSupportOptions && astroSupportOptions[2001];
+  if (vals) (lo.arkGridCores || []).forEach(c => (c.gems || []).forEach(g => (g.opts || []).forEach(o => {
+    if (o.id === 2001 && o.level > 0) pct += (vals[Math.min(o.level, vals.length) - 1] || 0) / 100;
+  })));
+  return pct;
+}
+
 // Gain d'un effet de gravure qui passe de base+addOld à base+addNew (même unité que `base`),
-// en 100 × ln du rapport de dégâts (même échelle que l'affinage et les gemmes)
-function engravingBonusGain(kind, base, addOld, addNew) {
+// en 100 × ln du rapport de dégâts (même échelle que l'affinage et les gemmes).
+// otherAp : % de PA hors cette gravure (otherAttackPowerPct), pour les gravures PA seulement.
+function engravingBonusGain(kind, base, addOld, addNew, otherAp = REF_OTHER_AP_PCT) {
   if (!(addNew > addOld)) return 0;
   if (kind === 'dmg') return 100 * Math.log((1 + (base + addNew) / 100) / (1 + (base + addOld) / 100));
   if (kind === 'ap') {
-    const pool = base + STONE_OTHER_AP_PCT;
+    const pool = base + otherAp;
     return 100 * Math.log((1 + (pool + addNew) / 100) / (1 + (pool + addOld) / 100));
   }
   if (!window.Bracelet) return 0;
@@ -174,10 +213,10 @@ function engravingBonusGain(kind, base, addOld, addNew) {
 }
 
 // Gain (%) de la gravure quand la pierre passe du niveau lvlFrom à lvlTo
-function stoneEngravingGain(key, lvlFrom, lvlTo, isSupport) {
+function stoneEngravingGain(charObj, key, lvlFrom, lvlTo, isSupport) {
   const eff = window.ABILITY_STONE_EFFECTS && window.ABILITY_STONE_EFFECTS[key];
   if (isSupport || !eff || lvlTo <= lvlFrom) return 0;
-  return engravingBonusGain(eff.kind, eff.base, lvlFrom > 0 ? eff.stone[lvlFrom - 1] : 0, eff.stone[lvlTo - 1]);
+  return engravingBonusGain(eff.kind, eff.base, lvlFrom > 0 ? eff.stone[lvlFrom - 1] : 0, eff.stone[lvlTo - 1], otherAttackPowerPct(charObj));
 }
 
 // Gain (%) de la PA de base +1,5 % (somme des niveaux >= 5). DPS : profil de référence de bracelet-model.js.
@@ -214,7 +253,7 @@ function getAbilityStoneUpgrade(charObj, isSupport) {
     if (!(p > 0)) return;
     const sumFrom = e1.level + e2.level;
     const apBonus = sumFrom < 5 && sumFrom + 1 >= 5 ? stoneBaseApGain(charObj, isSupport) : 0;
-    const engGain = stoneEngravingGain(up.key, up.level, upTo, isSupport);
+    const engGain = stoneEngravingGain(charObj, up.key, up.level, upTo, isSupport);
     const gain = engGain + apBonus; // 100 × ln : les deux effets se multiplient
     const cost = abilityStonePrice() / p;
     candidates.push({ up, keep, upTo, target, p, stones: 1 / p, cost, gain, apBonus });
@@ -279,7 +318,7 @@ function getRelicBookUpgrades(charObj, isSupport) {
     if (!(price > 0)) return;
     const lvl = Math.floor(read / RELIC_BOOKS_PER_LEVEL);
     const books = RELIC_MAX_BOOKS - read;
-    const gain = engravingBonusGain(eff.kind, eff.base, lvl > 0 ? eff.relic[lvl - 1] : 0, eff.relic[3]);
+    const gain = engravingBonusGain(eff.kind, eff.base, lvl > 0 ? eff.relic[lvl - 1] : 0, eff.relic[3], otherAttackPowerPct(charObj));
     if (!(gain > 0)) return;
     out.push({
       id: e.id, key, en,

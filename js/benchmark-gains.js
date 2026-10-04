@@ -218,7 +218,8 @@ function benchRelicBookGains(player, target) {
   };
   const targetRead = {};
   engrOf(target).forEach(e => { const r = relicBooksRead(e); if (r !== null) targetRead[e.id] = r; });
-  let mult = 1, cost = 0;
+  let buy = 0, cost = 0;
+  const otherAp = otherAttackPowerPct(player);
   engrOf(player).forEach(e => {
     const read = relicBooksRead(e);
     if (read === null) return;
@@ -228,11 +229,11 @@ function benchRelicBookGains(player, target) {
     const goal = e.id in targetRead ? targetRead[e.id] : RELIC_MAX_BOOKS;
     if (!eff || !(price > 0) || goal <= read) return;
     const lvl = Math.floor(read / RELIC_BOOKS_PER_LEVEL), goalLvl = Math.floor(goal / RELIC_BOOKS_PER_LEVEL);
-    const g = engravingBonusGain(eff.kind, eff.base, lvl > 0 ? eff.relic[lvl - 1] : 0, goalLvl > 0 ? eff.relic[goalLvl - 1] : 0);
-    mult *= 1 + g / 100;
+    // 100 × ln : les gains des gravures s'additionnent
+    buy += engravingBonusGain(eff.kind, eff.base, lvl > 0 ? eff.relic[lvl - 1] : 0, goalLvl > 0 ? eff.relic[goalLvl - 1] : 0, otherAp);
     cost += (goal - read) * price;
   });
-  return { buy: (mult - 1) * 100, cost: Math.round(cost) };
+  return { buy, cost: Math.round(cost) };
 }
 
 /**

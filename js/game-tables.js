@@ -24,7 +24,7 @@ async function loadArkGridBp() {
 // Battle Point en mode support avec la table du jeu (branche 2, data/battle-point-support.json, tools/fetch-maxroll-honing.mjs).
 // Vérifié à l'identique, partie par partie, sur 6 profils support corrects (Bardes, Paladins, Artiste).
 let bpSupportTable = null;
-// Options support des astrogemmes : valeur (0,01 %) par niveau d'option, gemOptions[id][n - 1]
+// Options des astrogemmes : valeur (0,01 %) par niveau d'option, gemOptions[id][n - 1] (2011-2013 support, 2001 PA % DPS)
 let astroSupportOptions = null;
 async function loadBpSupportTable() {
   try {
