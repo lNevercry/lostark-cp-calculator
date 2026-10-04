@@ -25,7 +25,7 @@ function getCharacterClassKey(curChar) {
 // chiffré par braceletGpdStep. Rien n'est simulé sans personnage importé.
 
 const ACC_LINE_NAMES = {
-  addDmg: ['Dégâts additionnels', 'Additional Damage'], outDmg: ['Dégâts infligés', 'Damage to enemies'],
+  addDmg: ['Dégâts additionnels', 'Additional Damage'], outDmg: ['Dégâts infligés', 'Outgoing Damage'],
   apPct: ['PA %', 'Attack Power %'], wpPct: ["Puissance d'arme %", 'Weapon Power %'],
   critPct: ['Taux critique', 'Crit Rate'], cdmgPct: ['Dégâts critiques', 'Crit Damage'],
   brand: ['Puissance de marque', 'Brand Power'], identity: ["Gain de jauge d'identité", 'Identity Gain'],

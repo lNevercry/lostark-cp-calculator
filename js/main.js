@@ -26,7 +26,9 @@ async function initApp() {
   if (savedRoster && savedRoster.length > 0) {
     hideNoCharacterState();
     renderPresetsBar();
-    loadCharacter(savedRoster[0]);
+    let savedActive = null;
+    try { savedActive = lsGet('lostark_active_char'); } catch (e) {}
+    loadCharacter(savedRoster.find(c => (c.id || c.name.toLowerCase()) === savedActive) || savedRoster[0]);
   } else {
     showNoCharacterState();
   }
@@ -55,6 +57,7 @@ async function initApp() {
     updateBelgardinView();
     renderRotationTab();
     renderSavedRosterManager();
+    renderOAuthRosters();
   });
 
   // Initialisation des modules
@@ -70,7 +73,7 @@ async function initApp() {
 
   // Vérification du retour de redirection OAuth ou session active
   checkOAuthCallback();
-  const token = localStorage.getItem('lostark_bible_token');
+  const token = lsGet('lostark_bible_token');
   if (token) {
     fetchOAuthUserData(token);
   }

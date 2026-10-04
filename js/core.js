@@ -13,8 +13,36 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Stockage du navigateur sans exception : bloqué (navigation privée stricte, cookies refusés) ou quota plein, la
+// lecture rend null et l'écriture est ignorée au lieu d'interrompre l'import ou le démarrage. storeCompact gère
+// lui-même le quota (il vide le cache du Benchmark).
+function storageOf(session) {
+  try { return session ? window.sessionStorage : window.localStorage; } catch (e) { return null; }
+}
+function lsGet(key, session = false) {
+  try { const st = storageOf(session); return st ? st.getItem(key) : null; } catch (e) { return null; }
+}
+function lsSet(key, value, session = false) {
+  try { const st = storageOf(session); if (st) st.setItem(key, value); return true; } catch (e) { return false; }
+}
+function lsDel(key, session = false) {
+  try { const st = storageOf(session); if (st) st.removeItem(key); } catch (e) {}
+}
+
 // Régions des profils lostark.bible (segment de chemin des appels : rien d'autre n'y entre)
 const BIBLE_REGIONS = ['CE', 'NA', 'NAE', 'NAW', 'SA'];
+
+// Région d'un personnage enregistré : champ region, sinon le serveur « Monde (NAE) » des anciens imports, sinon CE
+function characterRegion(c) {
+  const r = c && String(c.region || '').toUpperCase();
+  if (BIBLE_REGIONS.includes(r)) return r;
+  const m = c && /\(([A-Z]{2,3})\)\s*$/.exec(c.server || '');
+  return m && BIBLE_REGIONS.includes(m[1]) ? m[1] : 'CE';
+}
+
+// Pause entre deux profils lostark.bible dans une boucle (réactualisation, synchro OAuth) : appels espacés
+const BIBLE_FETCH_GAP_MS = 6000;
+const bibleFetchPause = () => new Promise(r => setTimeout(r, BIBLE_FETCH_GAP_MS));
 
 // Image de repli (attribut data-fallback) : écouteur unique en capture, à la place des onerror inline
 // (la CSP n'autorise aucun script inline)
@@ -314,7 +342,7 @@ const FACE_AVATARS = {
 function getCharacterFaceAvatar(ch) {
   if (!ch) return 'images/classes/paladin.png';
   const cKey = (ch.id || ch.name || '').toLowerCase().trim();
-  const savedCustom = localStorage.getItem('char_custom_avatar_' + cKey);
+  const savedCustom = lsGet('char_custom_avatar_' + cKey);
   if (savedCustom) return savedCustom;
 
   // Les 6 avatars découpés sont STRICTEMENT réservés au Roster Démo de Nevercry
@@ -418,7 +446,7 @@ function storeCompact(key, value) {
 
 function getUserRoster() {
   try {
-    const raw = localStorage.getItem('lostark_user_roster');
+    const raw = lsGet('lostark_user_roster');
     if (raw) {
       const parsed = compactParse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -452,6 +480,9 @@ function saveUserRoster(list) {
 }
 
 let activeCharacterId = null;
+// Dernier personnage chargé (loadCharacter) : sert quand il n'est pas dans le roster enregistré (import sans
+// « ajouter au roster », ou quota du navigateur plein), sinon tous les onglets retombaient sur un autre personnage
+let loadedCharacter = null;
 
 // Uniquement de vrais personnages importés depuis lostark.bible : aucun roster de démo.
 function getActiveRosterList() {
@@ -463,8 +494,9 @@ function getCurrentActiveCharacter() {
   if (activeCharacterId) {
     const found = list.find(c => (c.id || c.name.toLowerCase()) === activeCharacterId);
     if (found) return found;
+    if (loadedCharacter && (loadedCharacter.id || loadedCharacter.name.toLowerCase()) === activeCharacterId) return loadedCharacter;
   }
-  return list[0] || null;
+  return list[0] || loadedCharacter || null;
 }
 
 // Aucun vrai personnage : on masque le contenu et on ouvre l'import (non fermable)

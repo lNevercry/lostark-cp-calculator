@@ -143,8 +143,8 @@ async function startOAuthFlow() {
     const verifier = generateRandomString(50);
     const state = generateRandomString(24);
 
-    sessionStorage.setItem('lostark_oauth_verifier', verifier);
-    sessionStorage.setItem('lostark_oauth_state', state);
+    lsSet('lostark_oauth_verifier', verifier, true);
+    lsSet('lostark_oauth_state', state, true);
 
     const challenge = await generateCodeChallenge(verifier);
 
@@ -170,7 +170,7 @@ async function startOAuthFlow() {
     if (dom.importStatus) {
       dom.importStatus.className = 'modal-status error';
       dom.importStatus.style.display = 'block';
-      dom.importStatus.textContent = `Impossible d'initialiser OAuth : ${err.message}`;
+      dom.importStatus.textContent = trLang(`Impossible d'initialiser OAuth : ${err.message}`, `Could not start OAuth: ${err.message}`);
     }
   }
 }
@@ -198,15 +198,15 @@ async function checkOAuthCallback() {
 
   if (!code) return;
 
-  const savedState = sessionStorage.getItem('lostark_oauth_state');
-  const verifier = sessionStorage.getItem('lostark_oauth_verifier');
+  const savedState = lsGet('lostark_oauth_state', true);
+  const verifier = lsGet('lostark_oauth_verifier', true);
 
   // Retour sans state, sans vérificateur PKCE ou d'une autre session : refusé (connexion forcée à un autre compte)
   if (!stateParam || !savedState || stateParam !== savedState || !verifier) {
     console.warn('[OAuth] state ou vérificateur PKCE absent ou différent : retour ignoré');
     window.history.replaceState({}, document.title, window.location.pathname);
-    sessionStorage.removeItem('lostark_oauth_state');
-    sessionStorage.removeItem('lostark_oauth_verifier');
+    lsDel('lostark_oauth_state', true);
+    lsDel('lostark_oauth_verifier', true);
     return;
   }
 
@@ -245,9 +245,9 @@ async function checkOAuthCallback() {
     const data = await res.json();
 
     if (data.access_token) {
-      localStorage.setItem('lostark_bible_token', data.access_token);
-      sessionStorage.removeItem('lostark_oauth_verifier');
-      sessionStorage.removeItem('lostark_oauth_state');
+      lsSet('lostark_bible_token', data.access_token);
+      lsDel('lostark_oauth_verifier', true);
+      lsDel('lostark_oauth_state', true);
 
       if (dom.importStatus) {
         dom.importStatus.className = 'modal-status success';
@@ -265,7 +265,7 @@ async function checkOAuthCallback() {
     if (dom.importStatus) {
       dom.importStatus.className = 'modal-status error';
       dom.importStatus.style.display = 'block';
-      dom.importStatus.textContent = `Échec de la connexion OAuth : ${err.message}`;
+      dom.importStatus.textContent = trLang(`Échec de la connexion OAuth : ${err.message}`, `OAuth sign-in failed: ${err.message}`);
     }
   }
 }
@@ -320,7 +320,7 @@ async function fetchOAuthUserData(token) {
       if (dom.importStatus) {
         dom.importStatus.className = 'modal-status error';
         dom.importStatus.style.display = 'block';
-        dom.importStatus.textContent = `Session OAuth invalide (${userData?.error_description || userData?.error || 'HTTP ' + userRes.status}). Reconnexion requise.`;
+        dom.importStatus.textContent = trLang(`Session OAuth invalide (${userData?.error_description || userData?.error || 'HTTP ' + userRes.status}). Reconnexion requise.`, `Invalid OAuth session (${userData?.error_description || userData?.error || 'HTTP ' + userRes.status}). Please sign in again.`);
       }
       return;
     }
@@ -354,14 +354,18 @@ async function fetchOAuthUserData(token) {
     if (dom.importStatus) {
       dom.importStatus.className = 'modal-status error';
       dom.importStatus.style.display = 'block';
-      dom.importStatus.textContent = `Erreur de communication OAuth : ${e.message}`;
+      dom.importStatus.textContent = trLang(`Erreur de communication OAuth : ${e.message}`, `OAuth communication error: ${e.message}`);
     }
   }
 }
 
 let currentOAuthRosters = null;
 
-function renderOAuthRosters(rostersRaw) {
+// Dernière liste reçue : redessinée au changement de langue (main.js)
+let lastOAuthRosters = null;
+function renderOAuthRosters(rostersRaw = lastOAuthRosters) {
+  if (!rostersRaw) return;
+  lastOAuthRosters = rostersRaw;
   const rosters = extractRostersList(rostersRaw);
   currentOAuthRosters = rosters;
   if (!dom.oauthRosterList) return;
@@ -474,8 +478,9 @@ async function syncAllOAuthCharacters(rostersRaw) {
     if (statusEl) {
       statusEl.innerHTML = `${trLang('Synchronisation', 'Syncing')} (${i + 1}/${topChars.length}) : <strong>${escapeHtml(tc.name)}</strong> (${tc.ilvl.toFixed(1)})...`;
     }
+    if (i > 0) await bibleFetchPause();
     try {
-      const charObj = await fetchBibleProfile(tc.region, tc.name, false);
+      const charObj = await fetchBibleProfile(tc.region, tc.name, 'silent');
       if (charObj) {
         importedList.push(charObj);
       }
@@ -485,7 +490,13 @@ async function syncAllOAuthCharacters(rostersRaw) {
   }
 
   if (importedList.length > 0) {
-    saveUserRoster(importedList);
+    // Fusion avec le roster existant : les personnages synchronisés remplacent leur ancienne version, les autres restent
+    const merged = (getUserRoster() || []).slice();
+    importedList.forEach(ch => {
+      const idx = merged.findIndex(c => (c.id || c.name.toLowerCase()) === ch.id);
+      if (idx >= 0) merged[idx] = { ...merged[idx], ...ch }; else merged.push(ch);
+    });
+    saveUserRoster(merged);
     renderPresetsBar();
     loadCharacter(importedList[0]);
     renderSavedRosterManager();
@@ -521,16 +532,19 @@ function removeCharacterFromUserRoster(charId) {
   saveUserRoster(list);
   if (list.length === 0) {
     activeCharacterId = null;
+    loadedCharacter = null;
     showNoCharacterState();
   } else {
     renderPresetsBar();
-    loadCharacter(list[0]);
+    // Le personnage actif reste actif, sauf si c'est lui qu'on retire
+    const keep = list.find(c => (c.id || c.name.toLowerCase()) === activeCharacterId);
+    loadCharacter(keep || list[0]);
   }
   renderSavedRosterManager();
 }
 
 function clearUserRoster() {
-  localStorage.removeItem('lostark_user_roster');
+  lsDel('lostark_user_roster');
   activeCharacterId = null;
   showNoCharacterState();
   renderSavedRosterManager();
@@ -551,27 +565,39 @@ async function refreshAllUserRosterCharacters() {
     statusEl.innerHTML = trLang(`Réactualisation de tes ${list.length} personnages…`, `Refreshing your ${list.length} characters…`);
   }
 
+  const failed = [];
   for (let i = 0; i < list.length; i++) {
     const c = list[i];
-    if (statusEl) statusEl.innerHTML = `${trLang('Réactualisation', 'Refreshing')} (${i + 1}/${list.length}) : <strong>${escapeHtml(c.name)}</strong>...`;
+    // Appels espacés : lostark.bible limite les requêtes
+    if (i > 0) await bibleFetchPause();
+    if (statusEl) {
+      statusEl.className = 'modal-status info';
+      statusEl.innerHTML = `${trLang('Réactualisation', 'Refreshing')} (${i + 1}/${list.length}) : <strong>${escapeHtml(c.name)}</strong>...`;
+    }
     try {
-      const updated = await fetchBibleProfile(c.region || 'CE', c.name, false);
-      if (updated) {
-        list[i] = { ...list[i], ...updated };
-      }
+      // Région du personnage (NA, SA…), jamais CE par défaut : un homonyme d'une autre région l'écraserait
+      const updated = await fetchBibleProfile(characterRegion(c), c.name, 'silent');
+      if (updated) list[i] = { ...list[i], ...updated };
+      else failed.push(c.name);
     } catch (e) {
       console.warn('Error refreshing char:', c.name, e);
+      failed.push(c.name);
     }
   }
 
   saveUserRoster(list);
   renderPresetsBar();
-  loadCharacter(list[0]);
+  const keep = list.find(c => (c.id || c.name.toLowerCase()) === activeCharacterId);
+  loadCharacter(keep || list[0]);
   renderSavedRosterManager();
 
   if (statusEl) {
-    statusEl.className = 'modal-status success';
-    statusEl.innerHTML = trLang(`Tes ${list.length} personnages sont à jour.`, `Your ${list.length} characters are up to date.`);
+    const ok = list.length - failed.length;
+    statusEl.className = failed.length ? 'modal-status error' : 'modal-status success';
+    statusEl.innerHTML = failed.length
+      ? trLang(`${ok} personnage(s) sur ${list.length} à jour. Échec : ${escapeHtml(failed.join(', '))} (réessaie plus tard).`,
+        `${ok} of ${list.length} characters up to date. Failed: ${escapeHtml(failed.join(', '))} (try again later).`)
+      : trLang(`Tes ${list.length} personnages sont à jour.`, `Your ${list.length} characters are up to date.`);
   }
 }
 
@@ -662,7 +688,7 @@ function renderSavedRosterManager() {
 }
 
 function logoutOAuth() {
-  localStorage.removeItem('lostark_bible_token');
+  lsDel('lostark_bible_token');
   currentOAuthRosters = null;
   if (dom.oauthDisconnectedView) dom.oauthDisconnectedView.style.display = 'block';
   if (dom.oauthConnectedView) dom.oauthConnectedView.style.display = 'none';

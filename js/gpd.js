@@ -313,6 +313,34 @@ function countGemLevelsFromLabel(label) {
   return counts;
 }
 
+/**
+ * Libellé de l'étape k (1 = la prochaine) de l'affinage des armures, d'après les niveaux des pièces sous +25.
+ * Même niveau partout : « +21 » / « depuis +20 sur 5 pièces » ; niveaux différents : « +1 sur 3 pièces » /
+ * « depuis +20 / +20 / +21 ». Sans pièces lisibles (levels null) : repli sur le niveau moyen du système.
+ */
+function armorStepLabel(levels, k, isEn, avgFallback) {
+  if (!levels || !levels.length) {
+    const from = Math.floor(avgFallback || 12) + k - 1;
+    return { title: `+${from + 1}`, sub: isEn ? `From +${from} on 5 pieces` : `Depuis +${from} sur 5 pièces`, step: `+${from} ➔ +${from + 1}` };
+  }
+  const cur = levels.map(l => l + k - 1);
+  const n = cur.length;
+  if (cur.every(l => l === cur[0])) {
+    const from = cur[0];
+    return {
+      title: `+${from + 1}`,
+      sub: isEn ? `From +${from} on ${n} piece${n > 1 ? 's' : ''}` : `Depuis +${from} sur ${n} pièce${n > 1 ? 's' : ''}`,
+      step: `+${from} ➔ +${from + 1}`
+    };
+  }
+  const list = [...cur].sort((a, b) => a - b).map(l => `+${l}`).join(' / ');
+  return {
+    title: isEn ? `+1 on ${n} pieces` : `+1 sur ${n} pièces`,
+    sub: isEn ? `From ${list}` : `Depuis ${list}`,
+    step: isEn ? `+1 on ${n} pieces (${list})` : `+1 sur ${n} pièces (${list})`
+  };
+}
+
 function getDynamicGpdTable(charObj, role, isEn) {
   const charRole = (charObj && detectCharacterRole(charObj)) || role || 'dps';
   if (!charObj) return [];
@@ -335,6 +363,7 @@ function getDynamicGpdTable(charObj, role, isEn) {
       sub,
       gainText: `+${gain.toFixed(2)}% ${isSupport ? 'Buff' : 'DPS'}`,
       gainVal: Number(gain.toFixed(2)),
+      gainRaw: gain, // non arrondi : cumuls de la feuille de route (gains support de l'ordre de 0,01 %)
       cost: Math.round(cost),
       ratioText: formatNumber(ratio) + ' g',
       ratioVal: ratio,
@@ -366,30 +395,36 @@ function getDynamicGpdTable(charObj, role, isEn) {
   }
 
   // 2. Armor Honing
-  let aLvl = Math.floor(sys.armors.avgArmor || 12);
+  // Pièces réelles du profil : +1 sur chaque pièce sous +25 (même périmètre que honingDpsGain), libellé exact
+  // (le niveau moyen arrondi affichait « depuis +21 » avec deux pièces à +20, et aucune ligne à 25/25/25/24/24)
+  const gearLv = charObj && charObj.gear;
+  const armorPieces = gearLv ? GEAR_ARMOR_SLOTS.map(sl => gearLv[sl]).filter(l => l >= 0) : [];
+  const knownPieces = armorPieces.length === 5;
+  let aLvl = knownPieces ? Math.min(...armorPieces.filter(l => l < 25), 25) : Math.floor(sys.armors.avgArmor || 12);
   // Serka : même logique que l'arme
-  const aStep = honingStepFor('armor', sys.armors.isSerka, aLvl, sys.armors.effAvgArmor !== undefined ? Math.floor(sys.armors.effAvgArmor) : undefined);
+  const aStep = honingStepFor('armor', sys.armors.isSerka, aLvl, !knownPieces && sys.armors.effAvgArmor !== undefined ? Math.floor(sys.armors.effAvgArmor) : undefined);
   if (aStep) {
     // Gain relatif : +1 niveau moyen ajoute ARMOR_HONING_BONUS_PER_LVL au bonus d'armure actuel
     const curArmorPct = sys.armors.bonusPct || 0;
     const perLvl = isSupport ? ARMOR_HONING_BONUS_PER_LVL.support : ARMOR_HONING_BONUS_PER_LVL.dps;
     const realGain = honingDpsGain(charObj, 'armor', sys.armors.isSerka, isSupport);
     const dmgGain = realGain !== null ? realGain : ((1 + (curArmorPct + perLvl) / 100) / (1 + curArmorPct / 100) - 1) * 100;
-    // Coût attendu d'un palier sur chacune des 5 pièces, chacune depuis son propre niveau quand on le connaît
-    const gearLv = charObj && charObj.gear;
-    // Chaque pièce depuis son niveau, sur sa propre recette (Serka ou Aegir : un set peut être mixte)
-    const perPiece = honingT4 && gearLv
+    // Coût attendu : +1 sur chaque pièce sous +25, chacune depuis son niveau, sur sa propre recette (Serka ou Aegir :
+    // un set peut être mixte)
+    const perPiece = honingT4 && knownPieces
       ? GEAR_ARMOR_SLOTS.map(sl => ({ l: gearLv[sl], track: pieceIsSerka(gearLv, sl) ? 'serka' : 'aegir' })).filter(x => x.l >= 10 && x.l < 25)
       : null;
-    const cost = perPiece && perPiece.length === 5
+    const cost = perPiece && perPiece.length
       ? perPiece.reduce((sum, x) => sum + getLevelCost('armor', x.l, x.track).totalValue, 0)
       : getLevelCost('armor', aStep.lvl, aStep.track).totalValue * 5;
+    const up = knownPieces ? armorPieces.filter(l => l < 25) : null;
+    const lbl = armorStepLabel(up, 1, isEn, sys.armors.avgArmor);
     pushRow('dyn_armor',
-      isEn ? `Honing — Armors +${aLvl + 1}` : `Affinage — Armures +${aLvl + 1}`,
-      isEn ? `From +${aLvl} on 5 pieces` : `Depuis +${aLvl} sur 5 pièces`,
+      isEn ? `Honing — Armors ${lbl.title}` : `Affinage — Armures ${lbl.title}`,
+      lbl.sub,
       dmgGain, cost,
-      isEn ? 'Expected cost for all 5 pieces (average taps with artisan energy, market-priced materials).' : 'Coût attendu sur les 5 pièces (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).',
-      { from: aLvl, to: aLvl + 1 });
+      isEn ? 'Expected cost of +1 on each piece below +25 (average taps with artisan energy, market-priced materials).' : 'Coût attendu de +1 sur chaque pièce sous +25 (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).',
+      { from: aLvl, to: aLvl + 1, levels: up });
   }
 
   // 2b. Affinage avancé : prochaine tranche de 10 niveaux (arme, puis armures les moins avancées).
@@ -549,11 +584,12 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const st = brac.step;
     pushRow('dyn_brac',
       isEn ? `Bracelet ${brac.cur.band} ➔ ${st.to}` : `Bracelet ${brac.cur.band} ➔ ${st.to}`,
-      st.minimum || (isEn ? `Next grade: ${st.to}` : `Note suivante : ${st.to}`),
+      // Textes de Loseii (« minimum », « odds ») en anglais seulement : repris tels quels en anglais, résumés en français
+      isEn ? (st.minimum || `Next grade: ${st.to}`) : `Note suivante : ${st.to}`,
       brac.gain, brac.gold,
       (isEn
         ? `Loseii's bracelet ladder (score ${brac.cur.score.toFixed(1)} on the bracelet calculator's scale). A rolled bracelet cannot be improved in place: a fresh campaign priced from scratch, gain measured from the bracelet you wear. ${st.odds || ''} Unrolled bracelets and pheons at the prices set above the table.`
-        : `Échelle du bracelet de Loseii (score ${brac.cur.score.toFixed(1)} sur l'échelle du calculateur de bracelet). Un bracelet relancé ne s'améliore pas sur place : campagne neuve chiffrée depuis zéro, gain mesuré depuis ton bracelet actuel. ${st.odds || ''} Bracelets non relancés et pheons aux prix réglés au-dessus du tableau.`).trim(),
+        : `Échelle du bracelet de Loseii (score ${brac.cur.score.toFixed(1)} sur l'échelle du calculateur de bracelet). Un bracelet relancé ne s'améliore pas sur place : campagne neuve chiffrée depuis zéro, gain mesuré depuis ton bracelet actuel. Bracelets non relancés et pheons aux prix réglés au-dessus du tableau.`).trim(),
       { state: brac.cur.band, from: brac.cur.band, to: st.to, score: brac.cur.score, curTotal: brac.cur.total });
   }
 

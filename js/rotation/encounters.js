@@ -5,7 +5,7 @@
 // db = { get(sql, args), all(sql, args), unpack(valeur) } : chaque méthode peut renvoyer une promesse.
 
 // Combats de raid exploitables : réussis, pas en solo ni en matchmaking, plus de 2 minutes.
-export const RAID_FILTER = `p.cleared = 1 AND p.difficulty IS NOT NULL AND p.difficulty NOT IN ('Solo', 'Matching') AND p.duration > 120000`;
+export const RAID_FILTER = `p.cleared = 1 AND p.difficulty IS NOT NULL AND p.difficulty <> '' AND p.difficulty NOT IN ('Solo', 'Matching') AND p.duration > 120000`;
 
 // Seulement les boss de raid (bosses : noms exacts, table raids de data/rotation-skills.json tirée de encounters.json de
 // LOA Logs) : ni gardiens ni donjons du chaos, qui ne se comparent pas.

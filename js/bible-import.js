@@ -46,6 +46,12 @@ function refreshCanonicalItems(prof) {
   const gemLabels = (bp.parts || []).filter(p => p.type === 22).map(p => label(p.id));
   const gemItems = prof.items.filter(it => it.cat === 'Gemmes');
   if (gemItems.length === gemLabels.length) gemItems.forEach((it, i) => { if (gemLabels[i]) it.label = gemLabels[i]; });
+  // Profils importés avant : cœurs absents du Battle Point (ajoutés après ses parties) chiffrés à l'ancien barème,
+  // remis à 0 — les premiers cœurs listés sont ceux des parties type 29 / 30
+  const bpCores = (bp.parts || []).filter(p => p.type === 29 || p.type === 30 || p.points).length;
+  prof.items.filter(it => it.cat === "Grille d'Ark" && it.badge === 'passive').forEach((it, i) => {
+    if (i >= bpCores) it.mult = '+0.00%';
+  });
   prof.items.forEach(it => {
     if (it.cat === 'Karma' && /transcendance/i.test(it.note || '')) it.note = null;
     if (it.cat === 'Familier') {
@@ -217,7 +223,7 @@ function unflattenDevalue(raw) {
 function parseBibleCharacter(dataNode, preferredRole = 'support') {
   const root = unflattenDevalue(dataNode);
   if (!root || !root.loadouts || !root.loadouts.length) {
-    throw new Error('Données de personnage invalides ou introuvables.');
+    throw new Error(trLang('Données de personnage invalides ou introuvables.', 'Character data invalid or not found.'));
   }
 
   // Sélectionne STRICTEMENT le loadout de Raid (exclut tout profil Donjon du Chaos / Cube / Trégion)
@@ -261,7 +267,7 @@ function parseBibleCharacter(dataNode, preferredRole = 'support') {
   }
   let bp = loadout.battlePoint;
   if (!bp || !bp.parts) {
-    throw new Error('Données Combat Power (Battle Point) absentes.');
+    throw new Error(trLang('Données Combat Power (Battle Point) absentes.', 'Combat Power (Battle Point) data missing.'));
   }
 
   const charRole = detectCharacterRole({
@@ -659,8 +665,10 @@ function parseBibleCharacter(dataNode, preferredRole = 'support') {
         const pts = Array.isArray(c.gems)
           ? c.gems.reduce((sum, g) => sum + (g.corePoints || 0), 0)
           : (c.points || 17);
-        const isAnc = ((c.id || 0) % 10 === 6);
-        const multVal = getArkGridCoreBonus(idStr, pts, isSupport, isAnc);
+        // Cœur absent du Battle Point (0 point, ou option sans valeur de Battle Point comme le Chaos Étoile support) :
+        // listé pour information, il ne compte pas dans le score (l'ancien barème le gonflait, ex. +16 % sur un profil
+        // aux cœurs vides)
+        const multVal = 0;
 
         let coreName = (typeof BIBLE_CORES !== 'undefined' && BIBLE_CORES[c.id]) || '';
         let name = '';
@@ -789,7 +797,7 @@ function parseBibleCharacter(dataNode, preferredRole = 'support') {
   });
 
   return {
-    name: root.characterInfo?.characterName || 'Personnage Importé',
+    name: root.characterInfo?.characterName || trLang('Personnage importé', 'Imported character'),
     className: resolvedClassName,
     classId: resolvedClassId,
     spec: resolvedSpec,
@@ -872,25 +880,38 @@ async function fetchBibleProfile(region, name, autoAdd = null) {
 
   try {
     let response = null;
+    let proxyStatus = 0;
     // 1. Essai via le proxy Nginx (contourne CORS)
     try {
       const proxyRes = await fetch(proxyUrl);
+      proxyStatus = proxyRes.status;
       if (proxyRes.ok) {
         response = proxyRes;
       }
     } catch (e) {}
 
-    // 2. Essai direct
+    // 2. Essai direct (sans proxy : site local) ; s'il échoue, le code du proxy dit si le pseudo est introuvable
     if (!response) {
-      response = await fetch(directUrl, { mode: 'cors' });
+      try {
+        response = await fetch(directUrl, { mode: 'cors' });
+      } catch (e) {
+        if (proxyStatus) { const err = new Error(`HTTP ${proxyStatus}`); err.status = proxyStatus; throw err; }
+        throw e;
+      }
     }
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) { const e = new Error(`HTTP ${response.status}`); e.status = response.status; throw e; }
     const json = await response.json();
     return applyLoadedProfile(json, cleanName, reg, shouldAutoAdd);
   } catch (err) {
     console.warn('fetchBibleProfile error:', err);
-    if (statusEl) {
+    if (statusEl && err.status !== 404 && err.status !== 400) {
+      // Site indisponible ou trop sollicité (429, 5xx, réseau) : le pseudo n'est pas en cause
+      statusEl.className = 'modal-status error';
+      statusEl.innerHTML = trLang(
+        `<strong>lostark.bible ne répond pas pour le moment${err.status ? ` (code ${err.status})` : ''}.</strong> Réessaie dans quelques minutes.`,
+        `<strong>lostark.bible is not responding right now${err.status ? ` (code ${err.status})` : ''}.</strong> Try again in a few minutes.`);
+    } else if (statusEl) {
       statusEl.className = 'modal-status error';
       const link = `<a href="${escapeHtml(directUrl)}" target="_blank" rel="noopener noreferrer" style="color:#E8E6DC; text-decoration:underline;">${trLang('ce lien', 'this link')}</a>`;
       statusEl.innerHTML = trLang(`<strong>Impossible d'interroger lostark.bible pour ${escapeHtml(cleanName)} :</strong><br>
@@ -979,6 +1000,7 @@ function applyLoadedProfile(json, characterName = null, region = 'CE', autoAddTo
     spec: profile.spec || '',
     role: resolvedRole,
     server: profile.server || `${region.toUpperCase()}`,
+    region: String(region).toUpperCase(),
     guild: profile.guild || '',
     rosterLevel: profile.rosterLevel || 300,
     ilvl: profile.ilvl,
@@ -1008,6 +1030,8 @@ function applyLoadedProfile(json, characterName = null, region = 'CE', autoAddTo
     rawProfile: profile
   };
 
+  // 'silent' : profil relu pour la réactualisation du roster, rien n'est chargé ni affiché (l'appelant enregistre)
+  if (autoAddToRoster === 'silent') return charObj;
   if (autoAddToRoster) {
     addCharacterToUserRoster(charObj);
   } else {

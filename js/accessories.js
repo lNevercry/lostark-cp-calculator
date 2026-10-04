@@ -141,7 +141,7 @@ function findBestAccessoryUpgrade(slotLines, isSupport, onlyKind) {
       [[t1, t2], [t2, t1]].forEach(([a, b]) => {
         const target = [{ key: m1, amount: ACC_LINE_TIERS[m1][a] }, { key: m2, amount: ACC_LINE_TIERS[m2][b] }];
         const nextPct = computeAccessoryLinesBonus(others.concat(target), isSupport);
-        const gain = ((1 + nextPct / 100) / (1 + curPct / 100) - 1) * 100;
+        const gain = 100 * Math.log((1 + nextPct / 100) / (1 + curPct / 100)); // même échelle que l'affinage
         if (!(gain >= 1e-4)) return;
         if (!best || cost / gain < best.cost / best.gain) best = { slot, kind, pkg, gain, cost, curPct, nextPct, lines: [m1, m2], tiers: [a, b] };
       });

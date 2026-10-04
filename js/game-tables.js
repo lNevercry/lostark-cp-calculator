@@ -242,6 +242,8 @@ async function loadLoseiiGpd() {
 function refreshGpdViews() {
   if (typeof renderEfficiencyTable === 'function') renderEfficiencyTable();
   if (typeof renderAdvisorView === 'function') renderAdvisorView();
+  // Onglet Optimisation : mêmes prix et tables (ligne bracelet « note suivante », coûts)
+  if (typeof updateOptimizationView === 'function') updateOptimizationView();
 }
 
 // --- Prix hors marché du GPD, réglables dans l'onglet GPD : pheon et bracelet non relancé ---
@@ -251,10 +253,10 @@ const GPD_DEFAULT_PRICES = { pheon: 2300, bracelet: 24000 };
 // Pierre d'aptitude non taillée : 9 pheons (Loseii : « uncut Ancient stones at 9 pheons each »)
 const ABILITY_STONE_PHEONS = 9;
 function loadGpdPrices() {
-  try { return JSON.parse(localStorage.getItem(GPD_PRICE_KEY)) || {}; } catch (e) { return {}; }
+  try { return JSON.parse(lsGet(GPD_PRICE_KEY)) || {}; } catch (e) { return {}; }
 }
 function saveGpdPrices() {
-  try { localStorage.setItem(GPD_PRICE_KEY, JSON.stringify(state.gpdPrices || {})); } catch (e) {}
+  try { lsSet(GPD_PRICE_KEY, JSON.stringify(state.gpdPrices || {})); } catch (e) {}
 }
 function gpdUnitPrice(kind) {
   const v = state.gpdPrices && state.gpdPrices[kind];

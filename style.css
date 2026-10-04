@@ -274,6 +274,8 @@ body {
   border: 1px solid rgba(232, 230, 220, 0.1);
 }
 
+.roster-status-badge:empty { display: none; }
+
 .roster-status-badge.custom {
   background: rgba(140, 192, 132, 0.15);
   color: #8CC084;
@@ -7797,3 +7799,26 @@ body.no-character .main-content {
 }
 .rot-new { font-size: 12px; color: var(--accent-gold); border: 1px solid rgba(224, 164, 58, 0.45); border-radius: var(--radius-sm); padding: 0 5px; margin-left: 6px; }
 #rotSyncNote:empty { display: none; }
+
+/* Tableaux larges (Smart Advisor, Benchmark, Marché) : défilement dans leur cadre, jamais de la page entière */
+.table-responsive,
+.table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  /* Recherche du Benchmark : champ sur toute la largeur, région et bouton en dessous */
+  .bench-search-box {
+    flex-wrap: wrap;
+  }
+  .bench-search-box input {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .bench-search-box .bench-region-select,
+  .bench-search-box .btn-bench-search {
+    flex: 1 1 auto;
+  }
+}

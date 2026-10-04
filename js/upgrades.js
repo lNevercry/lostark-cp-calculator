@@ -156,20 +156,21 @@ function getAbilityStone(charObj) {
   return { positives, negative: lines.find(l => l.negative) || null };
 }
 
-// Gain (%) d'un effet de gravure qui passe de base+addOld à base+addNew (même unité que `base`)
+// Gain d'un effet de gravure qui passe de base+addOld à base+addNew (même unité que `base`),
+// en 100 × ln du rapport de dégâts (même échelle que l'affinage et les gemmes)
 function engravingBonusGain(kind, base, addOld, addNew) {
   if (!(addNew > addOld)) return 0;
-  if (kind === 'dmg') return ((1 + (base + addNew) / 100) / (1 + (base + addOld) / 100) - 1) * 100;
+  if (kind === 'dmg') return 100 * Math.log((1 + (base + addNew) / 100) / (1 + (base + addOld) / 100));
   if (kind === 'ap') {
     const pool = base + STONE_OTHER_AP_PCT;
-    return ((1 + (pool + addNew) / 100) / (1 + (pool + addOld) / 100) - 1) * 100;
+    return 100 * Math.log((1 + (pool + addNew) / 100) / (1 + (pool + addOld) / 100));
   }
   if (!window.Bracelet) return 0;
   const prof = window.Bracelet.normalizeProfile({ role: 'dps' });
   const d = (addNew - addOld) / 100;
   const ref = window.Bracelet.critFactor(prof, 0, 0);
   const next = kind === 'critRate' ? window.Bracelet.critFactor(prof, d, 0) : window.Bracelet.critFactor(prof, 0, d);
-  return (next / ref - 1) * 100;
+  return 100 * Math.log(next / ref);
 }
 
 // Gain (%) de la gravure quand la pierre passe du niveau lvlFrom à lvlTo
@@ -192,7 +193,7 @@ function stoneBaseApGain(charObj, isSupport) {
   if (!window.Bracelet) return 0;
   const prof = window.Bracelet.normalizeProfile({ role: 'dps' });
   const without = Object.assign({}, prof, { baseApPct: prof.baseApPct - STONE_BASE_AP_BONUS });
-  return (window.Bracelet.attackPower(prof) / window.Bracelet.attackPower(without) - 1) * 100;
+  return 100 * Math.log(window.Bracelet.attackPower(prof) / window.Bracelet.attackPower(without));
 }
 
 /**
@@ -214,7 +215,7 @@ function getAbilityStoneUpgrade(charObj, isSupport) {
     const sumFrom = e1.level + e2.level;
     const apBonus = sumFrom < 5 && sumFrom + 1 >= 5 ? stoneBaseApGain(charObj, isSupport) : 0;
     const engGain = stoneEngravingGain(up.key, up.level, upTo, isSupport);
-    const gain = ((1 + engGain / 100) * (1 + apBonus / 100) - 1) * 100;
+    const gain = engGain + apBonus; // 100 × ln : les deux effets se multiplient
     const cost = abilityStonePrice() / p;
     candidates.push({ up, keep, upTo, target, p, stones: 1 / p, cost, gain, apBonus });
   });
@@ -325,7 +326,7 @@ const braceletEvPending = new Set();
 
 function loadBraceletEvCache() {
   if (braceletEvCache) return braceletEvCache;
-  try { braceletEvCache = JSON.parse(localStorage.getItem(BRACELET_EV_STORAGE) || '{}') || {}; } catch (e) { braceletEvCache = {}; }
+  try { braceletEvCache = JSON.parse(lsGet(BRACELET_EV_STORAGE) || '{}') || {}; } catch (e) { braceletEvCache = {}; }
   return braceletEvCache;
 }
 
@@ -387,8 +388,15 @@ function getBraceletRerollEstimate(charObj, isSupport) {
         // On ne garde que les 20 derniers bracelets calculés
         const keys = Object.keys(store);
         if (keys.length > 20) keys.slice(0, keys.length - 20).forEach(k => delete store[k]);
-        try { localStorage.setItem(BRACELET_EV_STORAGE, JSON.stringify(store)); } catch (e) {}
+        try { lsSet(BRACELET_EV_STORAGE, JSON.stringify(store)); } catch (e) {}
         if (typeof updateActiveCharacterCard === 'function') updateActiveCharacterCard(activeCharacterId);
+      };
+      // Worker qui ne se charge pas : calculs en attente libérés, worker recréé au prochain appel
+      braceletWorker.onerror = (ev) => {
+        console.warn('[BRACELET] Worker en erreur :', ev && ev.message);
+        braceletEvPending.clear();
+        try { braceletWorker.terminate(); } catch (e) {}
+        braceletWorker = null;
       };
     }
     braceletEvPending.add(key);

@@ -4,7 +4,7 @@
 //
 // Conseil = { kind, gainPct?, title, what, why, how: [lignes], moments: [{ t, text }] } dans la langue demandée.
 
-import { percentileRank, KEY_SKILL_MIN_SHARE, KEY_SKILL_MIN_USAGE, SHIELD_MIN_DURATION_MS } from './metrics.js';
+import { percentileRank, KEY_SKILL_MIN_SHARE, KEY_SKILL_MIN_USAGE, SHIELD_MIN_DURATION_MS, isStoneMalus, positionalMatters } from './metrics.js';
 
 export const WEAK_RANK = 35;          // critère sous ce rang : conseil
 export const SKILL_GAIN_MIN_PCT = 1;  // compétence : gain estimé d'au moins 1 % de dégâts
@@ -109,8 +109,8 @@ function dpsSkillAdvice(a, ref, build, L, skillMeta) {
     out.push({
       kind: 'skill', gainPct,
       title: tr(`Tu ne lances pas assez ${s.name}`, `You do not use ${s.name} enough`),
-      what: tr(`Tu l'as lancée ${s.casts} fois, soit ${num(s.cpm)} fois par minute. Les ${a.spec} sur ce boss la lancent ${num(medianCpm)} fois par minute en médiane, et les meilleurs ${num(bestCpm)}.`,
-               `You used it ${s.casts} times, ${num(s.cpm)} times per minute. ${a.spec} players on this boss use it ${num(medianCpm)} times per minute on median, the best ${num(bestCpm)}.`),
+      what: tr(`Tu l'as lancée ${s.casts} fois, soit ${num(s.cpm)} fois par minute. Les ${a.spec} ${L.on.fr} la lancent ${num(medianCpm)} fois par minute en médiane, et les meilleurs ${num(bestCpm)}.`,
+               `You used it ${s.casts} times, ${num(s.cpm)} times per minute. ${a.spec} players ${L.on.en} use it ${num(medianCpm)} times per minute on median, the best ${num(bestCpm)}.`),
       why: tr(`Elle fait ${pct(s.share)} de tes dégâts. La lancer aussi souvent que la médiane te donnerait environ +${num(gainPct)} % de dégâts. ${cause}`,
               `It deals ${pct(s.share)} of your damage. Using it as often as the median would give you about +${num(gainPct)}% damage. ${cause}`),
       how, moments,
@@ -145,7 +145,8 @@ function buffAdvice(a, ref, L) {
   if (a.support || !a.apRate) return [];
   const rank = percentileRank(ref.fullBuffRate, a.fullBuffRate);
   const casts = a.skills.flatMap(s => (s.unbuffedCasts || []).map(c => ({ ...c, name: s.name })));
-  if (rank == null || rank >= WEAK_RANK) return [];
+  // Aucun gros sort hors buffs : l'écart vient des petits coups, le titre « gros sorts » serait faux
+  if (rank == null || rank >= WEAK_RANK || !casts.length) return [];
   const moments = casts.sort((x, y) => x.t - y.t).slice(0, 6).map(c => ({
     t: c.t,
     text: tr(`${clock(c.t)} : ${c.name} ${!c.ap && !c.brand ? 'sans le buff d\'attaque ni la Marque' : !c.ap ? 'sans le buff d\'attaque' : 'sans la Marque'}`,
@@ -180,7 +181,7 @@ function supportShare(a, L) {
 
 function positionalAdvice(a, ref, L) {
   const { tr, pct } = L;
-  if ((ref.positionalShareMedian ?? 0) < 0.2 || a.positionalRate == null) return [];
+  if (!positionalMatters(ref) || a.positionalRate == null) return [];
   const rank = percentileRank(ref.positionalRate, a.positionalRate);
   if (rank == null || rank >= WEAK_RANK) return [];
   const worst = a.skills.filter(s => s.positional && s.share >= 0.03 && s.positionalRate != null).sort((x, y) => x.positionalRate - y.positionalRate).slice(0, 3);
@@ -208,9 +209,10 @@ function buildAdvice(a, build, names, L) {
     how.push(tr(`Stats de l'Évolution (Ark Passive) : tu as ${Object.keys(label).map(k => `${label[k]} ${evo[k] ?? 0}`).join(', ')} ; les meilleurs ${a.spec} ont ${Object.keys(label).map(k => `${label[k]} ${num(build.evolution[k]?.[10] ?? 0, 0)}`).join(', ')}.`,
                 `Evolution stats (Ark Passive): you have ${Object.keys(label).map(k => `${label[k]} ${evo[k] ?? 0}`).join(', ')}; the best ${a.spec} players have ${Object.keys(label).map(k => `${label[k]} ${num(build.evolution[k]?.[10] ?? 0, 0)}`).join(', ')}.`));
   }
-  const mine = new Set(a.build.engravings);
-  const missingEng = Object.entries(build.engravings).filter(([e, f]) => f >= NODE_TOP_SHARE && e !== 'Unknown' && !mine.has(e));
-  const rareEng = a.build.engravings.filter(e => e !== 'Unknown' && (build.engravings[e] ?? 0) < NODE_RARE_SHARE);
+  // Malus de pierre exclus aussi ici : les références construites avant ne les filtraient pas
+  const mine = new Set(a.build.engravings.filter(e => !isStoneMalus(e)));
+  const missingEng = Object.entries(build.engravings).filter(([e, f]) => f >= NODE_TOP_SHARE && e !== 'Unknown' && !isStoneMalus(e) && !mine.has(e));
+  const rareEng = [...mine].filter(e => e !== 'Unknown' && (build.engravings[e] ?? 0) < NODE_RARE_SHARE);
   for (const [e, f] of missingEng) how.push(tr(`Gravure ${e} : ${pct(f)} des meilleurs la jouent, pas toi.`, `${e} engraving: ${pct(f)} of the best players run it, you do not.`));
   for (const e of rareEng) how.push(tr(`Gravure ${e} : tu la joues, mais moins de ${pct(NODE_RARE_SHARE)} des meilleurs ${a.spec} la prennent.`, `${e} engraving: you run it, but fewer than ${pct(NODE_RARE_SHARE)} of the best ${a.spec} players do.`));
   const myNodes = new Set(Object.keys(a.build.nodes));
@@ -251,8 +253,8 @@ function supportAdvice(a, ref, L) {
     out.push({
       kind: 'support-ap',
       title: tr('Ton groupe frappe trop souvent sans ton buff d\'attaque', 'Your party hits too often without your attack buff'),
-      what: tr(`${pct(c.ap, 1)} des dégâts de ton groupe ont profité de ton buff d'attaque. Les ${a.spec} sur ce boss sont à ${pct(rs.ap[10], 1)} en médiane, les meilleurs à ${pct(rs.ap[18], 1)}.`,
-               `${pct(c.ap, 1)} of your party's damage benefited from your attack buff. ${a.spec} players on this boss are at ${pct(rs.ap[10], 1)} median, the best at ${pct(rs.ap[18], 1)}.`),
+      what: tr(`${pct(c.ap, 1)} des dégâts de ton groupe ont profité de ton buff d'attaque. Les ${a.spec} ${L.on.fr} sont à ${pct(rs.ap[10], 1)} en médiane, les meilleurs à ${pct(rs.ap[18], 1)}.`,
+               `${pct(c.ap, 1)} of your party's damage benefited from your attack buff. ${a.spec} players ${L.on.en} are at ${pct(rs.ap[10], 1)} median, the best at ${pct(rs.ap[18], 1)}.`),
       why: tr(`C'est ton buff le plus important : chaque seconde sans lui, tes DPS font moins de dégâts.`, `It is your most important buff: every second without it, your DPS deal less damage.`),
       how: [tr(`Relance ton buff d'attaque juste avant qu'il se termine, même en te déplaçant. Moments où ton groupe a frappé sans lui :`,
                `Recast your attack buff just before it ends, even while moving. Moments your party hit without it:`)],
@@ -343,8 +345,8 @@ function shieldAdvice(a, ref, L) {
   });
   const how = weak.map(s => {
     const r = rs.byShield[s.id];
-    return tr(`${s.name} : ${M(s.given)} de bouclier donnés, ${pct(s.efficiency, 1)} ont vraiment absorbé des dégâts. Chez les autres ${a.spec} sur ce boss, ce même bouclier sert à ${pct(r.efficiency[10], 1)} (meilleurs : ${pct(r.efficiency[18], 1)}). Le reste a disparu sans protéger personne.`,
-              `${s.name}: ${M(s.given)} of shields given, ${pct(s.efficiency, 1)} actually absorbed damage. For other ${a.spec} players on this boss, the same shield is ${pct(r.efficiency[10], 1)} useful (best: ${pct(r.efficiency[18], 1)}). The rest vanished without protecting anyone.`);
+    return tr(`${s.name} : ${M(s.given)} de bouclier donnés, ${pct(s.efficiency, 1)} ont vraiment absorbé des dégâts. Chez les autres ${a.spec} ${L.on.fr}, ce même bouclier sert à ${pct(r.efficiency[10], 1)} (meilleurs : ${pct(r.efficiency[18], 1)}). Le reste a disparu sans protéger personne.`,
+              `${s.name}: ${M(s.given)} of shields given, ${pct(s.efficiency, 1)} actually absorbed damage. For other ${a.spec} players ${L.on.en}, the same shield is ${pct(r.efficiency[10], 1)} useful (best: ${pct(r.efficiency[18], 1)}). The rest vanished without protecting anyone.`);
   });
   how.push(tr(`Garde tes boucliers pour les attaques du boss qui touchent tout le groupe : lance-les une ou deux secondes avant le coup, pas dès qu'ils sont prêts. Un bouclier qui expire avant le coup ne sert à rien.`,
               `Keep your shields for boss attacks that hit the whole party: cast them one or two seconds before the hit, not as soon as they are ready. A shield that expires before the hit is wasted.`));
@@ -362,8 +364,8 @@ function shieldAdvice(a, ref, L) {
   return [{
     kind: 'support-shield',
     title: tr('Tes boucliers ne tombent pas au bon moment', 'Your shields do not land at the right time'),
-    what: tr(`Ton groupe a pris des dégâts sans protection : tes boucliers n'ont évité que ${pct(sh.protectedShare, 0)} des dégâts reçus par tes coéquipiers (médiane des ${a.spec} sur ce boss : ${pct(rs.protectedShare[10], 0)}). Pourtant, sur ${M(sh.given)} de boucliers donnés, seuls ${pct(sh.efficiency, 1)} ont servi.`,
-             `Your party took unprotected damage: your shields only prevented ${pct(sh.protectedShare, 0)} of the damage your teammates took (${a.spec} median on this boss: ${pct(rs.protectedShare[10], 0)}). Yet of ${M(sh.given)} shields given, only ${pct(sh.efficiency, 1)} were used.`),
+    what: tr(`Ton groupe a pris des dégâts sans protection : tes boucliers n'ont évité que ${pct(sh.protectedShare, 0)} des dégâts reçus par tes coéquipiers (médiane des ${a.spec} ${L.on.fr} : ${pct(rs.protectedShare[10], 0)}). Pourtant, sur ${M(sh.given)} de boucliers donnés, seuls ${pct(sh.efficiency, 1)} ont servi.`,
+             `Your party took unprotected damage: your shields only prevented ${pct(sh.protectedShare, 0)} of the damage your teammates took (${a.spec} median ${L.on.en}: ${pct(rs.protectedShare[10], 0)}). Yet of ${M(sh.given)} shields given, only ${pct(sh.efficiency, 1)} were used.`),
     why: tr(`Un bouclier au bon moment évite des morts et laisse tes DPS frapper au lieu de se soigner. Dans le vent, il ne sert à rien.`,
             `A well-timed shield prevents deaths and lets your DPS keep attacking instead of healing. Wasted, it does nothing.`),
     how, moments,
@@ -379,7 +381,8 @@ export function guideAdvice(a, guides, L) {
   const src = guides.sources?.[g.source];
   const { tr, num } = L;
   const key = tr('fr', 'en');
-  const minutes = Math.max(1, a.durationMs) / 60000;
+  // Même base que le compteur de LOA Logs cité par les guides : durée du combat, pas la chronologie (jusqu'à 6 % plus longue)
+  const minutes = Math.max(1, a.fightMs || a.durationMs) / 60000;
   const main = a.skills.find(s => s.name === g.when.skill);
   if (!main || main.share < g.when.minShare) return [];
   const cite = src ? tr(`Source : ${src.title} (${src.authors}, ${src.updated}).`, `Source: ${src.title} (${src.authors}, ${src.updated}).`) : '';
@@ -412,8 +415,11 @@ export function guideAdvice(a, guides, L) {
   return out;
 }
 
-export function coachPlayer(a, ref, build, { lang = 'fr', arkPassiveNames = {}, skillMeta = {}, guides = null } = {}) {
+export function coachPlayer(a, ref, build, { lang = 'fr', arkPassiveNames = {}, skillMeta = {}, guides = null, scope = 'boss' } = {}) {
   const L = makeT(lang);
+  // Référence du même boss ou de tous les boss (pickReference) : les phrases disent laquelle
+  const sameBoss = scope === 'boss' || scope === 'bible-boss';
+  L.on = sameBoss ? { fr: 'sur ce boss', en: 'on this boss' } : { fr: 'tous boss confondus', en: 'across all bosses' };
   const fromGuide = guideAdvice(a, guides, L);
   if (!ref) return fromGuide;
   const list = a.support

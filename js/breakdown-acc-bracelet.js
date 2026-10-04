@@ -1026,10 +1026,10 @@ function buildBraceletBreakdownHtml(player, target, cpImpact, isEn) {
       }
     } else if (l === lineCps.tMainLine || l.isMainStat) {
       if (lineCps.mainDiff < 0) {
-        const lead = Math.abs(lineCps.mainDiff).toLocaleString('fr-FR');
+        const lead = formatNumber(Math.abs(lineCps.mainDiff));
         pillHtml = `<span class="line-parity-pill" style="color:#9CB4C6;" title="${isEn ? 'Counted in Main Stat & Base AP row' : 'Comptabilisé dans la ligne Stat Principale & Attaque Base'}">-${lead} ${isEn ? 'vs Player' : 'vs Joueur'}</span>`;
       } else if (lineCps.mainDiff > 0) {
-        const lead = lineCps.mainDiff.toLocaleString('fr-FR');
+        const lead = formatNumber(lineCps.mainDiff);
         pillHtml = `<span class="line-parity-pill" title="${isEn ? 'Counted in Base AP row' : 'Comptabilisé dans Attaque Base'}">+${lead} ${isEn ? '(Base AP)' : '(Attaque Base)'}</span>`;
       }
     } else if (l.isCombatStat || lineCps.tCombatLines.includes(l)) {
@@ -1051,7 +1051,7 @@ function buildBraceletBreakdownHtml(player, target, cpImpact, isEn) {
     let pillHtml = '';
     if (l === lineCps.pMainLine || l.isMainStat) {
       if (lineCps.mainDiff < 0) {
-        const lead = Math.abs(lineCps.mainDiff).toLocaleString('fr-FR');
+        const lead = formatNumber(Math.abs(lineCps.mainDiff));
         pillHtml = `<span class="line-lead-pill">+${lead} ${getMainStatName(pClassName, isEn)} (${isEn ? 'Player Lead' : 'Avance Joueur'})</span>`;
       }
     } else if (l.isPerk) {
@@ -1096,7 +1096,7 @@ function buildBraceletBreakdownHtml(player, target, cpImpact, isEn) {
         <td>${lineCps.tMainLine ? escapeHtml(lineCps.tMainLine.text) : '—'}</td>
         <td class="col-cp-gain" style="${lineCps.mainDiff < 0 ? 'color:#9CB4C6;' : 'color:var(--text-muted);'}">
           ${lineCps.mainDiff < 0 
-            ? `+${Math.abs(lineCps.mainDiff).toLocaleString('fr-FR')} ${isEn ? 'Player Lead' : 'Avance Joueur'} <em style="font-size:11px; font-weight:normal; display:block;">(${isEn ? 'Tracked in Base AP row' : 'Comptabilisé dans Attaque Base'})</em>` 
+            ? `+${formatNumber(Math.abs(lineCps.mainDiff))} ${isEn ? 'Player Lead' : 'Avance Joueur'} <em style="font-size:11px; font-weight:normal; display:block;">(${isEn ? 'Tracked in Base AP row' : 'Comptabilisé dans Attaque Base'})</em>` 
             : `= 0 CP <em style="font-size:11px; font-weight:normal; display:block;">(${isEn ? 'Tracked in Base AP row' : 'Comptabilisé dans Attaque Base'})</em>`}
         </td>
       </tr>
@@ -1133,7 +1133,7 @@ function buildBraceletBreakdownHtml(player, target, cpImpact, isEn) {
     const hasDef = lineCps.pDefensiveLines.length > 0;
     if (isSupport) {
       if (hasDef && lineCps.mainDiff < 0) {
-        const lead = Math.abs(lineCps.mainDiff).toLocaleString('fr-FR');
+        const lead = formatNumber(Math.abs(lineCps.mainDiff));
         verdictText = isEn
           ? `The +${cpImpact} CP gap stems entirely from raid support perks (+${lineCps.totalRawGain.toFixed(2)}% Buff Power). Target has higher-tier perks and an active party buff replacing your survival roll (${lineCps.pDefensiveLines.map(d=>d.text).join(', ')}). Your ${getMainStatName(pClassName, isEn)} is higher (+${lead} lead) and is already credited in the Main Stat & Base AP row.`
           : `L'écart de +${cpImpact} CP provient intégralement des passifs de soutien de raid (+${lineCps.totalRawGain.toFixed(2)}% de Buff Power) : la cible possède des passifs de palier supérieur et un passif de groupe actif remplaçant votre ligne de confort (${lineCps.pDefensiveLines.map(d=>d.text).join(', ')}). Votre ${getMainStatName(pClassName, isEn)} est supérieure (+${lead} d'avance) et est déjà créditée dans la ligne Stat Principale & Attaque Base.`;
@@ -1144,7 +1144,7 @@ function buildBraceletBreakdownHtml(player, target, cpImpact, isEn) {
       }
     } else {
       if (lineCps.mainDiff < 0) {
-        const lead = Math.abs(lineCps.mainDiff).toLocaleString('fr-FR');
+        const lead = formatNumber(Math.abs(lineCps.mainDiff));
         verdictText = isEn
           ? `The +${cpImpact} CP delta is driven by higher raid perk tiers (Hammer / Fervor / Wedge). Your ${getMainStatName(pClassName, isEn)} has a +${lead} advantage credited in Base AP.`
           : `L'écart de +${cpImpact} CP provient des paliers supérieurs de passifs de raid (Marteau / Ferveur / Coinçage). Votre ${getMainStatName(pClassName, isEn)} possède une avance de +${lead} créditée dans l'Attaque de Base.`;

@@ -143,23 +143,14 @@ function extractPlayerSystems(playerChar, isEn = false) {
     }
   }
 
-  let engLabel = "";
-  const stoneNotice = hasRealEng ? (isEn ? ` (Stone & Relic: +${engBonusPct.toFixed(2)}%)` : ` (Pierre & Relique: +${engBonusPct.toFixed(2)}%)`) : "";
-  if (isSupport) {
-    if (normClass.includes('paladin')) {
-      engLabel = (isEn ? "Blessed Aura 3, 5 Full T4 Relic Engravings" : "Aura Sacrée 3, 5 Gravures Reliques T4") + stoneNotice;
-    } else if (normClass.includes('bard')) {
-      engLabel = (isEn ? "Desperate Salvation 3, 5 Full T4 Relic Engravings" : "Salut Désespéré 3, 5 Gravures Reliques T4") + stoneNotice;
-    } else if (normClass.includes('artist') || normClass.includes('yinyangshi')) {
-      engLabel = (isEn ? "Full Bloom 3, 5 Full T4 Relic Engravings" : "Pleine Floraison 3, 5 Gravures Reliques T4") + stoneNotice;
-    } else if (normClass.includes('valkyrie')) {
-      engLabel = (isEn ? "Liberator 3, 5 Full T4 Relic Engravings" : "Libératrice 3, 5 Gravures Reliques T4") + stoneNotice;
-    } else {
-      engLabel = (isEn ? `${spec} 3, 5 Full T4 Relic Engravings` : `${spec} 3, 5 Gravures Reliques T4`) + stoneNotice;
-    }
-  } else {
-    engLabel = (isEn ? `${spec} 3, 5 Full T4 Relic Engravings` : `${spec} 3, 5 Gravures Reliques T4`) + stoneNotice;
-  }
+  // Libellé lu sur les gravures du profil : livres reliques terminés (20/20) sur le nombre de gravures équipées
+  const rawP = playerChar.rawProfile || playerChar;
+  const engList = rawP.engravings || (rawP.loadout && rawP.loadout.engravings) || [];
+  const engRelic = engList.filter(e => relicBooksRead(e) === RELIC_MAX_BOOKS).length;
+  const stoneNotice = hasRealEng ? (isEn ? ` (Stone & Relic: +${engBonusPct.toFixed(2)}%)` : ` (Pierre & Relique : +${engBonusPct.toFixed(2)} %)`) : "";
+  const engLabel = (engList.length
+    ? (isEn ? `${spec}, ${engRelic}/${engList.length} relic engravings 20/20` : `${spec}, ${engRelic}/${engList.length} gravures reliques 20/20`)
+    : spec) + stoneNotice;
 
   // 7b. Main Stat & Base AP (Type 1)
   const t1Part = allBpParts.find(p => p.type === 1);
@@ -310,13 +301,11 @@ function extractPlayerSystems(playerChar, isEn = false) {
     ? `T4 Advanced Honing +${adv} ${adv >= 40 ? 'complete' : ''}`.trim()
     : `Affinage Avancé +${adv} ${adv >= 40 ? 'complet' : ''}`.trim();
 
-  const transWeaponLabel = isEn ? "Weapon Transcendence R3 (21 Pts)" : "Transcendance Arme R3 (21 Pts)";
-  const transArmorLabel = isEn ? "Armor Transcendence R3 (105 Pts)" : "Transcendance Armures R3 (105 Pts)";
-  // Karma : partie type 8 du Battle Point (3,60 % au rang 6 d'Évolution) ; repli sur le rang 6 sans Battle Point
-  const karmaPart = allBpParts.find(p => p && p.type === 8);
-  const karmaBonusPct = karmaPart && Number.isFinite(karmaPart.value) ? Number((karmaPart.value / 100).toFixed(2)) : 3.60;
-  const karmaLabel = karmaPart
-    ? (isEn ? `Karma Evolution (+${karmaBonusPct.toFixed(2)}%)` : `Karma Évolution (+${karmaBonusPct.toFixed(2)} %)`)
+  // Karma : parties type 8 (Évolution, 3,60 % au rang 6) et 9 (Bond) du Battle Point ; repli sur le rang 6 sans Battle Point
+  const karmaParts = allBpParts.filter(p => p && (p.type === 8 || p.type === 9) && Number.isFinite(p.value));
+  const karmaBonusPct = karmaParts.length ? Number((karmaParts.reduce((m, p) => m * (1 + p.value / 1e4), 1) * 100 - 100).toFixed(2)) : 3.60;
+  const karmaLabel = karmaParts.length
+    ? (isEn ? `Karma Evolution & Leap (+${karmaBonusPct.toFixed(2)}%)` : `Karma Évolution & Bond (+${karmaBonusPct.toFixed(2)} %)`)
     : (isEn ? "Karma Evolution Rank 6" : "Karma Évolution Rang 6");
 
   // 8b. Astrogemmes de la Grille d'Ark
@@ -447,8 +436,6 @@ function extractPlayerSystems(playerChar, isEn = false) {
     },
     armors: { label: armorsLabel, bonusPct: Number(armorBonusPct.toFixed(2)), avgArmor, effAvgArmor, isSerka: isSerkaArmors, serkaArmorCount },
     advHoning: { label: advLabel, bonusPct: advBonusPct },
-    transWeapon: { label: transWeaponLabel, bonusPct: 14.50 },
-    transArmor: { label: transArmorLabel, bonusPct: 18.20 },
     accessories: { label: accLabel, bonusPct: accBonusPct },
     bracelet: { label: braceletLabel, bonusPct: brBonusPct, fromBattlePoint: hasRealBr },
     gems: { label: gemDesc, bonusPct: gemBonusPct },
@@ -481,7 +468,7 @@ function resolveTargetSystems(target, isEn = false) {
         ? (ilvl >= 1770 ? ` (Stone +3/+4 & Relic: +${engVal.toFixed(2)}%)` : ` (Stone +2/+3 & Relic: +${engVal.toFixed(2)}%)`)
         : (ilvl >= 1770 ? ` (Pierre +3/+4 & Relique: +${engVal.toFixed(2)}%)` : ` (Pierre +2/+3 & Relique: +${engVal.toFixed(2)}%)`);
       sys.engravings = {
-        label: (isEn ? `${specName} 3, 5 Full T4 Relic Engravings` : `${specName} 3, 5 Gravures Reliques T4`) + stoneBonus,
+        label: (isEn ? `${specName}, relic engravings (estimate)` : `${specName}, gravures reliques (estimation)`) + stoneBonus,
         bonusPct: engVal,
         estimated: true
       };
@@ -494,7 +481,7 @@ function resolveTargetSystems(target, isEn = false) {
         ? (ilvl >= 1770 ? ` (Stone +3/+4 & Relic: +${engVal.toFixed(2)}%)` : ` (Stone +2/+3 & Relic: +${engVal.toFixed(2)}%)`)
         : (ilvl >= 1770 ? ` (Pierre +3/+4 & Relique: +${engVal.toFixed(2)}%)` : ` (Pierre +2/+3 & Relique: +${engVal.toFixed(2)}%)`);
       sys.engravings = {
-        label: (isEn ? `${specName} 3, 5 Full T4 Relic Engravings` : `${specName} 3, 5 Gravures Reliques T4`) + stoneBonus,
+        label: (isEn ? `${specName}, relic engravings (estimate)` : `${specName}, gravures reliques (estimation)`) + stoneBonus,
         bonusPct: engVal,
         estimated: true
       };
@@ -577,7 +564,7 @@ function resolveTargetSystems(target, isEn = false) {
 
 
 function computeGemUpgradeCost(player, target) {
-  if (!player || !target) return 180000;
+  if (!player || !target) return 0;
   const pGems = extractCharacterGemParts(player) || [];
   const tGems = extractCharacterGemParts(target) || [];
   
@@ -598,7 +585,7 @@ function computeGemUpgradeCost(player, target) {
   let tVal = 0; tGems.forEach(g => tVal += getGemValue(g));
   
   const diff = tVal - pVal;
-  return diff > 0 ? diff : 180000;
+  return Math.max(0, diff); // 0 : hors plan d'achat
 }
 
 

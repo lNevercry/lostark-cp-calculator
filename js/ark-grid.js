@@ -3,7 +3,9 @@
 'use strict';
 
 function getArkGridCoreBonus(prefix, points, isSupport, isAncient) {
-  const p = Math.max(10, Math.min(20, points || 10));
+  // Sous 10 points un cœur n'a aucun effet (ni en jeu ni au Battle Point) : 0, jamais le palier de 10
+  if (!(points >= 10)) return 0;
+  const p = Math.min(20, points);
   const pr = (prefix || '').toString();
   const isOrder = pr.startsWith('6730');
   const isSun = pr.startsWith('67300') || pr.startsWith('67310');
@@ -78,7 +80,7 @@ function weaponCoreGain(charObj, core, toPoints, isSupport) {
   const cur = weaponCoreBonus(core.id, core.points);
   const next = weaponCoreBonus(core.id, toPoints);
   if (!ctx || !cur || !next) return null;
-  const pool = ctx.wpAmp - 1 + cur.pct / 100;
+  const pool = ctx.wpAmp - 1; // boucles + Karma + % actuel du cœur (gearStatContext)
   const flat = ctx.wp / (1 + pool);
   const wpAfter = (flat + next.flat - cur.flat) * (1 + pool + (next.pct - cur.pct) / 100);
   return isSupport ? supportApGain(charObj, ctx, wpAfter - ctx.wp, 0) : 50 * Math.log(wpAfter / ctx.wp);

@@ -14,7 +14,7 @@
     "btn_import_bible": "Importer (lostark.bible)",
     "btn_help": "Guide & Tutoriel",
     "help_title": "Comment utiliser l'outil ?",
-    "help_subtitle": "9 onglets ; importer ton personnage est le point de départ.",
+    "help_subtitle": "11 onglets ; importer ton personnage est le point de départ.",
     "help_intro": "Ce que fait chaque onglet :",
     "help_import_title": "Importation",
     "help_import": "Point de départ : importe ton personnage depuis lostark.bible (profil raid). Tous les onglets calculent sur ton vrai stuff ; sans personnage, rien n'est chiffré.",
@@ -37,29 +37,14 @@
     "help_benchmark_title": "Benchmark & Comparateur",
     "help_benchmark": "Compare-toi à de vrais joueurs de ta classe et de ton iLvl : écart par système en % et en CP, plan d'achat classé par or par % gagné.",
     "help_tip": "Sources : profil raid de lostark.bible, tables du jeu (Maxroll), modèles de dégâts et de buff de Loseii, prix EUC. Les simulations ne modifient pas ton personnage : réimporte-le après une amélioration en jeu.",
-    "role_label": "Rôle :",
-    "role_support": "Support",
     "role_dps": "DPS",
     "roster_label": "Roster :",
-    "roster_badge_demo": "Démo",
-    "roster_badge_custom": "Personnel",
     "btn_sync_roster": "Synchroniser mon Roster",
     "btn_manage_roster": "Gérer",
-    "btn_switch_demo": "↺ Roster Démo",
-    "add_character": "Ajouter un perso",
-    "synced_status": "Synchronisé",
-    "card_role_support": "Support",
-    "card_role_dps": "DPS",
     "card_ilvl_label": "Item Level",
     "card_metric_cp": "Combat Power Réel",
-    "card_metric_weapon": "Niveau d'Arme T4",
-    "card_metric_armor": "Armures T4",
-    "card_metric_adv": "Affinage Avancé",
     "card_level_prefix": "Niveau",
     "card_source_live": "Source : lostark.bible (Live)",
-    "card_source_custom": "Modifié manuellement",
-    "btn_change_avatar": "Changer l'image",
-    "btn_reset_avatar": "Restaurer le portrait officiel Lost Ark",
     "tab_predictor": "Prédicteur Rapide (iLvl ➔ CP)",
     "tab_advisor": "Smart Advisor (Rentabilité)",
     "tab_honing": "Simulateur d'Affinage par Pièce",
@@ -81,7 +66,6 @@
     "pred_gem_opt_full10": "Deck Complet 11x Gemmes Niv. 10 Endgame (+1 000 à +1 250 CP)",
     "pred_res_title": "Résultat de la Prédiction",
     "pred_model_support": "Modèle Support",
-    "pred_model_dps": "Modèle DPS",
     "pred_mode_honing": "Affinage Pur (Stuff Seul)",
     "pred_mode_global": "Évolution Globale (Endgame)",
     "pred_cp_at": "Combat Power Estimé à",
@@ -91,44 +75,12 @@
     "pred_bracket": "Tranche CP (Bracket)",
     "pred_analysis_title": "Analyse de ton saut d'iLvl :",
     "pred_gauge_start": "1640 (Départ T4)",
-    "pred_gauge_current": "Actuel :",
     "pred_gauge_end": "1800+ (Endgame)",
     "adv_badge": "Source : marché EUC",
     "adv_title": "Smart Upgrade Advisor — Planificateur Rentable",
     "adv_subtitle": "Calcule automatiquement le chemin optimal le moins cher en Gold pour maximiser vos CP et atteindre vos paliers de raid.",
-    "adv_mode_label": "Mode d'Optimisation :",
-    "adv_mode_budget_btn": "Budget Gold",
-    "adv_mode_ilvl_btn": "Objectif iLvl",
-    "adv_mode_cp_btn": "Objectif CP",
-    "adv_budget_label": "Budget Gold Maximal :",
-    "adv_target_ilvl_label": "Niveau Cible Visé (iLvl) :",
-    "adv_target_cp_label": "Gain de Combat Power Visé :",
-    "adv_scope_title": "Catégories autorisées pour le planificateur :",
-    "adv_scope_gear": "Affinage T4 (Arme & Armures)",
-    "adv_scope_adv": "Affinage Avancé (+10, +20...)",
-    "adv_scope_gems": "Gemmes T4 (Niv. 8, Niv. 9)",
-    "adv_scope_arkgrid": "Grille d'Ark (Cœurs 17P)",
-    "adv_scope_acc": "Accessoires Polish (Lignes Arme %)",
-    "adv_scope_books": "Gravures Reliques T4 (Livres)",
-    "adv_scope_bracelet": "Bracelet T4 (Optionnel - Casino RNG)",
-    "adv_brace_diag_title": "Diagnostic & Potentiel du Bracelet T4",
-    "adv_brace_diag_sub": "Évaluation d'efficacité globale, détection des stats mortes et procs BiS cibles pour votre classe.",
-    "adv_brace_potential_gain": "Gain potentiel :",
-    "adv_brace_eff_lbl": "Efficacité globale estimée :",
-    "adv_brace_col_current": "Lignes équipées sur votre bracelet :",
-    "adv_brace_col_targets": "Procs BiS cibles à viser (Reroll / Achat) :",
-    "adv_btn_calc": "Calculer la Feuille de Route Optimale",
-    "adv_kpi_total_gain": "Gain Total Estimé",
-    "adv_kpi_ilvl_prog": "Progression iLvl",
-    "adv_kpi_total_cost": "Coût Total Estimé",
-    "adv_kpi_avg_roi": "Efficacité Moyenne",
-    "adv_plan_title": "Feuille de Route Séquentielle (Chemin Optimal)",
-    "adv_plan_subtitle": "Classée par retour sur investissement décroissant pour maximiser votre impact à chaque gold dépensé.",
     "adv_btn_apply": "Appliquer ce Plan au Simulateur",
-    "adv_materials_title": "Matériaux T4 Requis Estimés (Honing & Transcendance) :",
     "honing_title": "Simulateur d'Affinage par Pièce (Stuff T4)",
-    "honing_subtitle": "Ajustez individuellement le niveau d'affinage de chaque pièce pour mesurer l'impact précis sur votre iLvl et CP.",
-    "honing_current_gear": "Niveaux d'Affinage Actuels",
     "honing_adv_select_label": "Affinage Avancé :",
     "honing_gear_weapon": "Arme T4",
     "honing_gear_weapon_desc": "Bonus Puissance d'Attaque élevé",
@@ -139,17 +91,7 @@
     "honing_gear_gloves": "Gants",
     "honing_gear_armor_desc": "Gros apport de Force brute",
     "honing_actions_collective": "Action collective :",
-    "honing_btn_all_plus": "Tous +1",
-    "honing_btn_all_minus": "Tous -1",
     "honing_btn_reset": "↺ Réinitialiser",
-    "honing_kpi_ilvl": "iLvl Simulé",
-    "honing_kpi_cp": "CP Simulé",
-    "honing_kpi_cost": "Coût Affinage Estimé",
-    "honing_kpi_efficiency": "Rentabilité Estimée",
-    "honing_stats_title": "Estimation Stats de Base :",
-    "honing_str_label": "Force / Int / Dex :",
-    "honing_atk_label": "Attaque de Base :",
-    "honing_advice_title": "Recommandation d'Affinage Stratégique :",
     "ark_badge": "Progression T4",
     "ark_title": "Simulateur Ark Passive (T4)",
     "ark_subtitle": "Faites varier les points dépensés dans chaque arbre et lisez leur effet sur le Combat Power, avec la valeur par point du Battle Point du jeu lue sur votre profil.",
@@ -157,37 +99,15 @@
     "ark_tree_evo_title": "Arbre Évolution",
     "ark_tree_evo_sub": "Paliers 1 à 4 (le palier 0 = stats de combat)",
     "ark_tree_evo_points_label": "Points dépensés (paliers 1 à 4) :",
-    "ark_tree_evo_node_label": "Nœud Majeur Palier IV :",
-    "ark_tree_evo_node_vigor": "Vigueur Divine / Don de Vie (Focus Buff Puissance & AP Brute) [Recommandé Support]",
-    "ark_tree_evo_node_strike": "Frappe Lourde / Perçage (Dégâts Critiques & Pénétration Brute) [Recommandé DPS]",
-    "ark_tree_evo_node_flow": "Flux Astral (Vitesse d'Attaque & Réduction de Mana)",
     "ark_tree_evo_mult_label": "Battle Point Évolution",
     "ark_tree_evo_cp_label": "Part du CP",
     "ark_tree_enlight_title": "Arbre Éclairage",
     "ark_tree_enlight_sub": "Nœuds de classe",
     "ark_tree_enlight_points_label": "Points dépensés en Éclairage :",
-    "ark_tree_enlight_relic_books": "2x Livres Reliques T4 de Classe (+10 Pts Éclairage)",
-    "ark_tree_enlight_relic_acc": "Accessoires Reliques Polish Max (+15 Pts Éclairage)",
-    "ark_tree_enlight_spec_label": "Spécialisation de Classe Activée :",
-    "ark_tree_enlight_spec_blessed": "Aura Bénie (Spécialisation Paladin Support)",
-    "ark_tree_enlight_spec_judgment": "Jugement (Spécialisation Paladin DPS)",
     "ark_tree_enlight_mult_label": "Battle Point Éclairage",
-    "ark_tree_enlight_cp_label": "Contribution CP",
     "ark_tree_leap_title": "Arbre Saut (Leap)",
     "ark_tree_leap_sub": "Hyper Awakening & Compétences d'Éveil",
-    "ark_tree_leap_points_label": "Points Alloués en Saut :",
-    "ark_tree_leap_ha_unlocked": "Hyper Awakening Débloqué & Actif",
-    "ark_tree_leap_raids_unlocked": "Raids Kazeros Complétés (Bonus Passifs)",
-    "ark_tree_leap_mult_label": "Multiplicateur Saut (HA)",
-    "ark_tree_leap_cp_label": "Contribution CP",
-    "ark_summary_title": "Impact Global Ark Passive T4",
-    "ark_summary_mult_label": "Multiplicateur Global Cumulé :",
-    "ark_summary_cp_label": "Combat Power Total Généré :",
-    "ark_summary_analysis_title": "Analyse de votre configuration Ark Passive :",
-    "astro_badge": "Modèle Loseii (loseii.com)",
-    "astro_title": "Simulateur & Analyseur de Gemmes Astrales T4 (Astrogems)",
     "astro_subtitle": "Notez instantanément votre gemme astrale (0 à 100+), son rang (S+ à F), son gain réel en % dégâts ou buff groupe, et sa viabilité pour compléter les cœurs à 17 points de votre Grille d'Ark.",
-    "astro_sec1_title": "1. Caractéristiques de la Gemme Astrale",
     "astro_cost_label": "Coût de Base de la Gemme :",
     "astro_cost_8": "Coût 8 (Pool : Dégâts Add, Arme %, Marque, Dégâts Alliés)",
     "astro_cost_9": "Coût 9 (Pool : Boss Dmg, Arme %, Dégâts Alliés, PA Alliés)",
@@ -198,8 +118,6 @@
     "astro_eff1_label": "Ligne 3 (Effet 1) :",
     "astro_eff2_label": "Ligne 4 (Effet 2) :",
     "astro_grade_label": "Grade Global Loseii",
-    "astro_gain_group": "Gain Réel Buff Groupe",
-    "astro_gain_dps": "Gain Réel DPS Personnel",
     "astro_rarity_label": "Rareté de la Gemme",
     "astro_cost_core_label": "Coût dans le Cœur",
     "astro_viability_label": "Viabilité Ark Grid",
@@ -212,17 +130,12 @@
     "opt_res_title": "Gain simulé",
     "opt_res_gain_acc": "Bijoux",
     "opt_res_gain_gems": "Gemmes",
-    "eff_badge": "Feuille Arsonistic 2026 · marché EUC",
     "eff_title": "Arbitrage de Rentabilité Gold / Dégâts (Marché EUC)",
     "eff_subtitle": "Toutes les façons de monter ton personnage, chiffrées en or (prix du marché EUC) et classées par coût du gain, comme le GPD de Loseii",
     "eff_rec_title": "Prochaine Amélioration Prioritaire Recommandée (ROI Max) :",
-    "eff_col_rank": "#",
     "eff_col_name": "Amélioration / Système T4",
-    "eff_col_gain_supp": "Gain Buff Groupe",
-    "eff_col_gain_dps": "Gain DPS Net",
     "eff_col_cost": "Coût Moyen EUC",
     "eff_col_ratio_supp": "Coût / 0.01% Buff",
-    "eff_col_ratio_dps": "Coût / 1% DPS",
     "eff_col_prio": "Priorité ROI",
     "canon_badge": "lostark.bible",
     "canon_title": "Moteur Mathématique Canonique T4 (Smilegate & lostark.bible)",
@@ -253,24 +166,13 @@
     "modal_btn_login": "Se connecter avec lostark.bible",
     "modal_oauth_helper": "OAuth 2.0 PKCE officiel • Synchronisation instantanée de votre Roster et de vos logs",
     "modal_status_connected": "Connecté",
-    "modal_btn_refresh": "Rafraîchir",
     "modal_btn_logout": "Déconnexion",
     "modal_btn_sync_roster": "Tout Synchroniser vers mon Roster (Top 6)",
-    "modal_direct_divider": "ou ajouter directement par pseudo",
     "modal_region_lbl": "Région",
-    "modal_name_lbl": "Pseudo du Personnage",
     "modal_chk_auto_roster": "Ajouter et sauvegarder automatiquement dans Mon Roster",
     "modal_btn_fetch": "Importer & Charger le Personnage",
-    "modal_roster_count_lbl": "Personnages dans mon Roster",
-    "modal_btn_refresh_all": "Tout rafraîchir",
     "modal_btn_clear_roster": "Réinitialiser",
     "modal_btn_close": "✓ OK / Fermer",
-    "modal_avatar_title": "Personnaliser le Portrait de votre Personnage",
-    "modal_avatar_subtitle": "Téléversez une image locale pour remplacer le portrait de ce personnage sur la carte et la barre des rosters.",
-    "modal_avatar_dropzone": "Cliquez ou glissez une image ici (PNG, JPG, WebP)",
-    "modal_avatar_preview_lbl": "Aperçu du nouveau portrait :",
-    "modal_avatar_btn_save": "Enregistrer le portrait",
-    "modal_avatar_btn_reset": "↺ Restaurer l'image officielle lostark.bible",
     "footer_left": "Lost Ark Tier 4 • Profils réels de lostark.bible",
     "footer_right": "Tables du jeu (Maxroll) • Modèles DPS et support de Loseii • Prix EUC"
 ,
@@ -289,21 +191,10 @@
     "honing_btn_all_16": "Tout à +16",
     "honing_btn_all_18": "Tout à +18",
     "honing_btn_all_20": "Tout à +20",
-    "adv_roadmap_title": "Feuille de Route Prioritaire (Ordre d'Achat Optimisé)",
     "adv_btn_apply_plan": "Appliquer ce Plan dans le Simulateur d'Affinage",
-    "adv_kpi_avg_roi_lbl": "Rentabilité Moyenne",
-    "adv_kpi_avg_roi_sub": "Indice coût / gain de CP",
     "ark_main_title": "Simulateur Ark Passive — Évolution, Éclairage & Bond",
-    "ark_btn_current_pts": "Points Actuels du Personnage",
-    "ark_btn_sup_build": "Build Support Recommandé (Aura Max)",
-    "ark_btn_dps_build": "Build DPS Recommandé (Burst Max)",
-    "ark_relic_acc_chip": "Accessoires Reliques avec Éclairage (+6 Pts)",
-    "ark_class_spec_label": "Spécialisation de Classe Active :",
-    "ark_tree_leap_heading": "Arbre Bond (Leap)",
     "ark_tree_leap_subtext": "Éveil supérieur",
     "ark_tree_leap_points_lbl": "Points dépensés en Bond :",
-    "ark_ha_unlocked_chip": "Éveil Supérieur & T-Skill Débloqués (+10% dégâts T)",
-    "ark_raids_unlocked_chip": "Paliers Raids Behemoth / Aegir validés (Plafond 70 pts)",
     "ark_mult_leap_lbl": "Battle Point Bond",
     "ark_summary_header": "Effet sur le Combat Power",
     "ark_kpi_proj_cp": "Combat Power Projeté",
@@ -326,21 +217,14 @@
     "canon_col_mult": "Multiplicateur Net",
     "canon_col_impact": "Impact Rôle",
     "pred_gem_opt_full10": "Deck Complet 11x Gemmes Niv. 10 Endgame (+1 000 à +1 250 CP)",
-    "adv_budget_label": "Budget en Gold disponible :",
-    "adv_target_ilvl_label": "Niveau d'Objet Cible (iLvl) :",
     "honing_gear_levels_title": "Niveaux d'Affinage T4 (Honing)",
     "ark_btn_current_points": "Points Actuels du Personnage",
     "ark_btn_max_points": "Tous les points au maximum",
-    "ark_tier_iv_reached": "Palier IV Atteint",
-    "ark_class_opt_supp": "Bénédiction Sacrée (Aura Bénie / Paladin Support)",
-    "ark_class_opt_dps": "Jugement (Paladin DPS / Exécuteur)",
     "astro_order_sub": "Multiplicateur direct au-dessus du plancher de 17 points (+0.16% par point).",
     "astro_eff1_lvl_lbl": "Niveau de l'Effet 1 :",
     "astro_eff2_lvl_lbl": "Niveau de l'Effet 2 :",
     "astro_cost_sub": "8 Base − 5 Volonté",
     "opt_th_gain": "Gain Groupe",
-    "cut2_opt_not_cut": "Pas encore taillé (Évaluer la décision après le Cut 1)",
-    "cut2_opt_done": "2ᵉ Cut Déjà Effectué (Évaluer le Cut 3)",
     "canon_sub_ingame": "Relevé sur le profil lostark.bible",
     "canon_sub_calc": "Précision : ±1.7% vs jeu",
     "raid_badge": "Revenus en or des raids T4",
@@ -363,21 +247,11 @@
     "raid_cathedral": "Horizon Cathedral",
     "raid_serca": "Serca",
     "raid_kazeros": "Final Act: Kazeros",
-    "raid_gate_short": "P{gate}",
-    "raid_cleared_badge": "Validé",
     "raid_cleared_at": "Validé le {time}",
-    "raid_diff_normal": "Normal",
-    "raid_diff_hard": "Hard",
-    "raid_diff_nightmare": "Nightmare",
-    "raid_gold_unit": "g",
-    "raid_char_total": "Total :",
-    "raid_card_all_done": "Terminé",
-    "raid_gold_earned": "Encaissé :",
     "raid_btn_agent_download": "Installer l'Agent",
     "raid_net_gold": "Golds Hebdomadaires Encaissés",
     "raid_btn_mark_all": "Tout Valider",
     "raid_btn_all_chests": "Tous les Coffres",
-    "raid_earned_suffix": "encaissés",
     "agent_modal_title": "Agent de Synchronisation en Direct (Local & Privé)",
     "agent_modal_subtitle": "Synchronisez automatiquement vos clears de raids et vos gains de golds depuis LOA Logs en temps réel.",
     "agent_step1_title": "1. Téléchargez",
@@ -402,9 +276,7 @@
     "card_title_astro": "Astrogemmes",
     "card_title_gpd": "Prochain +1%",
     "score_acc_dmg": "Dégâts Exacts",
-    "score_acc_buff": "Buff Allié Exact",
     "score_gpd_per": "par 1% Dégâts",
-    "score_gpd_per_sup": "par 0.01% Buff",
     "gpd_chart_link": "GPD ➔",
     "mkt_title": "Marché & Forteresse",
     "mkt_subtitle": "Prix de l'hôtel des ventes EUC utilisés par les calculs, et rentabilité des fusions de l'atelier de Forteresse.",
@@ -430,9 +302,6 @@
     "gpd_table_title": "Classement par rentabilité",
     "gpd_table_sub": "Du moins cher au plus cher, sur ton équipement actuel. Les paliers de ton objectif sont surlignés.",
     "gpd_th_system": "Système",
-    "gpd_th_read": "Lecture Actuelle",
-    "gpd_th_current": "Palier Actuel",
-    "gpd_th_last": "Dernier Palier",
     "gpd_th_next": "Étape",
     "gpd_th_rate": "Or / 1 %",
     "gpd_th_cpgain": "+CP",
@@ -503,32 +372,44 @@
     "bench_prio_opt": "Endgame / Coûteux",
     "bench_prio_derived": "Via l'équipement",
     "bench_toggle_show_equal": "Afficher les systèmes équivalents (0% d'écart) ▾",
-    "bench_toggle_hide_equal": "Masquer les systèmes équivalents ▴",
     "bench_region_title": "Région du serveur",
     "bench_region_auto": "Région : Auto",
     "bench_region_ce": "Europe (CE)",
     "bench_region_nae": "Amérique Est (NAE)",
     "bench_region_naw": "Amérique Ouest (NAW)",
     "bench_region_sa": "Amérique Sud (SA)",
-    "bench_parity_title": "Parité ou avance",
-    "bench_parity_desc": "Tous vos systèmes d'équipement sont équivalents ou supérieurs à ce profil de référence.",
-    "bench_loading": "Chargement du profil depuis lostark.bible...",
-    "bench_load_error": "Impossible de charger ce profil depuis lostark.bible.",
-    "bench_custom_tag": "Personnalisé",
     "welcome_modal_title": "Bienvenue sur Lost Ark CP & Optimizer T4",
     "welcome_modal_sub": "Analysez votre personnage et calculez votre Combat Power réel en quelques clics",
     "welcome_modal_intro": "Entrez le pseudo de votre personnage pour charger instantanément ses statistiques, son affinage et son roster depuis lostark.bible :",
     "welcome_char_name_lbl": "Pseudo du Personnage",
-    "welcome_suggestions_lbl": "Suggestions :",
     "welcome_btn_fetch": "Charger mon personnage",
-    "welcome_or_label": "ou découvrez l'outil",
-    "welcome_btn_demo": "Explorer en mode Démo",
-    "welcome_btn_restore_nevercry": "Restaurer Roster Neevercry",
-    "btn_restore_nevercry": "Restaurer Roster Neevercry",
+    "welcome_more_options": "Autres options : connexion lostark.bible, import manuel",
     "btn_refresh_all_roster": "Tout réactualiser",
     "btn_share_char": "Partager",
-    "toast_link_copied": "Lien direct copié dans le presse-papiers.",
-    "toast_nevercry_restored": "Roster Neevercry (6 personnages) restauré avec succès.",
+    "tt_sync_roster": "Synchroniser votre propre Roster depuis lostark.bible",
+    "tt_manage_roster": "Gérer ou actualiser vos personnages",
+    "alt_char_portrait": "Portrait du personnage",
+    "tt_share_char": "Copier le lien direct de ce personnage pour l'envoyer à un ami",
+    "tt_card_acc": "Cliquez pour voir les Accessoires T4",
+    "tt_card_bracelet": "Cliquez pour analyser le Bracelet",
+    "tt_card_astro": "Cliquez pour voir les Astrogemmes",
+    "tt_card_gpd": "Cliquez pour ouvrir le Smart Advisor / GPD",
+    "tt_weekly_reset": "Reset hebdomadaire chaque mercredi à 12h00 CEST",
+    "tt_refresh_sync": "Actualiser la synchronisation",
+    "tt_install_agent": "Installer ou télécharger l'agent local",
+    "tt_mark_all_cleared": "Valider tous les raids du roster",
+    "tt_toggle_all_chests": "Activer / Désactiver tous les coffres bonus",
+    "aria_bracer_level": "Niveau du brassard",
+    "tt_bench_auto": "Sélectionne automatiquement le profil optimal (+1-3 iLvl, mêmes gemmes, même classe & spé)",
+    "tt_close": "Fermer",
+    "ph_welcome_name": "Ex : Àlphâ, Frieedhof, Siwilpal…",
+    "page_title": "Calculateur & Prédicteur CP / iLvl - Lost Ark T4",
+    "btn_close": "Compris.",
+    "agent_compatibility_notice": "Compatible avec LOA Logs / Lost Ark Logs (%LOCALAPPDATA%\\LOA Logs\\encounters.db).",
+    "help_belg_title": "Projection Belgardin",
+    "help_belg": "Projection du brassard T4 avant sa sortie EU : coût et gain estimés par niveau, avec la source de chaque valeur.",
+    "help_rotation_title": "Analyse de rotation",
+    "help_rotation": "Charge ton encounters.db de LOA Logs (lu dans ton navigateur, jamais envoyé) : note d'exécution par raid comparée à ta spé, et conseils pour progresser.",
     "char_active_default": "Personnage Actif"
   },
   "en": {
@@ -540,7 +421,7 @@
     "btn_import_bible": "Import (lostark.bible)",
     "btn_help": "Guide & Tutorial",
     "help_title": "How to use the tool?",
-    "help_subtitle": "9 tabs; importing your character is the starting point.",
+    "help_subtitle": "11 tabs; importing your character is the starting point.",
     "help_intro": "What each tab does:",
     "help_import_title": "Import",
     "help_import": "Starting point: import your character from lostark.bible (raid profile). Every tab computes on your real gear; without a character, nothing is priced.",
@@ -563,29 +444,14 @@
     "help_benchmark_title": "Benchmark & Comparator",
     "help_benchmark": "Compare yourself with real players of your class and iLvl: gap per system in % and CP, purchase plan ranked by gold per % gained.",
     "help_tip": "Sources: lostark.bible raid profile, game tables (Maxroll), Loseii damage and buff models, EUC prices. Simulations never change your character: re-import it after an in-game upgrade.",
-    "role_label": "Role:",
-    "role_support": "Support",
     "role_dps": "DPS",
     "roster_label": "Roster:",
-    "roster_badge_demo": "Demo",
-    "roster_badge_custom": "Custom",
     "btn_sync_roster": "Sync my Roster",
     "btn_manage_roster": "Manage",
-    "btn_switch_demo": "↺ Demo Roster",
-    "add_character": "Add character",
-    "synced_status": "Synced",
-    "card_role_support": "Support",
-    "card_role_dps": "DPS",
     "card_ilvl_label": "Item Level",
     "card_metric_cp": "Actual Combat Power",
-    "card_metric_weapon": "T4 Weapon Level",
-    "card_metric_armor": "T4 Armors",
-    "card_metric_adv": "Advanced Honing",
     "card_level_prefix": "Level",
     "card_source_live": "Source: lostark.bible (Live)",
-    "card_source_custom": "Manually edited",
-    "btn_change_avatar": "Change avatar",
-    "btn_reset_avatar": "Restore official Lost Ark portrait",
     "tab_predictor": "Quick Predictor (iLvl ➔ CP)",
     "tab_advisor": "Smart Advisor (ROI Optimizer)",
     "tab_honing": "Piece-by-Piece Honing Simulator",
@@ -607,7 +473,6 @@
     "pred_gem_opt_full10": "Full 11x Lvl. 10 Endgame Gems Deck (+1,000 to +1,250 CP)",
     "pred_res_title": "Prediction Results",
     "pred_model_support": "Support Model",
-    "pred_model_dps": "DPS Model",
     "pred_mode_honing": "Pure Honing (Gear Only)",
     "pred_mode_global": "Global Build Evolution (Endgame)",
     "pred_cp_at": "Estimated Combat Power at",
@@ -617,65 +482,23 @@
     "pred_bracket": "CP Bracket",
     "pred_analysis_title": "Analysis of your iLvl jump:",
     "pred_gauge_start": "1640 (T4 Start)",
-    "pred_gauge_current": "Current:",
     "pred_gauge_end": "1800+ (Endgame)",
     "adv_badge": "Source: EUC market",
     "adv_title": "Smart Upgrade Advisor — Cost-Efficiency Planner",
     "adv_subtitle": "Automatically calculates the cheapest gold path to maximize your CP and hit your raid thresholds.",
-    "adv_mode_label": "Optimization Mode:",
-    "adv_mode_budget_btn": "Gold Budget",
-    "adv_mode_ilvl_btn": "iLvl Goal",
-    "adv_mode_cp_btn": "CP Goal",
-    "adv_budget_label": "Maximum Gold Budget:",
-    "adv_target_ilvl_label": "Target Item Level (iLvl):",
-    "adv_target_cp_label": "Target Combat Power Gain:",
-    "adv_scope_title": "Allowed upgrade categories for planner:",
-    "adv_scope_gear": "T4 Honing (Weapon & Armor)",
-    "adv_scope_adv": "Advanced Honing (+10, +20...)",
-    "adv_scope_gems": "T4 Gems (Lvl. 8, Lvl. 9)",
-    "adv_scope_arkgrid": "Ark Grid (17-Point Cores)",
-    "adv_scope_acc": "Accessory Polish (Weapon Power % Lines)",
-    "adv_scope_books": "Relic Engraving Books T4",
-    "adv_scope_bracelet": "T4 Bracelet (Optional - Heavy RNG)",
-    "adv_brace_diag_title": "T4 Bracelet Diagnostic & Potential",
-    "adv_brace_diag_sub": "Overall efficiency evaluation, dead stat detection, and targeted BiS rolls for your class.",
-    "adv_brace_potential_gain": "Potential Gain:",
-    "adv_brace_eff_lbl": "Estimated overall efficiency:",
-    "adv_brace_col_current": "Equipped lines on your bracelet:",
-    "adv_brace_col_targets": "Target BiS rolls to aim for (Reroll / Auction):",
-    "adv_btn_calc": "Calculate Optimal Roadmap",
-    "adv_kpi_total_gain": "Estimated Total Gain",
-    "adv_kpi_ilvl_prog": "iLvl Progression",
-    "adv_kpi_total_cost": "Estimated Total Cost",
-    "adv_kpi_avg_roi": "Average Efficiency",
-    "adv_plan_title": "Sequential Roadmap (Optimal Path)",
-    "adv_plan_subtitle": "Ranked in descending order of ROI to maximize your impact for every gold spent.",
     "adv_btn_apply": "Apply Plan to Simulator",
-    "adv_materials_title": "Estimated Required T4 Materials (Honing & Transcendence):",
     "honing_title": "Piece-by-Piece Honing Simulator (T4 Gear)",
-    "honing_subtitle": "Individually adjust the honing level of each piece to measure the precise impact on your iLvl and CP.",
-    "honing_current_gear": "Current Honing Levels",
     "honing_adv_select_label": "Advanced Honing:",
     "honing_gear_weapon": "T4 Weapon",
     "honing_gear_weapon_desc": "High Attack Power bonus",
     "honing_gear_head": "Helmet",
-    "honing_gear_shoulder": "Shoulderpads",
+    "honing_gear_shoulder": "Shoulders",
     "honing_gear_chest": "Chestpiece (Torso)",
     "honing_gear_pants": "Pants (Legs)",
     "honing_gear_gloves": "Gloves",
     "honing_gear_armor_desc": "Substantial Main Stat increase",
     "honing_actions_collective": "Collective action:",
-    "honing_btn_all_plus": "All +1",
-    "honing_btn_all_minus": "All -1",
     "honing_btn_reset": "↺ Reset",
-    "honing_kpi_ilvl": "Simulated iLvl",
-    "honing_kpi_cp": "Simulated CP",
-    "honing_kpi_cost": "Estimated Honing Cost",
-    "honing_kpi_efficiency": "Estimated ROI",
-    "honing_stats_title": "Base Stats Estimation:",
-    "honing_str_label": "Strength / Int / Dex:",
-    "honing_atk_label": "Base Attack Power:",
-    "honing_advice_title": "Strategic Honing Recommendation:",
     "ark_badge": "T4 progression",
     "ark_title": "Ark Passive Simulator (T4)",
     "ark_subtitle": "Change the points spent in each tree and read their effect on Combat Power, using the per-point value of the game Battle Point read from your profile.",
@@ -683,37 +506,15 @@
     "ark_tree_evo_title": "Evolution Tree",
     "ark_tree_evo_sub": "Tiers 1 to 4 (tier 0 = combat stats)",
     "ark_tree_evo_points_label": "Points spent (tiers 1 to 4):",
-    "ark_tree_evo_node_label": "Tier IV Major Node:",
-    "ark_tree_evo_node_vigor": "Divine Vigor / Gift of Life (AP & Power Buff Focus) [Recommended Support]",
-    "ark_tree_evo_node_strike": "Heavy Strike / Armor Piercing (Crit Damage & Raw Pen) [Recommended DPS]",
-    "ark_tree_evo_node_flow": "Astral Flow (Attack Speed & Mana Reduction)",
     "ark_tree_evo_mult_label": "Evolution Battle Point",
     "ark_tree_evo_cp_label": "Share of CP",
     "ark_tree_enlight_title": "Enlightenment Tree",
     "ark_tree_enlight_sub": "Class nodes",
     "ark_tree_enlight_points_label": "Enlightenment points spent:",
-    "ark_tree_enlight_relic_books": "2x T4 Relic Class Books (+10 Enlightenment Pts)",
-    "ark_tree_enlight_relic_acc": "Max Polished Relic Accessories (+15 Enlightenment Pts)",
-    "ark_tree_enlight_spec_label": "Active Class Specialization:",
-    "ark_tree_enlight_spec_blessed": "Blessed Aura (Paladin Support Specialization)",
-    "ark_tree_enlight_spec_judgment": "Judgment (Paladin DPS Specialization)",
     "ark_tree_enlight_mult_label": "Enlightenment Battle Point",
-    "ark_tree_enlight_cp_label": "CP Contribution",
     "ark_tree_leap_title": "Leap Tree",
     "ark_tree_leap_sub": "Hyper Awakening & Awakening Skills",
-    "ark_tree_leap_points_label": "Allocated Leap Points:",
-    "ark_tree_leap_ha_unlocked": "Hyper Awakening Unlocked & Active",
-    "ark_tree_leap_raids_unlocked": "Kazeros Raids Cleared (Passive Buffs)",
-    "ark_tree_leap_mult_label": "Leap Multiplier (HA)",
-    "ark_tree_leap_cp_label": "CP Contribution",
-    "ark_summary_title": "T4 Ark Passive Overall Impact",
-    "ark_summary_mult_label": "Cumulative Global Multiplier:",
-    "ark_summary_cp_label": "Total Generated Combat Power:",
-    "ark_summary_analysis_title": "Ark Passive Configuration Analysis:",
-    "astro_badge": "Loseii model (loseii.com)",
-    "astro_title": "T4 Astrogem Simulator & Analyzer",
     "astro_subtitle": "Instantly score your astrogem (0 to 100+), its rank (S+ to F), net % damage/buff gain, and viability for 17-point Ark Grid cores.",
-    "astro_sec1_title": "1. Astrogem Base Characteristics",
     "astro_cost_label": "Base Gem Cost:",
     "astro_cost_8": "Cost 8 (Pool: Additional Dmg, Weapon %, Brand, Ally Dmg)",
     "astro_cost_9": "Cost 9 (Pool: Boss Dmg, Weapon %, Ally Dmg, Ally AP)",
@@ -724,8 +525,6 @@
     "astro_eff1_label": "Line 3 (Effect 1):",
     "astro_eff2_label": "Line 4 (Effect 2):",
     "astro_grade_label": "Loseii Global Grade",
-    "astro_gain_group": "Real Raid Buff Gain",
-    "astro_gain_dps": "Real Personal DPS Gain",
     "astro_rarity_label": "Gem Rarity",
     "astro_cost_core_label": "Core Cost",
     "astro_viability_label": "Ark Grid Viability",
@@ -738,17 +537,12 @@
     "opt_res_title": "Simulated gain",
     "opt_res_gain_acc": "Accessories",
     "opt_res_gain_gems": "Gems",
-    "eff_badge": "Arsonistic 2026 sheet · EUC market",
     "eff_title": "Gold / Damage Cost-Efficiency Arbitrage (EUC Market)",
     "eff_subtitle": "Every way to upgrade your character, priced in gold (EUC market prices) and ranked by cost per gain, like Loseii's GPD",
     "eff_rec_title": "Next Recommended Priority Upgrade (Max ROI):",
-    "eff_col_rank": "#",
     "eff_col_name": "Upgrade / T4 System",
-    "eff_col_gain_supp": "Raid Buff Gain",
-    "eff_col_gain_dps": "Net DPS Gain",
     "eff_col_cost": "Avg EUC Cost",
     "eff_col_ratio_supp": "Cost / 0.01% Buff",
-    "eff_col_ratio_dps": "Cost / 1% DPS",
     "eff_col_prio": "ROI Priority",
     "canon_badge": "lostark.bible",
     "canon_title": "Canonical Mathematical Engine T4 (Smilegate & lostark.bible)",
@@ -779,24 +573,13 @@
     "modal_btn_login": "Sign in with lostark.bible",
     "modal_oauth_helper": "Official OAuth 2.0 PKCE • Instant synchronization of your Roster and raid logs",
     "modal_status_connected": "Connected",
-    "modal_btn_refresh": "Refresh",
     "modal_btn_logout": "Logout",
     "modal_btn_sync_roster": "Sync Everything to My Roster (Top 6)",
-    "modal_direct_divider": "or add directly by username",
     "modal_region_lbl": "Region",
-    "modal_name_lbl": "Character Name",
     "modal_chk_auto_roster": "Automatically add and save to My Roster",
     "modal_btn_fetch": "Import & Load Character",
-    "modal_roster_count_lbl": "Characters in My Roster",
-    "modal_btn_refresh_all": "Refresh All",
     "modal_btn_clear_roster": "Reset",
     "modal_btn_close": "✓ OK / Close",
-    "modal_avatar_title": "Customize Character Portrait",
-    "modal_avatar_subtitle": "Upload a local image to replace this character's portrait on the card and preset chips.",
-    "modal_avatar_dropzone": "Click or drop an image here (PNG, JPG, WebP)",
-    "modal_avatar_preview_lbl": "New portrait preview:",
-    "modal_avatar_btn_save": "Save portrait",
-    "modal_avatar_btn_reset": "↺ Restore official lostark.bible portrait",
     "footer_left": "Lost Ark Tier 4 • Real lostark.bible profiles",
     "footer_right": "Game tables (Maxroll) • Loseii DPS and support models • EUC prices"
 ,
@@ -815,21 +598,10 @@
     "honing_btn_all_16": "All to +16",
     "honing_btn_all_18": "All to +18",
     "honing_btn_all_20": "All to +20",
-    "adv_roadmap_title": "Priority Roadmap (Optimized Purchase Order)",
     "adv_btn_apply_plan": "Apply this Plan to Honing Simulator",
-    "adv_kpi_avg_roi_lbl": "Average Efficiency",
-    "adv_kpi_avg_roi_sub": "Gold cost per net CP gain",
     "ark_main_title": "Ark Passive Simulator — Evolution, Enlightenment & Leap",
-    "ark_btn_current_pts": "Current Character Points",
-    "ark_btn_sup_build": "Recommended Support Build (Max Aura)",
-    "ark_btn_dps_build": "Recommended DPS Build (Max Burst)",
-    "ark_relic_acc_chip": "Relic Accessories with Enlightenment (+6 Pts)",
-    "ark_class_spec_label": "Active Class Specialization:",
-    "ark_tree_leap_heading": "Leap Tree (Hyper Awakening)",
     "ark_tree_leap_subtext": "Hyper Awakening",
     "ark_tree_leap_points_lbl": "Leap points spent:",
-    "ark_ha_unlocked_chip": "Hyper Awakening & T-Skill Unlocked (+10% T dmg)",
-    "ark_raids_unlocked_chip": "Behemoth / Aegir Raid Tiers Cleared (70 pts Cap)",
     "ark_mult_leap_lbl": "Leap Battle Point",
     "ark_summary_header": "Effect on Combat Power",
     "ark_kpi_proj_cp": "Projected Combat Power",
@@ -852,21 +624,14 @@
     "canon_col_mult": "Net Multiplier",
     "canon_col_impact": "Role Impact",
     "pred_gem_opt_full10": "Full Deck 11x Lv. 10 Endgame Gems (+1,000 to +1,250 CP)",
-    "adv_budget_label": "Available Gold Budget:",
-    "adv_target_ilvl_label": "Target Item Level (iLvl):",
     "honing_gear_levels_title": "T4 Honing Levels (Gear)",
     "ark_btn_current_points": "Current Character Points",
     "ark_btn_max_points": "All points at max",
-    "ark_tier_iv_reached": "Tier IV Reached",
-    "ark_class_opt_supp": "Blessed Aura (Paladin Support)",
-    "ark_class_opt_dps": "Judgment (Paladin DPS / Executioner)",
     "astro_order_sub": "Direct multiplier above the 17-point threshold (+0.16% per point).",
     "astro_eff1_lvl_lbl": "Effect 1 Level:",
     "astro_eff2_lvl_lbl": "Effect 2 Level:",
     "astro_cost_sub": "8 Base − 5 Willpower",
     "opt_th_gain": "Party Gain",
-    "cut2_opt_not_cut": "Not cut yet (Evaluate decision after Cut 1)",
-    "cut2_opt_done": "2nd Cut Completed (Evaluate Cut 3)",
     "canon_sub_ingame": "Tracked from lostark.bible profile",
     "canon_sub_calc": "Accuracy: ±1.7% vs in-game",
     "raid_badge": "T4 raid gold income",
@@ -889,21 +654,11 @@
     "raid_cathedral": "Horizon Cathedral",
     "raid_serca": "Serca",
     "raid_kazeros": "Final Act: Kazeros",
-    "raid_gate_short": "G{gate}",
-    "raid_cleared_badge": "Cleared",
     "raid_cleared_at": "Cleared on {time}",
-    "raid_diff_normal": "Normal",
-    "raid_diff_hard": "Hard",
-    "raid_diff_nightmare": "Nightmare",
-    "raid_gold_unit": "g",
-    "raid_char_total": "Total:",
-    "raid_card_all_done": "Completed",
-    "raid_gold_earned": "Earned:",
     "raid_btn_agent_download": "Install Agent",
     "raid_net_gold": "Weekly Gold Earned",
     "raid_btn_mark_all": "Clear All",
     "raid_btn_all_chests": "All Chests",
-    "raid_earned_suffix": "earned",
     "agent_modal_title": "Live Sync Agent (Local & Private)",
     "agent_modal_subtitle": "Automatically sync your raid clears and weekly gold rewards from LOA Logs in real time.",
     "agent_step1_title": "1. Download",
@@ -928,9 +683,7 @@
     "card_title_astro": "Astrogems",
     "card_title_gpd": "Cheapest Next 1%",
     "score_acc_dmg": "Exact Damage",
-    "score_acc_buff": "Exact Ally Buff",
     "score_gpd_per": "per 1% Dmg",
-    "score_gpd_per_sup": "per 0.01% Buff",
     "gpd_chart_link": "GPD ➔",
     "mkt_title": "Market & Stronghold",
     "mkt_subtitle": "EUC auction house prices used by the calculations, and profitability of Stronghold workshop fusions.",
@@ -956,9 +709,6 @@
     "gpd_table_title": "Ranked by efficiency",
     "gpd_table_sub": "Cheapest first, on your current gear. Steps in your goal plan are highlighted.",
     "gpd_th_system": "System",
-    "gpd_th_read": "What it reads",
-    "gpd_th_current": "Where that puts you",
-    "gpd_th_last": "Last step",
     "gpd_th_next": "Step",
     "gpd_th_rate": "Gold / 1%",
     "gpd_th_cpgain": "+CP",
@@ -1029,37 +779,49 @@
     "bench_prio_opt": "Endgame / Expensive",
     "bench_prio_derived": "Via gear",
     "bench_toggle_show_equal": "Show equivalent systems (0% delta) ▾",
-    "bench_toggle_hide_equal": "Hide equivalent systems ▴",
     "bench_region_title": "Server Region",
     "bench_region_auto": "Region: Auto",
     "bench_region_ce": "Europe (CE)",
     "bench_region_nae": "North America East (NAE)",
     "bench_region_naw": "North America West (NAW)",
     "bench_region_sa": "South America (SA)",
-    "bench_parity_title": "Parity or ahead",
-    "bench_parity_desc": "All your equipment systems are equal or superior to this reference benchmark.",
-    "bench_loading": "Loading profile from lostark.bible...",
-    "bench_load_error": "Could not load this profile from lostark.bible.",
-    "bench_custom_tag": "Custom",
     "welcome_modal_title": "Welcome to Lost Ark CP & Optimizer T4",
     "welcome_modal_sub": "Analyze your character and calculate real Combat Power in a few clicks",
     "welcome_modal_intro": "Enter your main character name to instantly load stats, honing and roster from lostark.bible:",
     "welcome_char_name_lbl": "Character Name",
-    "welcome_suggestions_lbl": "Suggestions:",
     "welcome_btn_fetch": "Load my character",
-    "welcome_or_label": "or explore the tool",
-    "welcome_btn_demo": "Explore in Demo Mode",
-    "welcome_btn_restore_nevercry": "Restore Neevercry Roster",
-    "btn_restore_nevercry": "Restore Neevercry Roster",
+    "welcome_more_options": "More options: lostark.bible sign-in, manual import",
     "btn_refresh_all_roster": "Refresh All",
     "btn_share_char": "Share",
-    "toast_link_copied": "Direct link copied to clipboard.",
-    "toast_nevercry_restored": "Neevercry Roster (6 characters) successfully restored.",
+    "tt_sync_roster": "Sync your own roster from lostark.bible",
+    "tt_manage_roster": "Manage or refresh your characters",
+    "alt_char_portrait": "Character portrait",
+    "tt_share_char": "Copy this character's direct link to send to a friend",
+    "tt_card_acc": "Click to see the T4 accessories",
+    "tt_card_bracelet": "Click to analyze the bracelet",
+    "tt_card_astro": "Click to see the astrogems",
+    "tt_card_gpd": "Click to open the Smart Advisor / GPD",
+    "tt_weekly_reset": "Weekly reset every Wednesday at 12:00 CEST",
+    "tt_refresh_sync": "Refresh the sync",
+    "tt_install_agent": "Install or download the local agent",
+    "tt_mark_all_cleared": "Mark every roster raid as cleared",
+    "tt_toggle_all_chests": "Turn all bonus chests on / off",
+    "aria_bracer_level": "Bracer level",
+    "tt_bench_auto": "Automatically picks the best profile (+1-3 iLvl, same gems, same class & spec)",
+    "tt_close": "Close",
+    "ph_welcome_name": "e.g. Àlphâ, Frieedhof, Siwilpal…",
+    "page_title": "Lost Ark T4 CP / iLvl Calculator & Predictor",
+    "btn_close": "Got it.",
+    "agent_compatibility_notice": "Compatible with LOA Logs / Lost Ark Logs (%LOCALAPPDATA%\\LOA Logs\\encounters.db).",
+    "help_belg_title": "Belgardin Projection",
+    "help_belg": "T4 bracer projection before its EU release: estimated cost and gain per level, with the source of each value.",
+    "help_rotation_title": "Rotation analysis",
+    "help_rotation": "Load your LOA Logs encounters.db (read in your browser, never uploaded): an execution score per raid compared with your spec, and advice to improve.",
     "char_active_default": "Active Character"
   }
 };
 
-  let currentLang = 'fr';
+  let currentLang = 'en';
 
   function getStoredLang() {
     try {
@@ -1071,7 +833,7 @@
   }
 
   function setLang(lang) {
-    if (lang !== 'fr' && lang !== 'en') lang = 'fr';
+    if (lang !== 'fr' && lang !== 'en') lang = 'en';
     currentLang = lang;
     try {
       localStorage.setItem(STORAGE_KEY, lang);
@@ -1097,34 +859,50 @@
   }
 
   function t(key, fallback = '') {
-    const langDict = DICTIONARY[currentLang] || DICTIONARY.fr;
+    const langDict = DICTIONARY[currentLang] || DICTIONARY.en;
     if (langDict[key] !== undefined) return langDict[key];
-    const frDict = DICTIONARY.fr;
-    if (frDict[key] !== undefined) return frDict[key];
+    // Clé absente d'une langue : l'anglais (langue par défaut du site), jamais le français en mode anglais
+    const enDict = DICTIONARY.en;
+    if (enDict[key] !== undefined) return enDict[key];
     return fallback || key;
   }
 
+  const hasKey = key => DICTIONARY.en[key] !== undefined || DICTIONARY.fr[key] !== undefined;
+
   function applyTranslations() {
     // 1. Text elements
+    // Clé inconnue : le texte du HTML reste (jamais le nom de la clé à l'écran)
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      const val = t(key);
-      if (val) el.innerHTML = val;
+      if (hasKey(key)) el.innerHTML = t(key);
     });
 
     // 2. Title attributes
     document.querySelectorAll('[data-i18n-title]').forEach(el => {
       const key = el.getAttribute('data-i18n-title');
-      const val = t(key);
-      if (val) el.setAttribute('title', val);
+      if (hasKey(key)) el.setAttribute('title', t(key));
     });
 
     // 3. Placeholder attributes
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const key = el.getAttribute('data-i18n-placeholder');
-      const val = t(key);
-      if (val) el.setAttribute('placeholder', val);
+      if (hasKey(key)) el.setAttribute('placeholder', t(key));
     });
+
+    // 4. Texte alternatif et aria-label
+    document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+      const key = el.getAttribute('data-i18n-alt');
+      if (hasKey(key)) el.setAttribute('alt', t(key));
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+      const key = el.getAttribute('data-i18n-aria');
+      if (hasKey(key)) el.setAttribute('aria-label', t(key));
+    });
+
+    // 5. Titre de l'onglet du navigateur et description
+    if (hasKey('page_title')) document.title = t('page_title');
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta && hasKey('page_description')) meta.setAttribute('content', t('page_description'));
   }
 
   function init() {
@@ -1168,7 +946,14 @@
   function translateCanonicalItem(it, isEn = (currentLang === 'en')) {
     if (!it) return it;
     const clone = { ...it };
-    if (!isEn) return clone;
+    if (!isEn) {
+      // Effets passifs des bijoux : nom de la stat en anglais dans le dictionnaire du profil
+      if (typeof clone.note === 'string') {
+        clone.note = clone.note.replace(/: Meter Gain \+/g, ': Gain de jauge +').replace(/: Outgoing Damage \+/g, ': Dégâts infligés +')
+          .replace(/: Damage to foes \+/g, ': Dégâts aux ennemis +');
+      }
+      return clone;
+    }
 
     const catMap = {
       'Base': 'Base',
@@ -1208,8 +993,10 @@
     if (clone.val && typeof clone.val === 'string') {
       clone.val = clone.val
         .replace(/Niv\.\s*/g, 'Lv. ')
-        .replace(/^Qualité\s*/, 'Quality ');
+        .replace(/^Qualité\s*/, 'Quality ')
+        .replace(/^Rang (\d+)/, 'Rank $1');
     }
+    if (clone.mult && typeof clone.mult === 'string') clone.mult = clone.mult.replace(/% à \+/g, '% to +');
 
     if (clone.label && typeof clone.label === 'string') {
       let l = clone.label;
@@ -1273,12 +1060,12 @@
            .replace(/AP Allié/g, 'Ally AP')
            .replace(/Grille d'Ark\s*—\s*/g, 'Ark Grid — ')
            .replace(/Astrogemmes\s*—\s*/g, 'Astrogems — ')
-           .replace(/Ally Damage Enh\. \([^)]+\)/g, 'Ally Damage Enh.')
-           .replace(/Brand Power \([^)]+\)/g, 'Brand Power')
-           .replace(/Ally Attack Enh\. \([^)]+\)/g, 'Ally Attack Enh.')
-           .replace(/Attack Power \([^)]+\)/g, 'Attack Power')
-           .replace(/Additional Damage \([^)]+\)/g, 'Additional Damage')
-           .replace(/Dégâts aux Boss \([^)]+\)/g, 'Boss Damage')
+           .replace(/Ally Damage Enh\. \((?![^)]*\d)[^)]+\)/g, 'Ally Damage Enh.')
+           .replace(/Brand Power \((?![^)]*\d)[^)]+\)/g, 'Brand Power')
+           .replace(/Ally Attack Enh\. \((?![^)]*\d)[^)]+\)/g, 'Ally Attack Enh.')
+           .replace(/Attack Power \((?![^)]*\d)[^)]+\)/g, 'Attack Power')
+           .replace(/Additional Damage \((?![^)]*\d)[^)]+\)/g, 'Additional Damage')
+           .replace(/Dégâts aux Boss \((?![^)]*\d)[^)]+\)/g, 'Boss Damage')
            .replace(/Cœur Solaire/g, 'Solar Core')
            .replace(/Cœur Lunaire/g, 'Lunar Core')
            .replace(/Gemme T4 Niv\.\s*(\d+)/g, 'T4 Gem Lv. $1')
@@ -1289,6 +1076,39 @@
            .replace(/\(Dégâts\)/g, '(Damage)')
            .replace(/Gemme de Dégâts/g, 'Damage Gem')
            .replace(/Gemme de Recharge/g, 'Cooldown Gem');
+
+      // Bijoux support, bracelet, astrogemmes, cartes : textes FR restants (relevés sur les 70 profils en cache)
+      const braceletNames = {
+        "Attaque par l'Arrière": 'Back Attack', 'Coinçage': 'Wedge', 'Compétences Non Directionnelles': 'Non-Directional Skills',
+        'Dégâts Monstres Inférieurs': 'Damage to Lesser Monsters', 'Immunité Paralysie / Repoussement': 'Paralysis / Push Immunity',
+        'Rechargement Esquive / Relèvement': 'Evade / Stand Up Cooldown'
+      };
+      l = l.replace(/^(Ancient Bracelet|Relic Bracelet|Bracelet) — ([^(]+?)\s*\(([^)]*)\)$/, (m, head, fr, inner) => {
+        const name = braceletNames[fr.trim()];
+        if (/[A-Za-z]{3,}/.test(inner) && !/Démons/.test(inner)) return `${head} — ${inner}`;
+        return `${head} — ${name || fr.trim()} (${inner.replace(/\s*&\s*Démons/, ' & Demons')})`;
+      });
+      l = l.replace(/Max HP Max/g, 'Max HP')
+           .replace(/Neutralisation/g, 'Stagger')
+           .replace(/, & Vitesse/g, ' & Speed')
+           .replace(/ Cumulable$/g, ' (stackable)')
+           .replace(/ \/ Marque/g, '')
+           .replace(/Boucliers aux Membres du Groupe/g, 'Party Shield')
+           .replace(/Soins aux Membres du Groupe/g, 'Party Heal')
+           .replace(/Gain de Jauge d'Identité/g, 'Identity Gauge Gain')
+           .replace(/Effet Amplification (.+?)( \(|$)/g, '$1 Amplification$2')
+           .replace(/Effet Augmentation (.+?)( \(|$)/g, '$1 Increase$2')
+           .replace(/Récupération PV en Combat/g, 'Combat HP Recovery')
+           .replace(/Points de Mana Max/g, 'Max MP')
+           .replace(/Bonus Durée Altération État/g, 'Status Effect Duration Bonus')
+           .replace(/Ligne Affinée/g, 'Refined Line')
+           .replace(/Ligne d'Affinage/g, 'Refining Line')
+           .replace(/Composant Type #/g, 'Component Type #')
+           .replace(/Stats de Combat/g, 'Combat Stats')
+           .replace(/ — Niv\. (\d+)$/g, ' — Lv. $1')
+           // Cartes : « Nom EN (Nom FR) (Rang N) » → « Nom EN (Rank N) »
+           .replace(/\s*\([^()]*\)\s*\(Rang (\d+)\)$/, ' (Rank $1)')
+           .replace(/\(Rang (\d+)\)/g, '(Rank $1)');
 
       if (origCat === 'Gravures' || origCat === 'Engravings') {
         l = l.replace(/([A-Za-z' -]+)\s*\([^)]+\)(\s*—\s*Pierre\s*\+\d+)?/, (match, engName, stonePart) => {
@@ -1350,6 +1170,31 @@
                     'In-game effect: +$1% Brand Power (astrogem sum). Smilegate CP multiplier: +$2% $3.');
       n = n.replace(/Effet in-game : \+([0-9.]+)% Amélioration AP Allié \(cumul des astrogemmes\)\. Multiplicateur Smilegate CP : \+([0-9.]+)% (DPS Net|Buff Power)\./g,
                     'In-game effect: +$1% Ally Attack Power Amplification (astrogem sum). Smilegate CP multiplier: +$2% $3.');
+      const rawStat = {
+        'amélioration ap allié': 'ally AP amplification', 'amélioration dégâts alliés': 'ally damage amplification',
+        'dégâts additionnels': 'additional damage', 'dégâts aux boss': 'boss damage', "puissance d'attaque": 'attack power',
+        'puissance de marque': 'brand power', 'défense magique': 'magic defense', 'défense physique': 'physical defense',
+        'points de vie max': 'max HP', 'vitalité': 'Vitality', 'force': 'Strength', 'dextérité': 'Dexterity',
+        'intelligence': 'Intelligence', 'rapidité': 'Swiftness', 'spécialisation': 'Specialization', 'critique': 'Crit'
+      };
+      const dest = {
+        'Défense Magique': 'Magic Defense', 'Défense Physique': 'Physical Defense', 'Points de Vie Maximum (HP)': 'Max HP',
+        'HP Maximum': 'Max HP', 'Stats de Combat': 'Combat Stats', "Attaque de Base": 'Base Attack'
+      };
+      n = n.replace(/Stat brute (.+?) solo perso \(\+([0-9.]+)%\) : exclue du calcul du Buff Power en Support \(Smilegate Battle Point\)\./g,
+                    (m, st, v) => `Raw solo ${rawStat[st.toLowerCase()] || st} stat (+${v}%): excluded from Support Buff Power (Smilegate Battle Point).`);
+      n = n.replace(/Stat brute de (.+?) déjà intégrée directement dans (?:la |les |l')(.+?) en tête de liste\./g,
+                    (m, st, d) => `Raw ${rawStat[st.toLowerCase()] || st} stat is already included directly in ${dest[d] || d} at the top of the list.`);
+      n = n.replace(/Stat brute déjà agrégée directement dans l'Attaque de Base ou les PV Max en tête de liste\./g,
+                    'Raw stat is already included directly in Base Attack or Max HP at the top of the list.');
+      n = n.replace(/La Puissance d'Arme augmente directement votre Attaque de Base & Base Val en tête de liste\. Elle est à \+([0-9.]+)% ici pour éviter un double comptage\./g,
+                    'Weapon Power directly raises your Base Attack & Base Val at the top of the list. It is at +$1% here to avoid double counting.');
+      const slotEn = { 'Collier': 'necklace', "Boucle d'oreille": 'earring', 'Anneau': 'ring' };
+      n = n.replace(/Effet passif (Collier|Boucle d'oreille|Anneau)( Support)? T(\d)(?: \(Rang (\d+)\))? : (.+?)\./g,
+                    (m, slot, sup, tier, rank, eff) => `${sup ? 'Support ' : ''}T${tier} ${slotEn[slot]} passive effect${rank ? ` (Rank ${rank})` : ''}: ${eff}.`);
+      n = n.replace(/Stat solo perso : non transférée aux alliés en Support \(exclue du Buff Power\)\./g,
+                    'Solo stat: not transferred to allies for Support (excluded from Buff Power).');
+      n = n.replace(/Progression de niveau de bond de karma\./g, 'Karma leap level progression.');
       n = n.replace(/DPS Net/g, 'Net DPS');
       clone.note = n;
     }

@@ -158,12 +158,14 @@ async function analyze(encounterId) {
   };
 }
 
-self.onmessage = async ({ data }) => {
-  const { id, type } = data;
+async function handle({ id, type, ...data }) {
   readError = null;
   try {
     let result;
     if (type === 'open') result = await open(data.file);
+    // Base fermée par une ouverture ratée (fichier en cours d'écriture) : même traitement qu'un fichier modifié,
+    // l'onglet le rouvre et refait l'action
+    else if ((type === 'list' || type === 'analyze') && !db) throw new Error('file-changed');
     else if (type === 'list') result = await listRaids(adapter, { ...data.opts, bosses: Object.keys((await skillData()).raids || {}) });
     else if (type === 'analyze') result = await analyze(data.encounterId);
     else throw new Error(`unknown message ${type}`);
@@ -171,4 +173,9 @@ self.onmessage = async ({ data }) => {
   } catch (e) {
     self.postMessage({ id, ok: false, error: readError ? 'file-changed' : String(e?.message || e) });
   }
-};
+}
+
+// Messages traités un par un : une ouverture ne ferme jamais la base pendant une liste ou une analyse en cours
+// (et readError reste celui de l'opération en cours)
+let queue = Promise.resolve();
+self.onmessage = ({ data }) => { queue = queue.then(() => handle(data)); };

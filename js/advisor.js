@@ -76,8 +76,13 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const g1 = honingGainTo(charObj, piece, isSerka, isSupport, k), g0 = honingGainTo(charObj, piece, isSerka, isSupport, k - 1);
     if (g1 === null || g0 === null) return null;
     const cost = levels.reduce((sum, x) => sum + getLevelCost(isW ? 'weapon' : 'armor', x.l + k - 1, x.track).totalValue, 0);
-    const from = Math.floor(isW ? sys.weapon.wLvl : sys.armors.avgArmor) + k - 1;
-    return mk(`+${from} ➔ +${from + 1}`, cost, g1 - g0, { targetVal: from + 1 });
+    if (isW) {
+      const from = Math.floor(sys.weapon.wLvl) + k - 1;
+      return mk(`+${from} ➔ +${from + 1}`, cost, g1 - g0, { targetVal: from + 1 });
+    }
+    // Armures : pièces réelles encore sous +25 à cette étape (niveaux différents : « +1 sur n pièces »)
+    const lbl = armorStepLabel(levels.map(x => x.l), k, isEn, sys.armors.avgArmor);
+    return mk(lbl.step, cost, g1 - g0, { targetVal: Math.min(...levels.map(x => x.l)) + k, armorStep: k });
   }
   const gm = /^dyn_gems_(\d+)_\d+$/.exec(base.id);
   if (gm) {
@@ -127,7 +132,7 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal) {
   const avail = masterRows.map(r => ({ row: Object.assign({ chain: r.id, step: 1 }, r), k: 1 }));
   const plan = [];
   let cum = 0, cumCp = 0, gold = 0, arkChain = null;
-  const currentCp = (charObj && (charObj.calculatedScore || charObj.inGameScore)) || state.currentCp || 0;
+  const currentCp = characterCp(charObj);
   while (avail.length && cum < goal && plan.length < 40) {
     avail.sort((a, b) => a.row.rate - b.row.rate);
     const it = avail.shift();
@@ -136,14 +141,16 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal) {
       arkChain = it.row.chain;
     }
     const row = it.row;
+    // Gain non arrondi (dmgGain est arrondi à 0,01 % pour l'affichage)
+    const gain = row.gainRaw !== undefined ? row.gainRaw : row.dmgGain;
     if (it.k > 1 || row.cpGain === undefined) {
       row.cpGain = isSupport
-        ? (row.cpPerGain ? row.cpPerGain * row.dmgGain : null)
-        : currentCp * (Math.exp(row.dmgGain / 100) - 1);
+        ? (row.cpPerGain ? row.cpPerGain * gain : null)
+        : currentCp * (Math.exp(gain / 100) - 1);
     }
     plan.push(row);
     gold += row.cost;
-    cum += isSupport ? row.dmgGain : row.cpGain;
+    cum += isSupport ? gain : row.cpGain;
     if (row.cpGain > 0) cumCp += row.cpGain;
     const base = masterRows.find(r => r.id === row.chain);
     const next = base && gpdFollowUp(charObj, isSupport, isEn, base, it.k + 1);
@@ -235,16 +242,16 @@ function supportGpdRowCp(charObj, model, d, factors) {
     const ctx = gearStatContext(charObj);
     if (st && ctx) cp = gearCpGain(charObj, ctx, { dWp: st.dWp, dMs: 0, dVit: 0 }, true);
   } else if (id === 'dyn_stone') cp = model.stoneCp();
-  else if (id.startsWith('dyn_acc')) cp = model.linesCp([15, 17], m.curPct, d.gainVal);
-  else if (id === 'dyn_brac') cp = model.linesCp([19, 20], m.curTotal, d.gainVal);
+  else if (id.startsWith('dyn_acc')) cp = model.linesCp([15, 17], m.curPct, d.gainRaw);
+  else if (id === 'dyn_brac') cp = model.linesCp([19, 20], m.curTotal, d.gainRaw);
   else if (id.startsWith('dyn_astro_')) {
     const cur = astrogemGridDamage(true, { mean: m.mean, n: m.n });
-    cp = cur !== null ? model.astroCp(cur, d.gainVal) : null;
+    cp = cur !== null ? model.astroCp(cur, d.gainRaw) : null;
   }
   if (Number.isFinite(cp) && cp > 0) return cp;
   // Repli : rapport CP / buff de l'affinage (même famille pour l'avancé), sinon le premier disponible
   const f = id === 'dyn_adv_weapon' ? factors.weapon : (id === 'dyn_adv_armor' ? factors.armor : (factors.weapon || factors.armor));
-  return f ? f * d.gainVal : null;
+  return f ? f * d.gainRaw : null;
 }
 
 // CP d'une ligne, arrondi : décimale sous 10 CP (un support gagne souvent quelques CP par étape)
@@ -253,8 +260,15 @@ function fmtCpGain(cp) {
   return `+${cp < 10 ? cp.toFixed(1) : formatNumber(Math.round(cp))}`;
 }
 
+// CP du personnage pour la colonne +CP et l'objectif de la feuille de route : CP raid du profil, jamais le curseur
+// du prédicteur (onglet 1) que le joueur peut déplacer ; curseur seulement sans personnage
+function characterCp(charObj) {
+  const cp = (charObj && (raidCombatPowerOf(charObj) || charObj.cp)) || 0;
+  return cp > 0 ? cp : (state.currentCp || 0);
+}
+
 function buildMasterGpdData(charObj, isSupport, isEn) {
-  const currentCp = (charObj && (charObj.calculatedScore || charObj.inGameScore)) || state.currentCp || 6028;
+  const currentCp = characterCp(charObj);
   // Taille d'astrogemmes et Karma : obtenus en jeu, pas de ligne en or (cf. getDynamicGpdTable)
   const rows = [];
 
@@ -267,6 +281,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
     lastRate: '—',
     cost: d.cost,
     dmgGain: d.gainVal,
+    gainRaw: d.gainRaw,
     // ratioVal est déjà par 0.01% en support : on repasse par 1% comme les autres lignes (reconverti plus bas)
     rate: isSupport ? d.ratioVal * 100 : d.ratioVal
   }, extra);
@@ -285,13 +300,16 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         targetVal: m.to
       }));
     } else if (d.id === 'dyn_armor') {
+      // Pièces à des niveaux différents : état et étape lus pièce par pièce (armorStepLabel)
+      const lbl = armorStepLabel(m.levels, 1, isEn, m.from);
+      const mixed = m.levels && m.levels.length && !m.levels.every(l => l === m.levels[0]);
       rows.push(dynToMaster(d, {
         icon: '',
         system: isEn ? 'Armors honing' : 'Affinage Armures',
-        whatItReads: isEn ? `+${m.from} all pieces` : `+${m.from} toutes pièces`,
+        whatItReads: mixed ? lbl.sub : (isEn ? `+${m.from} all pieces` : `+${m.from} toutes pièces`),
         wherePutsYou: `+${m.from}`,
         lastStep: `+${m.from - 1} ➔ +${m.from}`,
-        nextStep: `+${m.from} ➔ +${m.to}`,
+        nextStep: lbl.step,
         category: 'gear',
         applyType: 'armors',
         targetVal: m.to
@@ -417,7 +435,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
   if (supModel) {
     dynRows.filter(d => d.id === 'dyn_weapon' || d.id === 'dyn_armor').forEach(d => {
       const cp = supportGpdRowCp(charObj, supModel, d, {});
-      if (cp > 0 && d.gainVal > 0) factors[d.id === 'dyn_weapon' ? 'weapon' : 'armor'] = cp / d.gainVal;
+      if (cp > 0 && d.gainRaw > 0) factors[d.id === 'dyn_weapon' ? 'weapon' : 'armor'] = cp / d.gainRaw;
     });
   }
   rows.forEach(r => {
@@ -425,10 +443,10 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
       const d = dynRows.find(x => x.id === r.id);
       r.cpGain = supModel && d ? supportGpdRowCp(charObj, supModel, d, factors) : null;
     } else {
-      r.cpGain = currentCp * (Math.exp(r.dmgGain / 100) - 1);
+      r.cpGain = currentCp * (Math.exp(r.gainRaw / 100) - 1);
     }
     // Rapport CP / gain de la ligne, repris par les étapes suivantes de la feuille de route
-    r.cpPerGain = r.cpGain > 0 && r.dmgGain > 0 ? r.cpGain / r.dmgGain : null;
+    r.cpPerGain = r.cpGain > 0 && r.gainRaw > 0 ? r.cpGain / r.gainRaw : null;
     r.roi = r.cpGain > 0 ? Math.round(r.cost / r.cpGain) : null;
   });
 
@@ -628,7 +646,8 @@ function renderAdvisorView() {
   const cName = curChar ? curChar.name : (isEn ? 'Active Character' : 'Personnage Actif');
   if (dom.advisorCharName) dom.advisorCharName.textContent = cName;
   if (dom.advisorCharStats) {
-    dom.advisorCharStats.textContent = `${state.currentIlvl.toFixed(2)} iLvl • ${formatNumber(Math.round(state.currentCp))} CP`;
+    const ilvl = curChar && curChar.ilvl > 0 ? curChar.ilvl : state.currentIlvl;
+    dom.advisorCharStats.textContent = `${ilvl.toFixed(2)} iLvl • ${formatNumber(Math.round(characterCp(curChar)))} CP`;
   }
 
   const masterData = buildMasterGpdData(curChar, isSupport, isEn);
@@ -709,7 +728,7 @@ function renderAdvisorView() {
     }
     if (dom.planSummaryRoi) {
       const per = road.cum > 0 ? Math.round(road.gold / (isSupport ? road.cum * 100 : road.cum)) : 0;
-      dom.planSummaryRoi.textContent = `${formatNumber(per)} g / ${isSupport ? '0,01 %' : 'CP'}`;
+      dom.planSummaryRoi.textContent = `${formatNumber(per)} g / ${isSupport ? (isEnLang() ? '0.01%' : '0,01 %') : 'CP'}`;
     }
     if (dom.gpdPlanSummary) dom.gpdPlanSummary.style.display = 'flex';
   } else {
@@ -798,8 +817,12 @@ function applyGpdPlan() {
       state.gear.weapon = item.targetVal;
       appliedCount++;
     } else if (item.applyType === 'armors' && item.targetVal) {
+      // Étape k des armures = +k sur chaque pièce réelle (plafond +25) ; sans pièces lisibles, niveau cible commun
+      const own = (getCurrentActiveCharacter() || {}).gear;
+      const k = item.armorStep || 1;
       ['head', 'shoulder', 'chest', 'pants', 'gloves'].forEach(p => {
-        state.gear[p] = item.targetVal;
+        const target = own && own[p] >= 0 ? Math.min(25, own[p] + k) : item.targetVal;
+        state.gear[p] = Math.max(state.gear[p] || 0, target);
       });
       appliedCount++;
     } else if (item.applyType === 'gems') {

@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { openDb, raidIds, loadEncounter } from './db.mjs';
-import { analyzeEncounter, toQuantiles, scorePlayer, coverageMean, REF_MIN_SAMPLES } from '../../js/rotation/metrics.js';
+import { analyzeEncounter, toQuantiles, scorePlayer, coverageMean, REF_MIN_SAMPLES, isStoneMalus } from '../../js/rotation/metrics.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -123,7 +123,7 @@ function build(rs) {
   const nodes = new Map(), engr = new Map(), gems = new Map();
   for (const r of top) {
     for (const id of Object.keys(r.build.nodes)) nodes.set(id, (nodes.get(id) || 0) + 1);
-    for (const e of r.build.engravings) engr.set(e, (engr.get(e) || 0) + 1);
+    for (const e of r.build.engravings) if (!isStoneMalus(e)) engr.set(e, (engr.get(e) || 0) + 1);
     for (const s of r.skills) {
       if (s.gemCd == null) continue;
       if (!gems.has(s.id)) gems.set(s.id, { name: s.name, n: 0, withGem: [] });

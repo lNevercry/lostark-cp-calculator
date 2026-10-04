@@ -266,13 +266,13 @@ function evaluateBracelet(charObj, isEn = false) {
       potentialGainCp = Math.round(currentCp * 0.025);
     } else if (efficiency >= 9.0) {
       tier = 'b';
-      tierLabel = isEn ? 'Tier B • Good' : 'Tier B • Bon';
+      tierLabel = isEn ? 'Tier B • Good' : 'Rang B • Bon';
       badgeClass = 'good';
       ratingDesc = isEn ? 'Transitional setup (1 perk or minor rolls, room for growth)' : 'Correct de transition (1 seul perk ou rolls bas, marge de progression)';
       potentialGainCp = Math.round(currentCp * 0.055);
     } else {
       tier = 'c';
-      tierLabel = isEn ? 'Tier C/D • Suboptimal' : 'Tier C/D • Passable / Mauvais';
+      tierLabel = isEn ? 'Tier C/D • Suboptimal' : 'Rang C/D • Passable / Mauvais';
       badgeClass = 'bad';
       ratingDesc = isEn ? 'Suboptimal (dead stats or no ally AP buffs, high priority)' : 'Sous-optimal (stats mortes ou aucun buff d\'AP allié, priorité haute)';
       potentialGainCp = Math.round(currentCp * 0.090);
@@ -293,7 +293,7 @@ function evaluateBracelet(charObj, isEn = false) {
       potentialGainCp = Math.round(currentCp * 0.025);
     } else if (efficiency >= 6.5) {
       tier = 'b';
-      tierLabel = isEn ? 'Tier B • Good' : 'Tier B • Bon';
+      tierLabel = isEn ? 'Tier B • Good' : 'Rang B • Bon';
       badgeClass = 'good';
       ratingDesc = deadStats.length > 0
         ? (isEn ? `Transitional setup (${deadStats.length} dead stat detected)` : `Correct de transition (${deadStats.length} stat morte détectée)`)
@@ -301,7 +301,7 @@ function evaluateBracelet(charObj, isEn = false) {
       potentialGainCp = Math.round(currentCp * (deadStats.length > 0 ? 0.050 : 0.040));
     } else {
       tier = 'c';
-      tierLabel = isEn ? 'Tier C/D • Suboptimal' : 'Tier C/D • Passable / Mauvais';
+      tierLabel = isEn ? 'Tier C/D • Suboptimal' : 'Rang C/D • Passable / Mauvais';
       badgeClass = 'bad';
       ratingDesc = isEn ? 'Suboptimal (dead stats or weak rolls to replace urgently)' : 'Sous-optimal (stats mortes ou rolls faibles à changer)';
       potentialGainCp = Math.round(currentCp * 0.075);

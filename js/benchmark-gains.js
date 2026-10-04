@@ -205,7 +205,7 @@ function benchAccessoryGains(player, target, isSupport, isEn) {
     });
   });
   const cur = val(ACC_SLOTS.flatMap(s => pl[s] || []));
-  const rel = next => ((1 + val(next) / 100) / (1 + cur / 100) - 1) * 100;
+  const rel = next => 100 * Math.log((1 + val(next) / 100) / (1 + cur / 100));
   return { net: rel(bothSet), buy: rel(upSet), cost };
 }
 
@@ -349,7 +349,7 @@ function supportCpGaps(player, target, gpd) {
     arkEvolution: fromParts(ofTypes([5])),
     arkEnlightenment: fromParts(ofTypes([6])),
     arkLeap: fromParts(ofTypes([7])),
-    karma: fromParts(ofTypes([8])),
+    karma: fromParts(ofTypes([8, 9])),
   };
   const rest = baseAttackRestRatio(player, target, gpd);
   if (rest !== null) out.baseAttackStat = cp(rest);
@@ -384,7 +384,7 @@ const DPS_BP_SYSTEMS = {
   arkEvolution: [5],
   arkEnlightenment: [6],
   arkLeap: [7],
-  karma: [8]
+  karma: [8, 9] // Évolution + Bond
 };
 function dpsBpGaps(player, target, cpBase) {
   const pp = battlePointPartsOf(player), tp = battlePointPartsOf(target);
@@ -445,7 +445,7 @@ function computeDynamicGapsAndPlan(player, target, pSys, tSys, isEn) {
     { key: 'accessories', title: isEn ? "T4 Accessory Lines (High Rolls)" : "Lignes d'Accessoires T4 (High Rolls)", cost: () => ACC_UPGRADE_COST_AVG },
     { key: 'weapon', title: isEn ? "T4 Weapon Honing" : "Affinage Arme T4", cost: () => honingGapCost('weapon', pSys.weapon || {}, tSys.weapon || {}, 'wLvl', 'effWLvl', 1) },
     { key: 'weaponQuality', title: isEn ? "Weapon Quality" : "Qualité d'Arme", cost: () => 0 }, // chiffrée par le GPD (DPS) ; sinon hors plan
-    { key: 'advHoning', title: isEn ? "T4 Advanced Honing" : "Affinage Avancé T4", cost: () => 125000 },
+    { key: 'advHoning', title: isEn ? "T4 Advanced Honing" : "Affinage Avancé T4", cost: () => 0 }, // sans gain du GPD : coût inconnu, hors plan d'achat
     { key: 'bracelet', title: isEn ? "T4 Bracelet Passives (Circularity)" : "Passifs de Bracelet T4 (Circulaire)", cost: () => 0 }, // obtenu en jeu : écart affiché, hors plan d'achat
     { key: 'gems', title: isEn ? "T4 Gems Tier" : "Palier de Gemmes T4", cost: () => computeGemUpgradeCost(player, target) },
     { key: 'armors', title: isEn ? "T4 Armor Honing" : "Affinage Armures T4", cost: () => honingGapCost('armor', pSys.armors || {}, tSys.armors || {}, 'avgArmor', 'effAvgArmor', 5) },
@@ -453,11 +453,11 @@ function computeDynamicGapsAndPlan(player, target, pSys, tSys, isEn) {
     // sur leurs propres lignes : coût 0 = affichées au diagnostic mais exclues du plan d'action.
     { key: 'baseAttackStat', title: isEn ? "Main Stat & Base AP" : "Stat Principale & Attaque de Base", cost: () => 0 },
     { key: 'engravings', title: isEn ? "Engravings & Ability Stone" : "Gravures & Pierre de Naissance", cost: () => relicBooksCostToTarget(player, target) }, // livres au prix du marché ; la pierre vient du jeu
-    { key: 'combatStats', title: isEn ? "Combat Stats (Quality & Potions)" : "Stats de Combat (Qualité & Potions)", cost: () => 0 },
+    { key: 'combatStats', title: isEn ? "Combat Stats (Crit / Spec / Swift)" : "Stats de Combat (Crit / Spé / Rapidité)", cost: () => 0 },
     { key: 'arkEnlightenment', title: isEn ? "Ark Passive: Enlightenment (Spec Tree)" : "Ark Passive : Illumination (Arbre Spé)", cost: () => 0 }, // points obtenus en jeu : écart affiché, hors plan d'achat
     { key: 'arkEvolution', title: isEn ? "Ark Passive: Evolution (Net Stats)" : "Ark Passive : Évolution (Stats Nets)", cost: () => 0 },
     { key: 'arkLeap', title: isEn ? "Ark Passive: Leap (Hyper Awakening)" : "Ark Passive : Saut (Hyper Awakening)", cost: () => 0 },
-    { key: 'karma', title: isEn ? "T4 Karma (Evolution Rank 6)" : "Karma T4 (Évolution Rang 6)", cost: () => 0 } // obtenu en jeu
+    { key: 'karma', title: isEn ? "T4 Karma (Evolution & Leap)" : "Karma T4 (Évolution & Bond)", cost: () => 0 } // obtenu en jeu
   ];
   const rows = {};
 
@@ -482,7 +482,8 @@ function computeDynamicGapsAndPlan(player, target, pSys, tSys, isEn) {
       delta = Number((t.bonusPct - p.bonusPct).toFixed(2)); gapCp = delta === 0 ? 0 : systemGapCp(p.bonusPct, t.bonusPct, player.cp);
     }
     // Partie achetable : celle du GPD quand elle existe (seulement ce qui manque, au coût du GPD)
-    const buy = estimated ? 0 : (g ? g.buy : delta);
+    // Hors GPD : seulement ce qui manque (jamais négatif quand le joueur est en avance)
+    const buy = estimated ? 0 : (g ? g.buy : Math.max(0, delta));
     const cost = g ? g.cost : m.cost();
     rows[m.key] = { delta, gapCp, fromGpd, unit: rowUnit, buy, cost };
     // Support : cartes classées sur le CP du jeu (retard si la référence gagne plus de 0,05 % du CP, avance au-delà de 0,15 %)

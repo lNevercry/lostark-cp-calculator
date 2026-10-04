@@ -13,7 +13,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
 const flag = k => argv.includes(k);
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
-const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--') && !['--json', '--list'].includes(argv[i - 1])));
+const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--') && !['--json', '--list', '--en'].includes(argv[i - 1])));
 
 const db = openDb(opt('--db'));
 const fmtTime = ms => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
@@ -103,7 +103,7 @@ console.log(`\nOuverture : ${a.opener.map(o => `${o.name} (${num(o.t / 1000)} s)
 const lang = flag('--en') ? 'en' : 'fr';
 const guidesFile = path.join(HERE, '..', '..', 'data', 'rotation-guides.json');
 const guides = existsSync(guidesFile) ? JSON.parse(readFileSync(guidesFile, 'utf8')) : null;
-const advice = coachPlayer(a, pickReference(refs, a.spec, enc.boss).ref, refData?.builds?.[a.spec], { lang, arkPassiveNames: DATA.arkPassive, skillMeta, guides });
+const advice = coachPlayer(a, pickReference(refs, a.spec, enc.boss).ref, refData?.builds?.[a.spec], { lang, arkPassiveNames: DATA.arkPassive, skillMeta, guides, scope: a.reference?.scope });
 console.log(`\n${'='.repeat(20)} ${lang === 'en' ? 'HOW TO IMPROVE' : 'COMMENT PROGRESSER'} ${'='.repeat(20)}`);
 if (!advice.length) console.log(lang === 'en' ? 'Nothing stands out: you play like the best of your spec on this boss.' : 'Rien ne ressort : tu joues comme les meilleurs de ta spé sur ce boss.');
 const MAX_ADVICE = 5; // au-delà, trop d'un coup : les plus importants d'abord, le build à part

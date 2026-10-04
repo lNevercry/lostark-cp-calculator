@@ -33,6 +33,7 @@ async function fetchMarketPrices() {
     if (typeof updateHoningView === 'function') updateHoningView();
     if (typeof renderEfficiencyTable === 'function') renderEfficiencyTable();
     if (typeof renderAdvisorView === 'function') renderAdvisorView();
+    if (typeof updateOptimizationView === 'function') updateOptimizationView();
     renderMarketTab();
     updateBelgardinView();
   } catch (e) {
@@ -78,7 +79,7 @@ function marketNetSale(price, lot = 1) {
 
 function loadStrongholdInputs() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STRONGHOLD_INPUTS_KEY) || 'null');
+    const saved = JSON.parse(lsGet(STRONGHOLD_INPUTS_KEY) || 'null');
     if (!saved) return;
     ['shCostRed', 'shTimeRed', 'shGsChance', 'shMatSource'].forEach(id => {
       const el = document.getElementById(id);
@@ -94,7 +95,7 @@ function saveStrongholdInputs() {
       const el = document.getElementById(id);
       if (el) out[id] = el.value;
     });
-    localStorage.setItem(STRONGHOLD_INPUTS_KEY, JSON.stringify(out));
+    lsSet(STRONGHOLD_INPUTS_KEY, JSON.stringify(out));
   } catch (e) { /* ignoré */ }
 }
 

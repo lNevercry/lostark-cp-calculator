@@ -24,16 +24,20 @@ const rot = {
   handle: null, storedHandle: null, storedLoaded: false, lastModified: null, syncedAt: null, newIds: new Set(), syncTimer: null,
 };
 
-// Lettre de la note d'exécution (rang parmi la même spé, 50 = médiane) : S = 5 % du haut, A = quart du haut, B = au-dessus
-// de la médiane, C = en dessous, D = quart du bas. Couleurs du barème du site (subrank.js).
+// Lettre de la note d'exécution d'après le « Top X % » (part des logs de référence qui font au moins aussi bien) :
+// S = 5 % du haut, A = quart du haut, B = moitié haute, C = moitié basse, D = quart du bas. La note 0-100 est une
+// moyenne de rangs, tassée autour de 50 (presque aucun log de référence n'atteint 95) : ses seuils ne donnaient
+// jamais S. Sans répartition de référence, repli sur la note. Couleurs du barème du site (subrank.js).
+const ROT_GRADES_TOP = [['S', 5], ['A', 25], ['B', 50], ['C', 75], ['D', Infinity]];
 const ROT_GRADES = [['S', 95], ['A', 75], ['B', 50], ['C', 25], ['D', -Infinity]];
 
-function rotGrade(score) {
+function rotGrade(score, top) {
+  if (top != null) return ROT_GRADES_TOP.find(([, max]) => top <= max)[0];
   return ROT_GRADES.find(([, min]) => score >= min)[0];
 }
 
-function rotGradeHtml(score, big) {
-  const g = rotGrade(score);
+function rotGradeHtml(score, big, top = null) {
+  const g = rotGrade(score, top);
   const c = window.Subrank ? window.Subrank.colorOf(g) : null;
   const style = c ? ` style="background:${c.bg};color:${c.fg}"` : '';
   return `<span class="rot-grade${big ? ' rot-grade-big' : ''}"${style}>${g}</span>`;
@@ -71,9 +75,13 @@ function rotCall(type, extra = {}) {
       rot.pending.delete(data.id);
       data.ok ? p.resolve(data.result) : p.reject(new Error(data.error));
     };
+    // Worker qui ne se charge pas (module, WASM, CSP) : appels en cours rejetés et worker abandonné, recréé au
+    // prochain appel (sinon les appels suivants restaient sans réponse et l'onglet bloqué jusqu'au rechargement)
     rot.worker.onerror = e => {
       for (const p of rot.pending.values()) p.reject(new Error(e.message || 'worker'));
       rot.pending.clear();
+      try { rot.worker.terminate(); } catch (_) {}
+      rot.worker = null;
     };
   }
   const id = ++rot.seq;
@@ -166,7 +174,8 @@ async function rotOpenSafely(file, opts) {
 // Relit le fichier par son handle. Automatique : seulement s'il a changé, sans message d'erreur (LOA Logs peut être en
 // train d'écrire : nouvel essai au tour suivant). Manuel : toujours, avec un nouvel essai après 2 s puis le message.
 async function rotSync({ manual = false } = {}) {
-  if (!rot.handle || (rot.busy && !manual) || rot.busy === 'sync') return;
+  // Jamais pendant une lecture ou une analyse : rouvrir la base la fermerait en plein calcul
+  if (!rot.handle || rot.busy) return;
   let file;
   try { file = await rot.handle.getFile(); } catch (e) {
     if (manual) { rot.error = rotErrorText(e.message); renderRotationTab(); }
@@ -251,7 +260,8 @@ async function rotWithFreshFile(action) {
     if (e.message !== 'file-changed' || !rot.handle) throw e;
     const file = await rot.handle.getFile();
     await rotCall('open', { file });
-    rot.lastModified = file.lastModified;
+    // rot.lastModified n'est PAS mis à jour : la synchro suivante voit le changement et relit la liste des raids
+    // (sinon le raid qui venait de finir n'apparaissait qu'à l'écriture suivante de LOA Logs)
     rot.syncedAt = Date.now();
     return action();
   }
@@ -416,7 +426,7 @@ function rotAnalysisHtml() {
       <td class="market-num">${rotPct(a.activity)}</td>
       <td class="market-num">${a.support ? `<span class="rot-dim">${trLang('support', 'support')}</span>` : rotPct(a.fullBuffRate)}</td>
       <td class="market-num">${a.positionalShare >= 0.05 ? rotPct(a.positionalRate) : '—'}</td>
-      <td class="market-num rot-score-cell">${sc != null ? `${rotGradeHtml(sc)} ${sc}` : '—'}</td>
+      <td class="market-num rot-score-cell">${sc != null ? `${rotGradeHtml(sc, false, a.scoreTop)} ${sc}` : '—'}</td>
     </tr>`;
   }).join('');
   const player = res.players.find(p => p.name === rot.selected);
@@ -438,8 +448,8 @@ function rotScopeText(a) {
   const r = a.reference;
   if (r.scope === 'bible-boss' || r.scope === 'bible-spec') {
     const where = r.scope === 'bible-boss' ? trLang('sur ce boss', 'on this boss') : trLang('tous boss', 'all bosses');
-    return trLang(`rang parmi ${r.n} logs de ${a.spec} autour de la médiane de DPS sur lostark.bible, ${where} (pas assez dans ta base LOA Logs). Sans le détail des coups : compétences et placement seulement, rythmes sur toute la durée du combat`,
-      `rank among ${r.n} ${a.spec} logs around the median DPS on lostark.bible, ${where} (not enough in your LOA Logs database). Without hit details: skills and positioning only, rates over the whole fight`);
+    return trLang(`rang parmi ${r.n} logs de ${a.spec} autour de la médiane de DPS sur lostark.bible, ${where} (pas assez de logs dans les références locales). Sans le détail des coups : compétences et placement seulement, rythmes sur toute la durée du combat`,
+      `rank among ${r.n} ${a.spec} logs around the median DPS on lostark.bible, ${where} (not enough logs in the local references). Without hit details: skills and positioning only, rates over the whole fight`);
   }
   return r.scope === 'boss'
     ? trLang(`rang parmi ${r.n} logs de ${a.spec} sur ce boss`, `rank among ${r.n} ${a.spec} logs on this boss`)
@@ -459,35 +469,41 @@ function rotPlayerHtml(a, enc) {
   let head;
   if (a.score && a.score.score != null) {
     head = `<div class="rot-score-row">
-        <div class="rot-score">${rotGradeHtml(a.score.score, true)}<span class="rot-score-value">${a.score.score}</span><span class="rot-dim">/ 100</span>${rotTopHtml(a.scoreTop)}</div>
+        <div class="rot-score">${rotGradeHtml(a.score.score, true, a.scoreTop)}<span class="rot-score-value">${a.score.score}</span><span class="rot-dim">/ 100</span>${rotTopHtml(a.scoreTop)}</div>
         ${rotCoverageHtml(a)}
         <div class="rot-score-text">${trLang('Note d\'exécution : ', 'Execution score: ')}${escapeHtml(rotScopeText(a))}.
-          <span class="rot-dim">${trLang('50 = la médiane de ta spé. S : 5 % du haut (95 et plus), A : quart du haut (75), B : au-dessus de la médiane (50), C : en dessous (25), D : quart du bas. La note ne dépend pas de ton équipement : elle compare ta façon de jouer.', '50 = your spec median. S: top 5% (95 and up), A: top quarter (75), B: above the median (50), C: below it (25), D: bottom quarter. The score does not depend on your gear: it compares how you play.')}</span>
+          <span class="rot-dim">${trLang('Lettre d\'après ton Top : S = 5 % du haut, A = quart du haut, B = moitié haute, C = moitié basse, D = quart du bas. La note ne dépend pas de ton équipement : elle compare ta façon de jouer.', 'Letter from your Top: S = top 5%, A = top quarter, B = upper half, C = lower half, D = bottom quarter. The score does not depend on your gear: it compares how you play.')}</span>
           <span class="rot-dim">${a.scoreTop != null ? trLang(`Top ${a.scoreTop} % : part des ${a.reference.n} logs de référence qui ont une note au moins aussi bonne.`, `Top ${a.scoreTop}%: share of the ${a.reference.n} reference logs with a score at least as good.`) : ''}</span>
           <span class="rot-dim">${a.coverageMean != null ? trLang('Couverture brute : moyenne simple de la part des dégâts du groupe sous ton buff d\'attaque, ta Marque et ton identité. Même idée que la « Buff Performance » de lostark.bible, dont la formule n\'est pas publiée : les chiffres ne sont pas identiques. Son « Top » compare aussi d\'autres joueurs (tous les logs envoyés, à CP proche).', 'Raw coverage: plain average of the party damage share under your attack buff, Brand and identity. Same idea as lostark.bible\'s “Buff Performance”, whose formula is not published: the numbers are not identical. Its “Top” also compares other players (all uploaded logs, at similar CP).') : ''}</span></div>
       </div>
       <div class="belg-cards rot-parts">${rotPartsHtml(a)}</div>`;
   } else if (a.support && a.ref && !a.supportCoverage) {
     head = `<p class="belg-empty">${trLang('Pas de note : la couverture du groupe n\'est pas calculée (groupe sans DPS ou avec deux supports).', 'No score: party coverage is not computed (party without DPS or with two supports).')}</p>`;
+  } else if (a.support && a.ref && !a.ref.support) {
+    head = `<p class="belg-empty">${trLang(`Pas de note : les logs de référence de ${escapeHtml(a.spec || '?')} n'ont pas la couverture du groupe (logs lostark.bible). Les mesures ci-dessous restent valables.`, `No score: the ${escapeHtml(a.spec || '?')} reference logs have no party coverage (lostark.bible logs). The measures below still apply.`)}</p>`;
   } else {
     head = `<p class="belg-empty">${trLang(`Pas encore assez de logs de référence pour ${escapeHtml(a.spec || '?')} (il en faut au moins 8) : pas de note ni de conseils comparés. Les mesures ci-dessous restent valables.`, `Not enough reference logs for ${escapeHtml(a.spec || '?')} yet (at least 8 needed): no score or compared advice. The measures below still apply.`)}</p>`;
   }
 
   // Sans référence, seuls les objectifs d'un guide de classe (s'il y en a un pour la spé).
-  const advice = rot.mods.coach.coachPlayer(a, a.ref, rot.refData?.builds?.[a.spec], { lang, arkPassiveNames: rot.skillData?.arkPassive || {}, skillMeta: rot.skillData?.skills || {}, guides: rot.guides });
+  const advice = rot.mods.coach.coachPlayer(a, a.ref, rot.refData?.builds?.[a.spec], { lang, arkPassiveNames: rot.skillData?.arkPassive || {}, skillMeta: rot.skillData?.skills || {}, guides: rot.guides, scope: a.reference?.scope });
   const main = advice.filter(c => c.kind !== 'build');
   const shown = [...main.slice(0, ROT_MAX_ADVICE), ...advice.filter(c => c.kind === 'build')];
   let adviceHtml = '';
-  if (a.ref || advice.length) {
+  // Support sans note (couverture absente) : pas de « rien ne ressort », rien n'a pu être comparé
+  const scored = a.score && a.score.score != null;
+  if (advice.length || (a.ref && (scored || !a.support))) {
     adviceHtml = shown.length
       ? shown.map((c, i) => rotAdviceHtml(c, i)).join('') + (main.length > ROT_MAX_ADVICE ? `<p class="belg-note">${rotMoreText(main.length - ROT_MAX_ADVICE)}</p>` : '')
-      : `<p class="belg-empty">${trLang('Rien ne ressort : tu joues comme les meilleurs de ta spé sur ce boss.', 'Nothing stands out: you play like the best of your spec on this boss.')}</p>`;
+      : `<p class="belg-empty">${['boss', 'bible-boss'].includes(a.reference?.scope)
+        ? trLang('Rien ne ressort : tu joues comme les meilleurs de ta spé sur ce boss.', 'Nothing stands out: you play like the best of your spec on this boss.')
+        : trLang('Rien ne ressort : tu joues comme les meilleurs de ta spé (tous boss confondus).', 'Nothing stands out: you play like the best of your spec (across all bosses).')}</p>`;
   }
 
   return `<div class="belg-panel rot-player">
       <h3>${escapeHtml(a.name)} <span class="rot-dim">${escapeHtml(a.className)} · ${escapeHtml(a.spec || '')}</span></h3>
       ${head}
-      ${a.ref || advice.length ? `<h4 class="rot-h4">${trLang('Comment progresser', 'How to improve')}</h4>${adviceHtml}` : ''}
+      ${adviceHtml ? `<h4 class="rot-h4">${trLang('Comment progresser', 'How to improve')}</h4>${adviceHtml}` : ''}
       <details class="rot-details"><summary>${trLang('Détail des mesures', 'Measure details')}</summary>${rotMeasuresHtml(a)}</details>
     </div>`;
 }
@@ -560,10 +576,14 @@ function initRotationTab() {
     rot.syncTimer = setInterval(rotSyncTick, ROT_SYNC_MS);
     document.addEventListener('visibilitychange', rotSyncTick);
   }
-  document.getElementById('rotResume')?.addEventListener('click', rotResume);
+  // Pendant une lecture ou une analyse, les commandes attendent (une seule opération à la fois sur la base)
+  document.getElementById('rotResume')?.addEventListener('click', () => { if (!rot.busy) rotResume(); });
   document.getElementById('rotSync')?.addEventListener('click', () => rotSync({ manual: true }));
-  document.getElementById('rotLatest')?.addEventListener('click', () => { rot.dayFilter = ''; rotListRaids(); });
-  document.getElementById('rotDate')?.addEventListener('change', e => { rot.dayFilter = e.target.value || ''; rotListRaids(); });
+  document.getElementById('rotLatest')?.addEventListener('click', () => { if (rot.busy) return; rot.dayFilter = ''; rotListRaids(); });
+  document.getElementById('rotDate')?.addEventListener('change', e => {
+    if (rot.busy) { e.target.value = rot.dayFilter; return; }
+    rot.dayFilter = e.target.value || ''; rotListRaids();
+  });
   const pane = document.getElementById('tab-rotation');
   const pick = (target, attr, fn) => {
     const row = target.closest(`[${attr}]`);

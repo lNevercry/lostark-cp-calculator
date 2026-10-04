@@ -96,13 +96,13 @@ function ensureCharacterRaidState(charKey, charIlvl) {
 function saveRaidTrackerState() {
   try {
     raidTrackerState.resetTimestamp = getLastWednesdayReset().getTime();
-    localStorage.setItem(RAID_TRACKER_STORAGE_KEY, JSON.stringify(raidTrackerState));
+    lsSet(RAID_TRACKER_STORAGE_KEY, JSON.stringify(raidTrackerState));
   } catch (e) {}
 }
 
 function loadSavedRaidTrackerState() {
   try {
-    const raw = localStorage.getItem(RAID_TRACKER_STORAGE_KEY);
+    const raw = lsGet(RAID_TRACKER_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       const lastReset = getLastWednesdayReset().getTime();
@@ -390,7 +390,7 @@ function updateRaidResetCountdown() {
   const el = document.getElementById('raidResetCountdownVal');
   if (!el) return;
 
-  const lang = (window.i18n && window.i18n.getLang()) || 'fr';
+  const lang = (window.i18n && window.i18n.getLang()) || 'en';
   const isFr = lang === 'fr';
 
   const next = getNextWednesdayReset();
@@ -413,7 +413,7 @@ function renderRaidTrackerView() {
   if (!grid) return;
 
   const t = (window.i18n && window.i18n.t) || (k => k);
-  const lang = (window.i18n && window.i18n.getLang()) || 'fr';
+  const lang = (window.i18n && window.i18n.getLang()) || 'en';
   const isFr = lang === 'fr';
 
   const rosterList = getActiveRosterList();
@@ -432,9 +432,12 @@ function renderRaidTrackerView() {
   });
 
   const existingCards = grid.querySelectorAll('.char-raid-card');
-  const needsFullBuild = existingCards.length !== rosterList.length;
+  // Cartes reconstruites aussi au changement de langue (noms des raids, infobulles) et quand le roster change
+  const rosterSig = `${lang}|${rosterList.map(ch => (ch.id || ch.name).toLowerCase()).join(',')}`;
+  const needsFullBuild = existingCards.length !== rosterList.length || grid.dataset.builtFor !== rosterSig;
 
   if (needsFullBuild) {
+    grid.dataset.builtFor = rosterSig;
     let html = '';
     rosterList.forEach(ch => {
       const cKey = (ch.id || ch.name).toLowerCase();
@@ -519,7 +522,7 @@ function renderRaidTrackerView() {
                 </div>
 
                 <div class="raid-chip-gold">
-                  +${modeDef.total.toLocaleString()} g
+                  +${formatNumber(modeDef.total)} g
                 </div>
               </div>
 
@@ -686,7 +689,7 @@ function renderRaidTrackerView() {
         const totalGoldEl = chip.querySelector('.raid-chip-gold');
         if (totalGoldEl) {
           totalGoldEl.style.color = raidEarned > 0 ? '#8CC084' : '#E0A43A';
-          totalGoldEl.textContent = raidEarned > 0 ? `${raidEarned.toLocaleString()} g` : `+${(modeDef.total - (cr.chest ? modeDef.chest : 0)).toLocaleString()} g`;
+          totalGoldEl.textContent = raidEarned > 0 ? `${formatNumber(raidEarned)} g` : `+${formatNumber((modeDef.total - (cr.chest ? modeDef.chest : 0)))} g`;
         }
       }
     });
@@ -706,12 +709,12 @@ function renderRaidTrackerView() {
 
     const goldCur = card.querySelector('.char-gold-cur');
     if (goldCur) {
-      goldCur.textContent = charEarnedGold.toLocaleString();
+      goldCur.textContent = formatNumber(charEarnedGold);
       goldCur.style.color = charEarnedGold > 0 ? '#8CC084' : '#E0A43A';
     }
     const goldMax = card.querySelector('.char-gold-max');
     if (goldMax) {
-      goldMax.textContent = `${charPotentialGold.toLocaleString()} g`;
+      goldMax.textContent = `${formatNumber(charPotentialGold)} g`;
     }
 
     const progressBar = card.querySelector('.char-progress-bar');
@@ -731,8 +734,8 @@ function renderRaidTrackerView() {
   const pct = totalAccountPotentialGold > 0 ? Math.round((totalAccountEarnedGold / totalAccountPotentialGold) * 100) : 0;
   const remainingGold = Math.max(0, totalAccountPotentialGold - totalAccountEarnedGold);
 
-  if (heroEarnedVal) heroEarnedVal.textContent = `${totalAccountEarnedGold.toLocaleString()} g`;
-  if (heroPotentialVal) heroPotentialVal.textContent = `${totalAccountPotentialGold.toLocaleString()} g max`;
+  if (heroEarnedVal) heroEarnedVal.textContent = `${formatNumber(totalAccountEarnedGold)} g`;
+  if (heroPotentialVal) heroPotentialVal.textContent = `${formatNumber(totalAccountPotentialGold)} g max`;
   if (heroPctBadge) heroPctBadge.textContent = `${pct}% ${isFr ? 'encaissés' : 'earned'}`;
   if (heroBarEarned) heroBarEarned.style.width = `${pct}%`;
   if (heroBarChests) {
@@ -749,16 +752,16 @@ function renderRaidTrackerView() {
   const kpiGatesSub = document.getElementById('raidKpiGatesSub');
   const kpiPotentialVal = document.getElementById('raidKpiPotentialVal');
 
-  if (kpiEarnedVal) kpiEarnedVal.textContent = `${totalAccountEarnedGold.toLocaleString()} g`;
+  if (kpiEarnedVal) kpiEarnedVal.textContent = `${formatNumber(totalAccountEarnedGold)} g`;
   if (kpiEarnedSub) kpiEarnedSub.textContent = t('raid_kpi_earned_sub').replace('{pct}', pct);
 
-  if (kpiRemainingVal) kpiRemainingVal.textContent = `${remainingGold.toLocaleString()} g`;
+  if (kpiRemainingVal) kpiRemainingVal.textContent = `${formatNumber(remainingGold)} g`;
   if (kpiRemainingSub) kpiRemainingSub.textContent = t('raid_kpi_remaining_sub').replace('{raids}', totalMaxRaids);
 
   if (kpiProgressVal) kpiProgressVal.textContent = `${totalCompletedRaids} / ${totalMaxRaids}`;
   if (kpiGatesSub) kpiGatesSub.textContent = t('raid_kpi_gates_sub').replace('{cleared}', totalClearedGates).replace('{total}', totalMaxGates);
 
-  if (kpiPotentialVal) kpiPotentialVal.textContent = `${totalAccountPotentialGold.toLocaleString()} g`;
+  if (kpiPotentialVal) kpiPotentialVal.textContent = `${formatNumber(totalAccountPotentialGold)} g`;
 
   // Statut Agent & Compte à rebours
   const pill = document.getElementById('raidAgentStatusPill');

@@ -55,8 +55,12 @@ function gearStatContext(charObj) {
   const parts = (lo.battlePoint && lo.battlePoint.parts) || (raw.battlePoint && raw.battlePoint.parts) || [];
   const earringPct = parts.filter(p => p.stat && p.stat.index === 152).reduce((s, p) => s + (p.stat.value || 0) / 100, 0);
   const karmaPct = ((lo.karma && lo.karma.enlightenment) || 0) * 0.1;
+  // % du cœur Chaos Étoile « Arme » : même amplification que les boucles et le Karma
+  const wc = getArkGridCoreIds(charObj).chaosStar;
+  const wcb = wc && wc.id.toString().startsWith(WEAPON_CORE_PREFIX) ? weaponCoreBonus(wc.id, wc.points) : null;
+  const corePct = wcb ? wcb.pct : 0;
   // Vitalité (stat 6) : les PV max suivent la Vitalité (branche défense du CP support)
-  return { wp, ms, vit: stat(6), wpAmp: 1 + (earringPct + karmaPct) / 100, msMult: armorMainStatMult(charObj, gear, stat, ms), gear };
+  return { wp, ms, vit: stat(6), wpAmp: 1 + (earringPct + karmaPct + corePct) / 100, msMult: armorMainStatMult(charObj, gear, stat, ms), gear };
 }
 
 /**
@@ -219,14 +223,15 @@ function supportSwiftFor(level) {
   return (1 - target / (1 - gemCdr)) * 100 / M.cdrPerSwift;
 }
 
-// Données du support lues sur le profil : % de PA (Battle Point type 1), lignes des bijoux, gemmes
+// Données du support lues sur le profil : % de PA (Battle Point type 1), lignes des bijoux (hors bracelet), gemmes
 function supportInputs(charObj) {
   const raw = (charObj && charObj.rawProfile) || {};
   const lo = raw.loadout || {};
   const parts = (lo.battlePoint && lo.battlePoint.parts) || (raw.battlePoint && raw.battlePoint.parts) || [];
   const atkPart = parts.find(p => p.type === 1) || {};
   const lines = { allyAtkEnh: 0, allyDmg: 0, brand: 0 };
-  (lo.items || []).forEach(it => ((it.data && it.data.stats) || []).forEach(st => {
+  // Bijoux seulement : le bracelet est chiffré à part (Bracelet.jointScore), ses lignes alliées n'entrent pas ici
+  (lo.items || []).filter(it => it.slot !== 'bracelet').forEach(it => ((it.data && it.data.stats) || []).forEach(st => {
     const v = (st.value || 0) / 100;
     if (st.type === 54) lines.allyAtkEnh += v;
     else if (st.type === 59 || st.index === 16000001) lines.allyDmg += v;

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculateur & Prédicteur CP / iLvl - Lost Ark T4</title>
+  <title>Lost Ark T4 CP / iLvl Calculator & Predictor</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpolygon%20points%3D%2250%2C8%2092%2C50%2050%2C92%208%2C50%22%20fill%3D%22%230b1120%22%20stroke%3D%22%23f59e0b%22%20stroke-width%3D%227%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2261%22%20font-size%3D%2232%22%20font-weight%3D%22bold%22%20fill%3D%22%23fbbf24%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3ECP%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=28.2">
+  <link rel="stylesheet" href="style.css?v=28.3">
 </head>
 <body>
   <div class="app-container">
@@ -50,7 +50,7 @@
         <div class="presets-left-group">
           <div class="presets-title-area">
             <span class="presets-title" id="presetsTitle" data-i18n="roster_label">Roster :</span>
-            <span class="roster-status-badge" id="rosterStatusBadge" data-i18n="roster_badge_demo">Démo</span>
+            <span class="roster-status-badge" id="rosterStatusBadge"></span>
           </div>
           <div class="presets-list" id="presetsList">
             <!-- Injecté dynamiquement par js/ -->
@@ -58,11 +58,11 @@
         </div>
 
         <div class="presets-actions">
-          <button type="button" class="btn-sync-roster-pill" id="btnSyncRosterNav" title="Synchroniser votre propre Roster depuis lostark.bible">
+          <button type="button" class="btn-sync-roster-pill" id="btnSyncRosterNav" title="Synchroniser votre propre Roster depuis lostark.bible" data-i18n-title="tt_sync_roster">
             <strong data-i18n="btn_sync_roster">Synchroniser mon Roster</strong>
           </button>
-          <button type="button" class="btn-action-pill" id="btnManageRoster" title="Gérer ou actualiser vos personnages" style="display: none;">
-            Gérer (<span id="rosterCountTag">0</span>)
+          <button type="button" class="btn-action-pill" id="btnManageRoster" title="Gérer ou actualiser vos personnages" data-i18n-title="tt_manage_roster" style="display: none;">
+            <span data-i18n="btn_manage_roster">Gérer</span> (<span id="rosterCountTag">0</span>)
           </button>
         </div>
       </div>
@@ -71,7 +71,7 @@
       <div class="active-character-card role-support" id="activeCharacterCard">
         <!-- Portrait Haute Définition à gauche -->
         <div class="char-avatar-wrapper">
-          <img id="charAvatarImg" class="char-avatar-img" src="images/classes/paladin.png" alt="Portrait du Personnage">
+          <img id="charAvatarImg" class="char-avatar-img" src="images/classes/paladin.png" alt="Portrait du Personnage" data-i18n-alt="alt_char_portrait">
           <div class="char-avatar-overlay"></div>
         </div>
 
@@ -82,7 +82,7 @@
               <h2 id="charCardName" data-i18n="char_active_default">Personnage Actif</h2>
               <span class="char-class-tag" id="charCardClass"><img class="class-sigil-tag" src="images/classes/paladin.png" alt=""> <span>Paladin</span></span>
               <span class="char-server-tag" id="charCardServer">Elpon (CE)</span>
-              <button type="button" class="btn-share-character" id="btnShareCharacter" title="Copier le lien direct de ce personnage pour l'envoyer à un ami">
+              <button type="button" class="btn-share-character" id="btnShareCharacter" title="Copier le lien direct de ce personnage pour l'envoyer à un ami" data-i18n-title="tt_share_char">
                 <span data-i18n="btn_share_char">Partager</span>
               </button>
             </div>
@@ -101,7 +101,7 @@
           <!-- Grille des 4 Scores d'Équipement & Rentabilité (Style Loseii) -->
           <div class="char-metrics-grid">
             <!-- Carte 1 : Accessoires T4 -->
-            <div class="char-metric-box score-card score-accessories" id="scoreCardAcc" title="Cliquez pour voir les Accessoires T4">
+            <div class="char-metric-box score-card score-accessories" id="scoreCardAcc" title="Cliquez pour voir les Accessoires T4" data-i18n-title="tt_card_acc">
               <div class="score-card-header">
                 <div class="score-card-title">
                   <span data-i18n="card_title_acc">Accessoires T4</span>
@@ -121,7 +121,7 @@
             </div>
 
             <!-- Carte 2 : Bracelet T4 -->
-            <div class="char-metric-box score-card score-bracelet" id="scoreCardBracelet" title="Cliquez pour analyser le Bracelet">
+            <div class="char-metric-box score-card score-bracelet" id="scoreCardBracelet" title="Cliquez pour analyser le Bracelet" data-i18n-title="tt_card_bracelet">
               <div class="score-card-header">
                 <div class="score-card-title">
                   <span data-i18n="card_title_bracelet">Bracelet T4</span>
@@ -141,7 +141,7 @@
             </div>
 
             <!-- Carte 3 : Astrogemmes T4 -->
-            <div class="char-metric-box score-card score-astrogems" id="scoreCardAstro" title="Cliquez pour voir les Astrogemmes">
+            <div class="char-metric-box score-card score-astrogems" id="scoreCardAstro" title="Cliquez pour voir les Astrogemmes" data-i18n-title="tt_card_astro">
               <div class="score-card-header">
                 <div class="score-card-title">
                   <span data-i18n="card_title_astro">Astrogemmes</span>
@@ -161,7 +161,7 @@
             </div>
 
             <!-- Carte 4 : Prochain +1% (GPD) -->
-            <div class="char-metric-box score-card score-gpd" id="scoreCardGpd" title="Cliquez pour ouvrir le Smart Advisor / GPD">
+            <div class="char-metric-box score-card score-gpd" id="scoreCardGpd" title="Cliquez pour ouvrir le Smart Advisor / GPD" data-i18n-title="tt_card_gpd">
               <div class="score-card-header">
                 <div class="score-card-title">
                   <span data-i18n="card_title_gpd">Prochain +1%</span>
@@ -1207,7 +1207,7 @@
             
             <div class="raidtracker-header-actions">
               <!-- Compte à rebours Reset Hebdo -->
-              <div class="reset-countdown-pill" id="raidResetCountdownPill" title="Reset hebdomadaire chaque mercredi à 12h00 CEST">
+              <div class="reset-countdown-pill" id="raidResetCountdownPill" title="Reset hebdomadaire chaque mercredi à 12h00 CEST" data-i18n-title="tt_weekly_reset">
                 <span class="reset-label" data-i18n="raid_reset_lbl">Prochain Reset :</span>
                 <strong id="raidResetCountdownVal">--j --h --m</strong>
               </div>
@@ -1218,11 +1218,11 @@
                 <span id="raidAgentStatusText" data-i18n="raid_agent_checking">Connexion Agent...</span>
               </div>
 
-              <button type="button" class="btn-refresh-raids" id="btnRefreshRaidsSync" title="Actualiser la synchronisation">
+              <button type="button" class="btn-refresh-raids" id="btnRefreshRaidsSync" title="Actualiser la synchronisation" data-i18n-title="tt_refresh_sync">
                 <span data-i18n="raid_btn_sync">Actualiser</span>
               </button>
 
-              <button type="button" class="btn-download-agent" id="btnOpenAgentModal" title="Installer ou télécharger l'agent local">
+              <button type="button" class="btn-download-agent" id="btnOpenAgentModal" title="Installer ou télécharger l'agent local" data-i18n-title="tt_install_agent">
                 <span data-i18n="raid_btn_agent_download">Installer l'Agent</span>
               </button>
             </div>
@@ -1239,10 +1239,10 @@
                 </div>
               </div>
               <div class="netgold-quick-toggles">
-                <button type="button" class="btn-roster-quick" id="btnRosterMarkAllCleared" title="Valider tous les 18 raids du roster">
+                <button type="button" class="btn-roster-quick" id="btnRosterMarkAllCleared" title="Valider tous les 18 raids du roster" data-i18n-title="tt_mark_all_cleared">
                   <span>✓</span> <span data-i18n="raid_btn_mark_all">Tout Valider</span>
                 </button>
-                <button type="button" class="btn-roster-quick" id="btnRosterToggleAllChests" title="Activer / Désactiver tous les coffres bonus">
+                <button type="button" class="btn-roster-quick" id="btnRosterToggleAllChests" title="Activer / Désactiver tous les coffres bonus" data-i18n-title="tt_toggle_all_chests">
                   <span data-i18n="raid_btn_all_chests">Tous les Coffres</span>
                 </button>
               </div>
@@ -1400,7 +1400,7 @@
           <div class="belg-panel">
             <h3 data-i18n="bracer_slider_title">Niveau d'affinage projeté</h3>
             <div class="belg-level-row">
-              <input type="range" id="belgLevel" min="0" max="25" step="1" value="10" aria-label="Niveau du brassard">
+              <input type="range" id="belgLevel" min="0" max="25" step="1" value="10" aria-label="Niveau du brassard" data-i18n-aria="aria_bracer_level">
               <span id="belgLevelOut" class="belg-level-out">+10</span>
               <span id="belgGrade" class="belg-grade"></span>
             </div>
@@ -1453,7 +1453,7 @@
             <!-- Barre de Contrôle Interactive -->
             <div class="benchmark-controls-bar">
               <div class="bench-controls-top-row">
-                <button type="button" class="btn-benchmark-auto" id="btnBenchmarkAutoMatch" title="Sélectionne automatiquement le profil optimal (+1-3 iLvl, mêmes gemmes, même classe & spé)">
+                <button type="button" class="btn-benchmark-auto" id="btnBenchmarkAutoMatch" title="Sélectionne automatiquement le profil optimal (+1-3 iLvl, mêmes gemmes, même classe & spé)" data-i18n-title="tt_bench_auto">
                   <strong data-i18n="bench_btn_auto">Auto-Match Optimal (+1-3 iLvl)</strong>
                 </button>
 
@@ -1635,6 +1635,14 @@
           <div class="help-card">
             <strong data-i18n="help_benchmark_title">Benchmark & Comparateur</strong>
             <div data-i18n="help_benchmark">Compare-toi à de vrais joueurs de ta classe et de ton iLvl : écart par système en % et en CP, plan d'achat classé par or par % gagné.</div>
+          </div>
+          <div class="help-card">
+            <strong data-i18n="help_belg_title">Projection Belgardin</strong>
+            <div data-i18n="help_belg">Projection du brassard T4 avant sa sortie EU : coût et gain estimés par niveau, avec la source de chaque valeur.</div>
+          </div>
+          <div class="help-card">
+            <strong data-i18n="help_rotation_title">Analyse de rotation</strong>
+            <div data-i18n="help_rotation">Charge ton encounters.db de LOA Logs (lu dans ton navigateur, jamais envoyé) : note d'exécution par raid comparée à ta spé, et conseils pour progresser.</div>
           </div>
         </div>
 
@@ -1843,7 +1851,7 @@
             </p>
           </div>
         </div>
-        <button type="button" class="modal-close-btn" id="btnCloseWelcomeModal" title="Fermer"></button>
+        <button type="button" class="modal-close-btn" id="btnCloseWelcomeModal" title="Fermer" data-i18n-title="tt_close"></button>
       </div>
 
       <div class="modal-body" style="padding: 22px;">
@@ -1863,7 +1871,7 @@
           </div>
           <div style="flex: 2;">
             <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;" data-i18n="welcome_char_name_lbl">Pseudo du Personnage</label>
-            <input type="text" id="welcomeCharName" placeholder="Ex: Àlphâ, Frieedhof, Siwilpal..." autofocus>
+            <input type="text" id="welcomeCharName" placeholder="Ex: Àlphâ, Frieedhof, Siwilpal..." data-i18n-placeholder="ph_welcome_name" autofocus>
           </div>
         </div>
 
@@ -1874,11 +1882,15 @@
 
         <div class="modal-status" id="welcomeStatus" style="display: none; margin-top: 12px;"></div>
 
+        <button type="button" class="btn-secondary" id="btnWelcomeMoreOptions" style="width: 100%; justify-content: center; margin-top: 10px;">
+          <span data-i18n="welcome_more_options">Autres options : connexion lostark.bible, import manuel</span>
+        </button>
+
       </div>
     </div>
   </div>
 
-  <script src="i18n.js?v=9.3"></script>
+  <script src="i18n.js?v=9.4"></script>
   <script src="data.js?v=3.0"></script>
   <script src="bracelet-data.js?v=1.0"></script>
   <script src="gear-data.js?v=1.0"></script>

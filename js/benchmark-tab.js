@@ -1128,7 +1128,7 @@ function renderBenchmarkTab() {
 // --- SYNC LIVE LOSTARK.BIBLE ENGINE (TEMPS RÉEL SANS SNAPSHOT) ---
 let liveBibleBenchmarkCache = {};
 try {
-  const savedLiveCache = localStorage.getItem('lostark_live_benchmarks_cache');
+  const savedLiveCache = lsGet('lostark_live_benchmarks_cache');
   if (savedLiveCache) {
     liveBibleBenchmarkCache = compactParse(savedLiveCache) || {};
     Object.values(liveBibleBenchmarkCache).forEach(b => {

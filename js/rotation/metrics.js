@@ -211,6 +211,8 @@ export function analyzePlayer(encounter, player, { skillMeta = {}, buffMeta = {}
     supportCoverage: isSupport(player) && player.supportCoverage?.ap != null ? player.supportCoverage : null,
     combatPower: player.combatPower, dps: player.damageStats.dps || Math.round(totalDamage / (durationMs / 1000)),
     durationMs, downtimeMs: downMs, availableMs,
+    // Durée du combat comptée par LOA Logs (son compteur « par minute »), plus courte que la chronologie des paquets
+    fightMs: encounter.durationMs || durationMs,
     deadMs, lostMs, sharedPauseMs, activity: 1 - lostMs / Math.max(1, availableMs - deadMs - sharedPauseMs),
     longestGaps: [...gaps].sort((a, b) => b.lostMs - a.lostMs).slice(0, 6),
     deadWindows: dead,
@@ -304,7 +306,7 @@ export function playerBuild(player) {
   for (const n of ap.evolution || []) if (EVOLUTION_STATS[n.id]) evo[EVOLUTION_STATS[n.id]] = n.lv;
   const nodes = {};
   for (const tree of ['evolution', 'enlightenment', 'leap']) for (const n of ap[tree] || []) if (!EVOLUTION_STATS[n.id]) nodes[n.id] = n.lv;
-  return { evolution: evo, nodes, engravings: player.engravings || [] };
+  return { evolution: evo, nodes, engravings: (player.engravings || []).filter(e => !isStoneMalus(e)) };
 }
 
 // Supports : chevauchement de leurs propres buffs (relancer un buff du même groupe encore actif gaspille la durée
@@ -407,8 +409,15 @@ export function toQuantiles(values) {
 // Rang (0-100) d'une valeur dans la distribution de référence.
 export function percentileRank(q, x) {
   if (!q || x == null) return null;
+  const n = q.length - 1;
+  // Ex aequo (quantiles égaux à x, ex. 15 % de la référence à 0 de placement) : rang du milieu de la plage, pas le
+  // plus bas ; référence constante = 50
+  const lo = q.findIndex(v => v >= x);
+  let hi = -1;
+  for (let i = n; i >= 0; i--) if (q[i] <= x) { hi = i; break; }
+  if (lo !== -1 && hi !== -1 && lo <= hi && q[lo] === x) return Math.round(((lo + hi) / 2 / n) * 100);
   if (x <= q[0]) return 0;
-  if (x >= q[q.length - 1]) return 100;
+  if (x >= q[n]) return 100;
   for (let i = 1; i < q.length; i++) {
     if (x <= q[i]) {
       const span = q[i] - q[i - 1];
@@ -424,10 +433,22 @@ export const SCORE_WEIGHTS = { activity: 30, skills: 35, buffs: 20, positional: 
 // de chaque critère avec le rDPS donné ÷ dégâts du groupe (803 supports, 2026-10-02) : identité 0,61, PA 0,50,
 // Marque 0,50, activité 0,34, T 0,25.
 export const SUPPORT_SCORE_WEIGHTS = { ap: 30, brand: 25, identity: 25, hat: 10, activity: 10 };
+// Malus de pierre d'aptitude (Defense / Atk. Power / Atk. Speed / Move Speed Reduction) : subis, pas choisis,
+// jamais un élément de build à conseiller
+export const isStoneMalus = e => /Reduction$/i.test(String(e || '').trim());
+
 export const REF_MIN_SAMPLES = 8;
 export const KEY_SKILL_MIN_SHARE = 0.03;
 export const KEY_SKILL_MIN_USAGE = 0.6; // compétence jouée par au moins 60 % des joueurs de la spé (sinon choix de build)
 export const POSITIONAL_MIN_SHARE = 0.2;
+// Placement noté seulement si les joueurs de la spé le réussissent vraiment : réussite médiane de la référence
+// d'au moins 10 % (Pistoleer : compétences marquées « de dos » dans les données du jeu, 0,4 % de réussite médiane)
+export const POSITIONAL_MIN_RATE = 0.1;
+export function positionalMatters(ref) {
+  const q = ref && ref.positionalRate;
+  const med = q && q.length ? q[Math.floor(q.length / 2)] : 0;
+  return (ref?.positionalShareMedian ?? 0) >= POSITIONAL_MIN_SHARE && med >= POSITIONAL_MIN_RATE;
+}
 
 // Référence locale (même boss, sinon tous boss) d'abord ; à défaut, logs de lostark.bible autour de la médiane
 // (même boss d'abord : une spé jouée sur un boss est mieux comparée sur ce boss, même hors de la base locale).
@@ -509,7 +530,7 @@ export function scorePlayer(a, ref) {
   // Un support ne s'aligne pas sur son propre buff : critère réservé aux DPS.
   parts.buffs = !a.support && a.apRate ? percentileRank(ref.fullBuffRate, a.fullBuffRate) : null;
 
-  parts.positional = (ref.positionalShareMedian ?? 0) >= POSITIONAL_MIN_SHARE ? percentileRank(ref.positionalRate, a.positionalRate) : null;
+  parts.positional = positionalMatters(ref) ? percentileRank(ref.positionalRate, a.positionalRate) : null;
 
   return { score: weighted(parts, SCORE_WEIGHTS), parts, skillScores: skillScores.sort((x, y) => y.weight - x.weight) };
 }

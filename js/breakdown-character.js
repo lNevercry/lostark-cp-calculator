@@ -457,29 +457,8 @@ function extractCharacterEngravings(c, isEn = false) {
     });
   }
 
-  // Fallback Universel : 5 Gravures Reliques T4 avec Pierre de Naissance
-  const specName = getCharacterSpecName(c) || (isEn ? 'Class Engraving' : 'Gravure de Classe');
-  const isSupport = c.role === 'support' || ['paladin', 'bard', 'artist'].some(s => (c.className || '').toLowerCase().includes(s));
-  const cIlvl = c.ilvl || 1750;
-  const stoneBonus = cIlvl >= 1770 ? 4.24 : 1.94;
-  const stonePts = cIlvl >= 1770 ? 4 : 2;
-
-  if (isSupport) {
-    return [
-      { id: 101, name: `${specName} 3`, rawName: `${specName} 3`, valuePct: 20.00, stonePoints: 0 },
-      { id: 102, name: isEn ? "Expert 3" : "Expert 3", rawName: "Expert", valuePct: 20.00, stonePoints: 0 },
-      { id: 103, name: isEn ? "Awakening 3" : "Éveil 3", rawName: "Éveil", valuePct: 20.00, stonePoints: 0 },
-      { id: 104, name: isEn ? "Drops of Ether 3" : "Gouttes d'éther 3", rawName: "Gouttes d'éther", valuePct: 20.00, stonePoints: stonePts },
-      { id: 105, name: isEn ? "Vital Point Hit 3" : "Frappe vitale 3", rawName: "Frappe vitale", valuePct: Number((20.00 + stoneBonus).toFixed(2)), stonePoints: stonePts + 1 }
-    ];
-  }
-  return [
-    { id: 201, name: `${specName} 3`, rawName: `${specName} 3`, valuePct: 20.00, stonePoints: 0 },
-    { id: 202, name: isEn ? "Grudge 3" : "Rancune 3", rawName: "Rancune", valuePct: 20.00, stonePoints: 0 },
-    { id: 203, name: isEn ? "Keen Blunt Weapon 3" : "Arme affûtée 3", rawName: "Arme affûtée", valuePct: 20.00, stonePoints: 0 },
-    { id: 204, name: isEn ? "Raid Captain 3" : "Capitaine de raid 3", rawName: "Capitaine de raid", valuePct: 20.00, stonePoints: stonePts },
-    { id: 205, name: isEn ? "Adrenaline 3" : "Adrénaline 3", rawName: "Adrénaline", valuePct: Number((20.00 + stoneBonus).toFixed(2)), stonePoints: stonePts + 1 }
-  ];
+  // Aucune gravure lisible : rien d'inventé
+  return [];
 }
 
 function extractCharacterBaseAtkDetails(c, isEn = false) {

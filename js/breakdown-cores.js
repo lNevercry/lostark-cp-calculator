@@ -104,19 +104,9 @@ function buildEngravingsBreakdownHtml(player, target, cpImpact, isEn) {
     }
   });
 
-  let explanationText = '';
-  const targetName = (target && target.name) || (isEn ? 'Benchmark' : 'La référence');
-  const hasNexusCase = (pOnly.some(p => (p.name || '').toLowerCase().includes('cursed doll') || (p.name || '').toLowerCase().includes('poupée')) && tOnly.some(t => (t.name || '').toLowerCase().includes('mass increase') || (t.name || '').toLowerCase().includes('masse')));
-
-  if (hasNexusCase) {
-    explanationText = isEn
-      ? `<strong>Why +${cpImpact} CP?</strong> In Lost Ark's Combat Power formula, Engravings are a global multiplicative layer: CP &prop; &prod;(1 + E<sub>i</sub>). For your character (${formatNumber(player.cp || 5587)} CP), <strong>1% overall damage = ~${cpPerPct.toFixed(1)} CP</strong>.<br>• ${escapeHtml(targetName)} gains <strong>+2.00% (+${Math.round(2.00 * cpPerPct)} CP)</strong> from running <em>Mass Increase</em> (+19.00%) over <em>Cursed Doll</em> (+17.00%) and <strong>+0.30% (+${Math.round(0.30 * cpPerPct)} CP)</strong> from an optimized Relic Stone node distribution.<br><strong>Theorycrafting Note (Lost Ark Nexus):</strong> Lost Ark Nexus explicitly recommends your setup (<em>Cursed Doll</em>). Although <em>Mass Increase</em> gives +2% raw AP on paper (+${Math.round(2.00 * cpPerPct)} CP on your profile), its -10% attack speed penalty slows down Demonic animations and rotations. Your setup is the optimal choice for real in-raid DPS and fluid gameplay.`
-      : `<strong>Pourquoi autant de CP (+${cpImpact} CP) ?</strong> Dans la formule officielle de Smilegate, les Gravures agissent comme un multiplicateur global multiplicatif : CP &prop; &prod;(1 + E<sub>i</sub>). Pour votre personnage (${formatNumber(player.cp || 5587)} CP), <strong>1% de dégâts bruts = ~${cpPerPct.toFixed(1)} CP</strong>.<br>• ${escapeHtml(targetName)} obtient <strong>+2.00% (+${Math.round(2.00 * cpPerPct)} CP)</strong> en jouant <em>Augmentation de Masse</em> (+19.00%) au lieu de <em>Poupée Maudite</em> (+17.00%), plus <strong>+0.30% (+${Math.round(0.30 * cpPerPct)} CP)</strong> grâce à la répartition optimisée des nœuds de Pierre Relique.<br><strong>Note de Theorycrafting (Lost Ark Nexus) :</strong> Le guide officiel <em>Lost Ark Nexus</em> préconise précisément votre configuration (<em>Poupée Maudite</em>). Bien qu'<em>Augmentation de Masse</em> apporte +2% d'AP brute sur le papier (+${Math.round(2.00 * cpPerPct)} CP au score affiché), son malus de -10% de vitesse d'attaque ralentit les animations et le cycle de burst démoniaque. Votre build est le choix optimal en combat réel pour la fluidité et le DPS effectif en raid.`;
-  } else {
-    explanationText = isEn
-      ? `<strong>Combat Power Impact (+${cpImpact} CP):</strong> In Lost Ark, engravings are strictly multiplicative. Each 1% engraving or ability stone gain contributes ~${cpPerPct.toFixed(1)} CP to your character. Aligning relic node breakpoints and high stone node rolls (+3/+4) bridges this gap.`
-      : `<strong>Impact sur le Combat Power (+${cpImpact} CP) :</strong> Dans Lost Ark, les gravures sont purement multiplicatives. Chaque 1% de gain de gravure ou de pierre apporte ~${cpPerPct.toFixed(1)} CP à votre profil. Aligner les paliers reliques et les nœuds de pierre (+3/+4) permet de rattraper cet écart.`;
-  }
+  const explanationText = isEn
+    ? `<strong>Combat Power Impact (+${cpImpact} CP):</strong> In Lost Ark, engravings are strictly multiplicative. Each 1% engraving or ability stone gain contributes ~${cpPerPct.toFixed(1)} CP to your character. Aligning relic node breakpoints and high stone node rolls (+3/+4) bridges this gap.`
+    : `<strong>Impact sur le Combat Power (+${cpImpact} CP) :</strong> Dans Lost Ark, les gravures sont purement multiplicatives. Chaque 1% de gain de gravure ou de pierre apporte ~${cpPerPct.toFixed(1)} CP à votre profil. Aligner les paliers reliques et les nœuds de pierre (+3/+4) permet de rattraper cet écart.`;
 
   return `
       <div class="acc-breakdown-panel engravings-breakdown-panel">

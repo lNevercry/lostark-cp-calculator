@@ -25,6 +25,7 @@ function bindEvents() {
         if (targetId === 'tab-arkpassive') updateArkPassiveView();
         if (targetId === 'tab-raidtracker') renderRaidTrackerView();
         if (targetId === 'tab-benchmark') renderBenchmarkTab();
+        if (targetId === 'tab-optimization') updateOptimizationView();
         if (targetId === 'tab-belgardin') updateBelgardinView();
         if (targetId === 'tab-rotation') showRotationTab();
       }
@@ -210,7 +211,7 @@ function bindEvents() {
       if (!file) return;
 
       if (file.size > 5 * 1024 * 1024) {
-        alert('Veuillez choisir une image de moins de 5 Mo.');
+        alert(trLang('Choisis une image de moins de 5 Mo.', 'Please choose an image under 5 MB.'));
         return;
       }
 
@@ -219,7 +220,9 @@ function bindEvents() {
         const currentChar = getCurrentActiveCharacter();
         const charKey = (activeCharacterId || (currentChar && currentChar.id) || 'character').toLowerCase();
         const dataUrl = event.target.result;
-        localStorage.setItem('char_custom_avatar_' + charKey, dataUrl);
+        if (!lsSet('char_custom_avatar_' + charKey, dataUrl)) {
+          showToast(trLang("Image non enregistrée : stockage du navigateur plein ou bloqué.", 'Image not saved: browser storage is full or blocked.'));
+        }
         if (dom.charAvatarImg) dom.charAvatarImg.src = dataUrl;
         const chipImg = document.getElementById('chipAvatar_' + charKey);
         if (chipImg) chipImg.src = dataUrl;
@@ -232,7 +235,7 @@ function bindEvents() {
     dom.btnResetAvatar.addEventListener('click', () => {
       const currentChar = getCurrentActiveCharacter();
       const charKey = (activeCharacterId || (currentChar && currentChar.id) || 'character').toLowerCase();
-      localStorage.removeItem('char_custom_avatar_' + charKey);
+      lsDel('char_custom_avatar_' + charKey);
       const defaultImg = (currentChar && currentChar.portraitUrl) || DEFAULT_AVATARS[charKey] || (currentChar ? getClassIconUrl(currentChar.className, currentChar.role) : 'images/classes/paladin.png');
       if (dom.charAvatarImg) dom.charAvatarImg.src = defaultImg;
       const chipImg = document.getElementById('chipAvatar_' + charKey);
@@ -309,6 +312,16 @@ function bindEvents() {
     });
   }
 
+  // Modale d'import fermée sans aucun personnage (ouverte depuis l'accueil) : retour à l'accueil, jamais une page vide
+  if (dom.importModal) {
+    new MutationObserver(() => {
+      if (!dom.importModal.classList.contains('active') && document.body.classList.contains('no-character')) {
+        const w = document.getElementById('welcomeModal');
+        if (w) w.classList.add('active');
+      }
+    }).observe(dom.importModal, { attributes: true, attributeFilter: ['class'] });
+  }
+
   if (dom.btnCloseImportModalFooter && dom.importModal) {
     dom.btnCloseImportModalFooter.addEventListener('click', () => {
       dom.importModal.classList.remove('active');
@@ -332,6 +345,8 @@ function bindEvents() {
       if (aModal && aModal.classList.contains('active')) {
         aModal.classList.remove('active');
       }
+      const hModal = document.getElementById('helpModal');
+      if (hModal) hModal.classList.remove('active');
     }
   });
 
@@ -350,7 +365,7 @@ function bindEvents() {
 
   if (raidPill && agentModal) {
     raidPill.style.cursor = 'pointer';
-    raidPill.title = 'Cliquez pour ouvrir l\'aide et l\'installation de l\'agent';
+    raidPill.title = trLang('Cliquez pour ouvrir l\'aide et l\'installation de l\'agent', 'Click to open the agent help and installation');
     raidPill.addEventListener('click', () => {
       agentModal.classList.add('active');
     });
@@ -397,15 +412,28 @@ function bindEvents() {
     dom.btnParseDirectJson.addEventListener('click', () => {
       const raw = dom.importJsonDirect ? dom.importJsonDirect.value.trim() : '';
       if (!raw) return;
+      const fail = msg => {
+        if (!dom.importStatus) return;
+        dom.importStatus.className = 'modal-status error';
+        dom.importStatus.style.display = 'block';
+        dom.importStatus.textContent = msg;
+      };
+      // Le JSON de lostark.bible ne contient pas le pseudo : on prend celui de la modale (et sa région)
+      const name = dom.importCharName ? dom.importCharName.value.trim() : '';
+      if (!name) return fail(trLang('Renseigne le pseudo du personnage au-dessus avant de coller son JSON.', 'Enter the character name above before pasting its JSON.'));
+      const region = dom.importRegion ? dom.importRegion.value : 'CE';
+      let json;
       try {
-        const json = JSON.parse(raw);
-        const autoAdd = dom.chkAutoAddToRoster ? dom.chkAutoAddToRoster.checked : true;
-        applyLoadedProfile(json, null, 'CE', autoAdd);
+        json = JSON.parse(raw);
       } catch (e) {
-        if (dom.importStatus) {
-          dom.importStatus.className = 'modal-status error';
-          dom.importStatus.textContent = trLang('Format JSON invalide. Assure-toi de copier l\'intégralité du texte.', 'Invalid JSON. Make sure you copied the whole text.');
-        }
+        return fail(trLang('Format JSON invalide. Assure-toi de copier l\'intégralité du texte.', 'Invalid JSON. Make sure you copied the whole text.'));
+      }
+      try {
+        const autoAdd = dom.chkAutoAddToRoster ? dom.chkAutoAddToRoster.checked : true;
+        applyLoadedProfile(json, name, region, autoAdd);
+      } catch (e) {
+        console.warn('Import manuel :', e);
+        fail(trLang(`Profil illisible : ${e.message}`, `Unreadable profile: ${e.message}`));
       }
     });
   }
@@ -419,7 +447,7 @@ function bindEvents() {
 
   if (dom.btnOAuthRefresh) {
     dom.btnOAuthRefresh.addEventListener('click', () => {
-      const token = localStorage.getItem('lostark_bible_token');
+      const token = lsGet('lostark_bible_token');
       if (token) fetchOAuthUserData(token);
     });
   }
@@ -439,15 +467,15 @@ function bindEvents() {
       const cur = getCurrentActiveCharacter();
       if (!cur) return;
       const curName = cur.name || '';
-      const shareUrl = `${window.location.origin}${window.location.pathname}?char=${encodeURIComponent(curName)}`;
+      // Région dans le lien : sans elle, un personnage NA s'ouvrait en CE (introuvable ou homonyme)
+      const shareUrl = `${window.location.origin}${window.location.pathname}?char=${encodeURIComponent(curName)}&region=${characterRegion(cur)}`;
+      const copyPrompt = () => prompt(trLang('Copie ce lien :', 'Copy this link:'), shareUrl);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
-          showToast(`Lien direct copié : ${shareUrl}`);
-        }).catch(() => {
-          prompt('Copiez ce lien :', shareUrl);
-        });
+          showToast(`${trLang('Lien direct copié', 'Direct link copied')} : ${shareUrl}`);
+        }).catch(copyPrompt);
       } else {
-        prompt('Copiez ce lien :', shareUrl);
+        copyPrompt();
       }
     });
   }
@@ -483,10 +511,20 @@ function initWelcomeModal() {
 
   function closeModal() {
     modal.classList.remove('active');
-    sessionStorage.setItem('lostark_onboarding_dismissed', 'true');
+    try { lsSet('lostark_onboarding_dismissed', 'true', true); } catch (e) {}
   }
 
   if (btnClose) btnClose.addEventListener('click', closeModal);
+
+  // Connexion OAuth et import manuel (JSON collé) ne sont que dans la modale d'import : accessible sans personnage
+  const btnMore = document.getElementById('btnWelcomeMoreOptions');
+  if (btnMore && dom.importModal) {
+    btnMore.addEventListener('click', () => {
+      modal.classList.remove('active');
+      dom.importModal.classList.add('active');
+      if (dom.importStatus) dom.importStatus.style.display = 'none';
+    });
+  }
 
   // Suggestions de pseudos rapides
   document.querySelectorAll('.welcome-chip-suggestion').forEach(chip => {
@@ -505,7 +543,7 @@ function initWelcomeModal() {
         if (statusEl) {
           statusEl.className = 'modal-status error';
           statusEl.style.display = 'block';
-          statusEl.textContent = 'Veuillez renseigner le pseudo de votre personnage.';
+          statusEl.textContent = trLang('Renseigne le pseudo de ton personnage.', 'Please enter your character name.');
         }
         return;
       }
@@ -513,7 +551,7 @@ function initWelcomeModal() {
       if (statusEl) {
         statusEl.className = 'modal-status info';
         statusEl.style.display = 'block';
-        statusEl.innerHTML = `Recherche de <strong>${escapeHtml(name)} (${escapeHtml(region)})</strong> sur lostark.bible...`;
+        statusEl.innerHTML = trLang(`Recherche de <strong>${escapeHtml(name)} (${escapeHtml(region)})</strong> sur lostark.bible…`, `Looking up <strong>${escapeHtml(name)} (${escapeHtml(region)})</strong> on lostark.bible…`);
       }
 
       const loaded = await fetchBibleProfile(region, name, true);
@@ -524,7 +562,9 @@ function initWelcomeModal() {
         if (statusEl) {
           statusEl.className = 'modal-status error';
           statusEl.style.display = 'block';
-          statusEl.innerHTML = trLang(`Personnage <strong>${escapeHtml(name)}</strong> introuvable sur lostark.bible (${escapeHtml(region)}). Vérifie l'orthographe ou essaie une suggestion.`, `Character <strong>${escapeHtml(name)}</strong> not found on lostark.bible (${escapeHtml(region)}). Check the spelling or try a suggestion.`);
+          // Site indisponible (429, panne) : le message de fetchBibleProfile le dit, au lieu de « introuvable »
+          const down = dom.importStatus && /ne répond pas|not responding/.test(dom.importStatus.textContent || '');
+          statusEl.innerHTML = down ? dom.importStatus.innerHTML : trLang(`Personnage <strong>${escapeHtml(name)}</strong> introuvable sur lostark.bible (${escapeHtml(region)}). Vérifie l'orthographe ou essaie une suggestion.`, `Character <strong>${escapeHtml(name)}</strong> not found on lostark.bible (${escapeHtml(region)}). Check the spelling or try a suggestion.`);
         }
       }
     });
@@ -543,9 +583,9 @@ function initWelcomeModal() {
 async function checkUrlCharacterParam() {
   const params = new URLSearchParams(window.location.search);
   const charParam = params.get('char') || params.get('name') || params.get('player');
-  const regionParam = params.get('region') || 'CE';
+  const regionParam = BIBLE_REGIONS.includes(String(params.get('region') || '').toUpperCase()) ? params.get('region').toUpperCase() : 'CE';
   if (charParam && charParam.trim()) {
-    sessionStorage.setItem('lostark_onboarding_dismissed', 'true');
+    try { lsSet('lostark_onboarding_dismissed', 'true', true); } catch (e) {}
     const welcomeModal = document.getElementById('welcomeModal');
     if (welcomeModal) welcomeModal.classList.remove('active');
 
@@ -553,12 +593,15 @@ async function checkUrlCharacterParam() {
     const existing = getActiveRosterList().find(c => (c.name || '').toLowerCase() === clean.toLowerCase());
     if (existing) {
       loadCharacter(existing);
-      showToast(`Profil ${existing.name} chargé.`);
+      showToast(trLang(`Profil ${existing.name} chargé.`, `Profile ${existing.name} loaded.`));
     } else {
-      showToast(`Chargement de ${clean} (${regionParam.toUpperCase()})...`);
+      showToast(trLang(`Chargement de ${clean} (${regionParam})…`, `Loading ${clean} (${regionParam})…`));
       const loaded = await fetchBibleProfile(regionParam, clean, true);
       if (loaded) {
-        showToast(`Personnage ${loaded.name} chargé depuis lostark.bible.`);
+        showToast(trLang(`Personnage ${loaded.name} chargé depuis lostark.bible.`, `Character ${loaded.name} loaded from lostark.bible.`));
+      } else if (dom.importModal) {
+        // Échec : la modale d'import montre l'erreur (sinon page vide sans explication)
+        dom.importModal.classList.add('active');
       }
     }
     return true;
@@ -572,7 +615,7 @@ function checkOnboarding() {
     return;
   }
   const userRoster = getUserRoster();
-  const dismissed = sessionStorage.getItem('lostark_onboarding_dismissed');
+  const dismissed = lsGet('lostark_onboarding_dismissed', true);
   if (!userRoster && !dismissed) {
     const welcomeModal = document.getElementById('welcomeModal');
     if (welcomeModal) {
@@ -656,8 +699,7 @@ function updateActiveCharacterCard(key, customProfile = null) {
   }
   if (dom.charCardServer) {
     const sName = p.server || (isEnLang() ? 'Server' : 'Serveur');
-    // Les rosters de démo portent la guilde fictive « Archétype Démo » (data.js)
-    const guild = p.guild && isEnLang() ? p.guild.replace('Archétype Démo', 'Demo archetype') : p.guild;
+    const guild = p.guild;
     const gName = guild ? `${guild} • ` : '';
     dom.charCardServer.textContent = `${gName}${sName}`;
   }
@@ -696,7 +738,7 @@ function updateActiveCharacterCard(key, customProfile = null) {
   }
 
   // Gestion de l'avatar du héros (priorité au custom upload local puis live / CDN officiel)
-  const savedCustom = localStorage.getItem('char_custom_avatar_' + charKey);
+  const savedCustom = lsGet('char_custom_avatar_' + charKey);
   const isDemo = Object.prototype.hasOwnProperty.call(DEFAULT_AVATARS, charKey);
   const classIconFallback = getClassIconUrl(p.className, p.role);
   const defaultImg = p.portraitUrl || (isDemo ? DEFAULT_AVATARS[charKey] : classIconFallback);
@@ -1159,6 +1201,9 @@ function loadCharacter(c) {
   hideNoCharacterState();
   const cId = (c.id || c.name.toLowerCase());
   activeCharacterId = cId;
+  loadedCharacter = c;
+  // Personnage actif retenu d'une visite à l'autre (main.js le recharge)
+  try { lsSet('lostark_active_char', cId); } catch (e) {}
 
   if (dom.presetsList) {
     dom.presetsList.querySelectorAll('.preset-chip').forEach(btn => {
