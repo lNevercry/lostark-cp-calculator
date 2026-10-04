@@ -1,5 +1,5 @@
 {
-  "main": "C:/Users/Nevercry/lostark-cp-calculator/client-agent/lostark-raid-agent.js",
-  "output": "C:/Users/Nevercry/lostark-cp-calculator/client-agent/sea-prep.blob",
+  "main": "lostark-raid-agent.js",
+  "output": "sea-prep.blob",
   "disableExperimentalSEAWarning": true
 }
