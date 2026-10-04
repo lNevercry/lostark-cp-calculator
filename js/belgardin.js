@@ -293,8 +293,8 @@ function updateBracerView() {
 
 // === PRÊT POUR BELGARDIN ? (seuils de CP par difficulté, axes d'amélioration) ===
 // Seuils sourcés dans data.js (BELGARDIN_RAID) : CP des groupes publics KR de la première semaine, et pour un DPS le
-// CP minimum (Nightmare 6 000 en groupe fixe, 6 500 en groupe public KR, Normal / Hard au rapport des PV porte par porte, même chrono). Le CP support
-// ne mesure pas des dégâts : seulement le seuil des groupes publics. Plan : affinage le moins cher jusqu'à l'iLvl
+// CP de groupe fixe (Nightmare seulement, DPS : 6 000). Pas de seuil calculé pour Normal / Hard : un plancher au rapport des
+// PV ne tient compte ni de la survie ni des temps morts (2 200 / 3 500 CP, loin des 4 000 / 5 000 réels). Plan : affinage le moins cher jusqu'à l'iLvl
 // d'entrée (predictHoningPath), puis feuille de route du Smart Advisor (buildGpdRoadmap) jusqu'au CP visé.
 const belgReadyState = { diff: null, goal: 'pf' };
 // Étapes au-delà de 20 M d'or / 1 % (plus de trois fois le rang D du GPD) écartées : sinon un objectif hors de portée
@@ -302,18 +302,11 @@ const belgReadyState = { diff: null, goal: 'pf' };
 const BELG_MAX_RATE = 20e6;
 
 function belgardinThresholds(diff, isSupport) {
-  const R = window.BELGARDIN_RAID;
-  const nm = R.difficulties.find(d => d.key === 'nightmare');
-  let min = null;
-  if (!isSupport) {
-    const ratio = Math.max(...diff.hp.map((hp, i) => hp / nm.hp[i]));
-    min = R.nightmareMinCp.map(v => Math.round(v * ratio / 10) * 10);
-  }
-  return { pf: diff.pf[isSupport ? 'support' : 'dps'], min };
+  return { pf: diff.pf[isSupport ? 'support' : 'dps'], fixed: !isSupport && diff.fixedDps ? diff.fixedDps : null };
 }
 
-// État d'un personnage pour chaque difficulté : 'ready' (CP des groupes publics), 'enough' (DPS minimum atteint),
-// 'tight' (dans la fourchette du DPS minimum), 'short' (en dessous) ; ilvlGap > 0 = iLvl d'entrée pas atteint
+// État d'un personnage pour chaque difficulté : 'ready' (CP des groupes publics), 'fixed' (CP de groupe fixe atteint),
+// 'short' (en dessous) ; ilvlGap > 0 = iLvl d'entrée pas atteint
 function belgardinReadiness(c, isSupport = c.role === 'support') {
   const cp = raidCombatPowerOf(c) || c.cp || 0;
   const ilvl = c.ilvl || 0;
@@ -321,8 +314,7 @@ function belgardinReadiness(c, isSupport = c.role === 'support') {
     const th = belgardinThresholds(diff, isSupport);
     let status = 'short';
     if (cp >= th.pf) status = 'ready';
-    else if (th.min && cp >= th.min[1]) status = 'enough';
-    else if (th.min && cp >= th.min[0]) status = 'tight';
+    else if (th.fixed && cp >= th.fixed) status = 'fixed';
     return { diff, th, cp, ilvlGap: Math.max(0, diff.ilvl - ilvl), status };
   });
 }
@@ -336,15 +328,14 @@ function renderBelgardinReadiness() {
   const dName = d => (isEn ? d.en : d.fr);
   const STATUS = {
     ready: [isEn ? 'Ready' : 'Prêt', isEn ? 'public party CP reached' : 'CP des groupes publics atteint'],
-    enough: [isEn ? 'Enough DPS' : 'DPS suffisant', isEn ? 'enough damage for a clean run, below public party CP' : 'assez de dégâts pour une exécution propre, sous le CP des groupes publics'],
-    tight: [isEn ? 'Tight' : 'Juste', isEn ? 'within the minimum CP range: no room for mistakes' : "dans la fourchette du CP minimum : aucune marge d'erreur"],
+    fixed: [isEn ? 'Static group' : 'Groupe fixe', isEn ? 'static group CP reached, below public party CP' : 'CP de groupe fixe atteint, sous le CP des groupes publics'],
     short: [isEn ? 'Not enough CP' : 'CP insuffisant', ''],
     ilvl: [isEn ? 'Item level too low' : 'iLvl insuffisant', '']
   };
   const chip = (r, withGap) => {
     const key = r.ilvlGap > 0 ? 'ilvl' : r.status;
     const gap = r.ilvlGap > 0 ? `−${fmt(r.ilvlGap, 2)} iLvl`
-      : (r.status === 'ready' ? '' : `${r.status === 'short' ? '' : (isEn ? 'public parties ' : 'groupes publics ')}−${fmt(Math.ceil(r.th.pf - r.cp))} CP`);
+      : (r.status === 'ready' ? '' : `${r.status === 'short' ? '' : (isEn ? '· public parties ' : '· groupes publics ')}−${fmt(Math.ceil(r.th.pf - r.cp))} CP`);
     return `<span class="belg-st belg-st-${key}" title="${escapeHtml(STATUS[key][1])}">${STATUS[key][0]}${withGap && gap ? ` <span class="belg-st-gap">${gap}</span>` : ''}</span>`;
   };
   const charObj = getCurrentActiveCharacter();
@@ -354,19 +345,19 @@ function renderBelgardinReadiness() {
   // 1. Seuils par difficulté
   h += `<table class="market-table belg-table"><thead><tr><th>${isEn ? 'Difficulty' : 'Difficulté'}</th><th class="market-num">iLvl</th>
       <th class="market-num" title="${isEn ? 'Party damage per second to beat the enrage, gate 1 / gate 2' : 'Dégâts par seconde du groupe pour battre l\'enrage, porte 1 / porte 2'}">${isEn ? 'Party damage needed (G1 / G2)' : 'Dégâts requis du groupe (P1 / P2)'}</th>
-      ${isSupport ? '' : `<th class="market-num" title="${isEn ? 'Lowest average DPS Combat Power with enough damage to beat the enrage, with clean mechanics' : "CP moyen le plus bas d'un DPS dont les dégâts suffisent à battre l'enrage, avec des mécaniques propres"}">${isEn ? 'Min. CP (clean run)' : 'CP min. (exécution propre)'}</th>`}<th class="market-num" title="${isEn ? 'CP asked in Korean public party listings' : 'CP demandé dans les annonces de groupe coréennes'}">${isEn ? 'Public party CP' : 'CP groupes publics'}</th>${charObj ? `<th>${escapeHtml(charObj.name)}</th>` : ''}</tr></thead><tbody>`;
+      ${isSupport ? '' : `<th class="market-num" title="${isEn ? 'CP asked by Korean static groups' : 'CP demandé par les groupes fixes coréens'}">${isEn ? 'Static group CP' : 'CP groupe fixe'}</th>`}<th class="market-num" title="${isEn ? 'CP asked in Korean public party listings' : 'CP demandé dans les annonces de groupe coréennes'}">${isEn ? 'Public party CP' : 'CP groupes publics'}</th>${charObj ? `<th>${escapeHtml(charObj.name)}</th>` : ''}</tr></thead><tbody>`;
   const mine = charObj ? belgardinReadiness(charObj, isSupport) : null;
   R.difficulties.forEach((d, i) => {
     const th = belgardinThresholds(d, isSupport);
     const dps = d.hp.map((hp, g) => fmt(hp / (R.gates[g].minutes * 60) / 1e9, 1)).join(' / ');
     h += `<tr><td>${dName(d)}</td><td class="market-num">${d.ilvl}</td><td class="market-num">${dps} ${isEn ? 'B/s' : 'Md/s'}</td>
-        ${isSupport ? '' : `<td class="market-num">${fmt(th.min[0])}–${fmt(th.min[1])}</td>`}<td class="market-num">${fmt(th.pf)}</td>
+        ${isSupport ? '' : `<td class="market-num">${th.fixed ? fmt(th.fixed) : '—'}</td>`}<td class="market-num">${fmt(th.pf)}</td>
         ${mine ? `<td>${chip(mine[i], true)}</td>` : ''}</tr>`;
   });
   h += `</tbody></table>`;
   h += `<p class="belg-note">${isEn
-      ? `Combat Power in the raid profile. <strong>Public party CP</strong>: CP asked in Korean party listings the first week (mostly trial groups, not a clear guarantee)${isSupport ? '; a support\'s CP measures its buffs, not damage, so there is no minimum CP for supports' : ''}. ${isSupport ? '' : `<strong>Min. CP (clean run)</strong>: lowest average CP whose damage beats the enrage. Nightmare: ${fmt(R.nightmareMinCp[0])} in a static group, ${fmt(R.nightmareMinCp[1])} in KR public parties with the "double rumble" strategy; Normal and Hard scaled by boss HP (same timers, DPS Combat Power is proportional to damage). `}Expect more in Europe on release week: 7,000 for a Nightmare reclear, ${fmt(R.nightmareHomeworkCp)} for "homework" lobbies (Shizukaziye). First Nightmare clear in Korea: 4 h 53, six players out of eight at 1800.`
-      : `Combat Power du profil raid. <strong>CP groupes publics</strong> : CP demandé dans les annonces de groupe coréennes la première semaine (surtout des groupes d'essai, pas une garantie de clear)${isSupport ? " ; le CP d'un support mesure ses buffs, pas des dégâts : pas de CP minimum pour un support" : ''}. ${isSupport ? '' : `<strong>CP min. (exécution propre)</strong> : CP moyen le plus bas dont les dégâts battent l'enrage. Nightmare : ${fmt(R.nightmareMinCp[0])} en groupe fixe, ${fmt(R.nightmareMinCp[1])} en groupe public KR avec la stratégie « double rumble » ; Normal et Hard au rapport des PV du boss (même chrono, CP d'un DPS proportionnel à ses dégâts). `}Compter plus en Europe la semaine de sortie : 7 000 pour un reclear Nightmare, ${fmt(R.nightmareHomeworkCp)} pour les groupes « homework » (Shizukaziye). Premier clear Nightmare en Corée : 4 h 53, six joueurs sur huit à 1800.`}</p>`;
+      ? `Combat Power in the raid profile. <strong>Public party CP</strong>: CP asked in Korean party listings the first week (mostly trial groups, not a clear guarantee)${isSupport ? '; a support\'s CP measures its buffs, not damage, so only the public party CP applies' : ''}. ${isSupport ? '' : `<strong>Static group CP</strong> (Nightmare only): ${fmt(R.difficulties[2].fixedDps)}; KR public parties went down to ${fmt(R.nightmarePublicKrCp)} with the "double rumble" strategy. `}Expect more in Europe on release week: 7,000 for a Nightmare reclear, ${fmt(R.nightmareHomeworkCp)} for "homework" lobbies (Shizukaziye). First Nightmare clear in Korea: 4 h 53, six players out of eight at 1800.`
+      : `Combat Power du profil raid. <strong>CP groupes publics</strong> : CP demandé dans les annonces de groupe coréennes la première semaine (surtout des groupes d'essai, pas une garantie de clear)${isSupport ? " ; le CP d'un support mesure ses buffs, pas des dégâts : seul le CP des groupes publics s'applique" : ''}. ${isSupport ? '' : `<strong>CP groupe fixe</strong> (Nightmare seulement) : ${fmt(R.difficulties[2].fixedDps)} ; les groupes publics KR sont descendus à ${fmt(R.nightmarePublicKrCp)} avec la stratégie « double rumble ». `}Compter plus en Europe la semaine de sortie : 7 000 pour un reclear Nightmare, ${fmt(R.nightmareHomeworkCp)} pour les groupes « homework » (Shizukaziye). Premier clear Nightmare en Corée : 4 h 53, six joueurs sur huit à 1800.`}</p>`;
 
   // 2. Roster
   const roster = getActiveRosterList();
@@ -391,16 +382,16 @@ function renderBelgardinReadiness() {
     const first = mine.find(r => r.ilvlGap > 0 || r.status !== 'ready');
     belgReadyState.diff = (first || mine[mine.length - 1]).diff.key;
   }
-  if (isSupport) belgReadyState.goal = 'pf';
   const sel = mine.find(r => r.diff.key === belgReadyState.diff);
-  const target = belgReadyState.goal === 'min' && sel.th.min ? sel.th.min[1] : sel.th.pf;
+  if (!sel.th.fixed) belgReadyState.goal = 'pf';
+  const target = belgReadyState.goal === 'fixed' ? sel.th.fixed : sel.th.pf;
   h += `<h3 class="belg-plan-title">${isEn ? 'How to get there' : 'Comment y arriver'}</h3><div class="belg-quick">`;
   R.difficulties.forEach(d => {
     h += `<button type="button" class="belg-quick-btn${d.key === belgReadyState.diff ? ' active' : ''}" data-belg-diff="${d.key}">${dName(d)}</button>`;
   });
-  if (!isSupport) {
+  if (sel.th.fixed) {
     h += `<span class="belg-quick-sep"></span>`;
-    [['pf', isEn ? 'Public party CP' : 'CP groupes publics'], ['min', isEn ? 'Min. CP (clean run)' : 'CP min. (exécution propre)']].forEach(([k, l]) => {
+    [['pf', isEn ? 'Public party CP' : 'CP groupes publics'], ['fixed', isEn ? 'Static group CP' : 'CP groupe fixe']].forEach(([k, l]) => {
       h += `<button type="button" class="belg-quick-btn${k === belgReadyState.goal ? ' active' : ''}" data-belg-goal="${k}">${l}</button>`;
     });
   }

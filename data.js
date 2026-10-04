@@ -476,18 +476,18 @@ window.STRONGHOLD_FUSION_RECIPES = [
 //   3976548, 2026-08-05 ; surtout des groupes d'essai). Hard DPS 5 000 : 3976548, 3972385 et le post r/lostarkgame
 //   1vxypz7 (3976146 dit 5 500). Nightmare 7 000 : Inven ; Shizukaziye (cité sous le post Reddit) : 7 000 pour un
 //   reclear, 7 500 pour les groupes « homework », pas de candidature sous 7 000 en Europe la première semaine.
-// - CP minimum (DPS seulement) : Nightmare 6 000 en groupe fixe, 6 500 en groupe public KR avec la stratégie
-//   « double rumble » de Portia (post r/lostarkgame 1vxypz7, d'après Riyeon & LOALAB / Shizukaziye) ; Normal / Hard en
-//   sont déduits au rapport des PV, porte par porte (même chrono dans les trois modes, CP DPS proportionnel aux dégâts).
+// - groupe fixe (DPS, Nightmare seulement) : 6 000 ; groupes publics KR descendus à 6 500 avec la stratégie « double
+//   rumble » de Portia (post r/lostarkgame 1vxypz7, d'après Riyeon & LOALAB / Shizukaziye). Pas de seuil calculé
+//   pour Normal / Hard : un plancher au rapport des PV ignore la survie et les temps morts (retiré le 2026-10-05).
 // - premier clear Nightmare : 4 h 53, six joueurs sur huit à 1800 (Inven Global 24475).
 // Même Battle Point qu'en Europe ; brassard pas encore monté à ces dates.
 window.BELGARDIN_RAID = {
   gates: [{ minutes: 10 }, { minutes: 13 }],
-  nightmareMinCp: [6000, 6500],
+  nightmarePublicKrCp: 6500,
   nightmareHomeworkCp: 7500,
   difficulties: [
     { key: 'normal', fr: 'Normal', en: 'Normal', ilvl: 1750, hp: [1.7393e12, 1.9506e12], pf: { dps: 4000, support: 4000 } },
     { key: 'hard', fr: 'Hard', en: 'Hard', ilvl: 1770, hp: [2.7686e12, 3.1340e12], pf: { dps: 5000, support: 5000 } },
-    { key: 'nightmare', fr: 'Nightmare', en: 'Nightmare', ilvl: 1780, hp: [4.9516e12, 5.6051e12], pf: { dps: 7000, support: 6500 } }
+    { key: 'nightmare', fr: 'Nightmare', en: 'Nightmare', ilvl: 1780, hp: [4.9516e12, 5.6051e12], pf: { dps: 7000, support: 6500 }, fixedDps: 6000 }
   ]
 };
