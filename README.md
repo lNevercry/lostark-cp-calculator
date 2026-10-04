@@ -206,4 +206,4 @@ Issues and pull requests are welcome!
 
 The original code of this repository is released under the [MIT License](LICENSE).
 
-Third-party models, data and assets (Loseii, bebkok, Arsonistic, game data from Smilegate RPG / Amazon Games, LOA Logs metadata, SQLite…) are **not** covered by this license and remain the property of their respective authors. See the [Credits](#-credits-sources--inspiration) and the third-party notice in [`LICENSE`](LICENSE).
+Third-party models, data and assets (Loseii, bebkok, Arsonistic, game data from Smilegate RPG / Amazon Games, LOA Logs metadata, SQLite…) are **not** covered by this license and remain the property of their respective authors. See the [Credits](#-credits-sources--inspiration) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
