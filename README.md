@@ -1,16 +1,14 @@
 <div align="center">
-  <h1>⚔️ Lost Ark Tier 4 CP Calculator & Benchmark</h1>
-  <p><strong>The ultimate progression tool for Lost Ark's Tier 4 Endgame</strong></p>
-  
+  <h1>⚔️ Lost Ark Tier 4 CP Calculator & Upgrade Advisor</h1>
+  <p><strong>Gold-efficient progression planning for Lost Ark's Tier 4 endgame, built on the game's own tables</strong></p>
+
   [![Live Website](https://img.shields.io/badge/🌐_Website-lostark--cp.pages.dev-00C7B7?style=for-the-badge&logo=googlechrome&logoColor=white)](https://lostark-cp.pages.dev/)
   [![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?style=for-the-badge&logo=cloudflare)](https://pages.cloudflare.com/)
   [![Vanilla JS](https://img.shields.io/badge/Vanilla-JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
   <br />
 
   ### 🔗 **[👉 Launch Web App (lostark-cp.pages.dev) 👈](https://lostark-cp.pages.dev/)**
-  *Staging / Beta environment: [staging.lostark-cp.pages.dev](https://staging.lostark-cp.pages.dev/)*
 </div>
 
 <br />
@@ -19,43 +17,74 @@
 
 ## 📖 Overview
 
-**Lost Ark CP Calculator** is an advanced, high-performance client-side web application designed to help players optimize their Tier 4 progression. It calculates Combat Power (CP) gains, simulates exact probabilistic honing costs using live EUC market API data, and compares your character directly with top-tier players to generate a highly accurate, gold-efficient **Action Plan** and **Smart Roadmap**.
+**Lost Ark CP Calculator** is a client-side web app that imports your character from `lostark.bible`, reads its real **Battle Point** (the game's Combat Power breakdown), and tells you **what to buy next, and for how much gold**.
+
+Every number comes from a verifiable source: the game's own tables (via the Maxroll planner feed), Loseii's published models, the official Lost Ark wiki or live market prices. Nothing is a demo value or a guessed constant, and the engine is regression-tested against ~70 real cached profiles covering every class.
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-- **📊 Probabilistic T4 Honing Engine**: Calculates exact mathematical expectations for T4 honing up to +25 (including Artisan Energy / Pity limits up to 500 taps).
-- **📈 Live Market Prices Integration**: Fetches real-time EUC market data (Destruction Stones, Guardian Stones, Leapstones, Fusion Mats) via Loa-Buddy API to split costs into *Raw Gold* vs *Market Value*.
-- **🌐 Dynamic Roster Sync (OAuth)**: Securely connects to the `lostark.bible` API to import your live roster instantly.
-- **⚡ Peer Profile Comparator**: Compare your character's exact build (Gems, Engravings, Ark Grid, Bracelets, Accessories) against live reference profiles.
-- **💡 Smart Upgrade Advisor (Cost-Efficiency Planner)**: Automatically computes the cheapest gold path to hit your raid CP and iLvl thresholds across all systems:
-  - 🔨 **T4 Honing** (Weapon & Armor up to +25)
-  - ✨ **Ark Grid** (Epic Astrogems & 17P Cores)
-  - 💍 **T4 Accessories** (Dead Line Polishing & Mid ➔ High Rolls)
-  - 💎 **T4 Gems** (Lv. 8 ➔ Lv. 9 and Lv. 9 ➔ Lv. 10)
-  - 📜 **Relic Engraving Books** (Missing books to 20/20)
-  - 📿 **T4 Bracelet** (Diagnostic & BiS Perk targets)
-- **🛡️ Full Support & DPS Symmetry**: Specialized buff power scaling formulas for Paladins, Bards, and Artists, accurately treating offensive-only lines as dead stats on supports.
-- **🌍 Bilingual Interface**: Fully localized in English and French.
+### 💡 Smart Advisor & Gold-per-Damage (GPD)
+Every way to improve your character, priced in gold and ranked like [Loseii's GPD](https://www.loseii.com/loa-gpd):
+- **Honing**: weapon & armor up to +25, piece by piece (mixed Serka / Aegir sets supported), and advanced honing.
+- **Gems**: your real gems, read one by one (damage / cooldown effects, gem Attack Power).
+- **Accessories**: one row per slot type, with the exact target lines ("➔ AP % High / Atk. Power % Mid") and your current lines.
+- **Bracelet**, **Astrogems** (epic & rare cutting) and **Ark Grid cores**, from Loseii's live ladders and graders.
+- **Ability stone** (exact cutting odds), **relic books**, **Illumination Karma** and **weapon quality** (official upgrade odds).
+- Ranked by gold per +1 % damage (DPS) or per +0.01 % ally buff (Support), with S+ to D tiers, a +CP column, and adjustable off-market prices.
+- **Roadmap**: the cheapest sequence of upgrades to reach a CP target (DPS) or buff target (Support).
+
+### 🛡️ DPS and Support, modelled separately
+- **DPS**: personal damage (100 × ln of damage ratios, consistent across every system).
+- **Support**: Loseii's support contribution model (Atk. Power buff, brand, identity), with support-only accessory lines priced as real stats and dead stats on DPS.
+- A support class is always a support unless a DPS engraving says otherwise. Profiles saved with a stale Ark Passive tree are automatically recomputed in support mode from the game's Battle Point table.
+
+### 📊 Benchmark & Comparator
+- Compare yourself with **real players** of the same class and spec, pulled from lostark.bible raid rankings and reloaded live.
+- System-by-system gaps (honing, gems, accessories, cores, bracelet, astrogems, engravings, Ark Passive, Karma…) priced with the GPD functions, plus a gold-ranked **purchase plan**.
+- Profiles with missing Battle Point parts are detected and never used as references.
+
+### 🧮 Simulators
+- **Quick Predictor (iLvl ➔ CP)**: the cheapest honing path to a target item level, using real game recipes and market prices.
+- **Piece-by-Piece Honing Simulator**: expected cost per piece (artisan energy, failure bonus, breath), CP gain and a gold-per-CP recommendation.
+- **Ark Passive Simulator**: projected CP from the game's per-point Battle Point values, plus an **astrogem evaluator** (grade, rank and gain).
+- **T4 Optimization**: try different accessory tiers and gem levels on your own character.
+- **Canonical Engine**: your Battle Point, part by part, rebuilt exactly from the profile.
+
+### 🎯 Rotation Analysis (beta)
+- Load your **LOA Logs** `encounters.db` directly in the browser. It is read locally by a SQLite WebAssembly worker and **never uploaded**.
+- Execution score (0-100) and "Top X %" against players of the same spec on the same boss, plus coaching tips (skill usage, positionals, cast rhythm, buff windows).
+- Supports: buff coverage (Atk. Power, brand, identity), similar to lostark.bible's Buff Performance.
+- Auto-sync on Chrome / Edge: the file is re-read every 10 seconds while you raid.
+
+### 💰 Market, Stronghold & more
+- **Live EUC market prices** used by every calculation, with the time of the last update.
+- **Stronghold fusion** profitability (Abidos / Superior Abidos), with your own bonuses.
+- **Raids & Gold Tracker**, optionally synced with LOA Logs by a local companion (see below).
+- **Belgardin Projection**: an estimate of the upcoming T4 bracer (완갑) before its EU release, with every value's source shown.
+
+### 🌐 Roster & languages
+- **OAuth roster sync** with lostark.bible, multi-region (NAE / EUC…), shareable character links (`?char=…&region=…`).
+- Fully bilingual: **English** and **French**.
 
 ---
 
 ## 🛠️ Tech Stack
 
-This project is built to be extremely fast, serverless, and easy to host:
-- **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3 (No framework overhead).
-- **Hosting / Deployment**: Fully optimized for **Cloudflare Pages**.
-- **APIs**: 
-  - `lostark.bible` Open API (OAuth2 character telemetry & live data)
-  - `loa-buddy` Market API (Live EUC item prices)
-- **Analytics**: Cloudflare Web Analytics integrated (Privacy-first).
+- **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3. No framework, no build step: plain scripts loaded in order by `index.html`.
+- **Hosting**: Cloudflare Pages (+ Pages Functions for the lostark.bible and market proxies), plus an Nginx mirror.
+- **Data sources**:
+  - `lostark.bible`: character profiles, Battle Point, OAuth roster, raid rankings
+  - Maxroll planner feed: honing recipes, item level stats, Karma, Battle Point and Ark Passive tables
+  - `loseii.com`: GPD ladders, astrogem grader
+  - `loa-buddy`: live EUC market prices
+- **Security**: strict Content Security Policy, no inline scripts.
+- **Analytics**: Cloudflare Web Analytics (cookie-free).
 
 ---
 
 ## 🚀 Quick Start (Local Development)
-
-The application is entirely static and runs directly in any browser:
 
 1. **Clone the repository:**
    ```bash
@@ -63,91 +92,88 @@ The application is entirely static and runs directly in any browser:
    cd lostark-cp-calculator
    ```
 
-2. **Serve the files:**
-   You can use any local web server. For example, using Python 3:
+2. **Serve the files** (the API proxies need a server, a plain static server is not enough):
    ```bash
-   python -m http.server 3000
-   ```
-   Or using Node's `serve`:
-   ```bash
-   npx serve .
+   npx wrangler pages dev .      # same as production (Pages Functions: profiles + market)
+   # or
+   node server.js                # lightweight Node server on port 8080 (lostark.bible proxy)
    ```
 
-3. **Open in browser:**
-   Navigate to `http://localhost:3000`.
+3. **Check syntax before committing:**
+   ```bash
+   for f in js/*.js; do node -c "$f"; done
+   ```
 
----
+### 🧪 Audit bench
+`tools/audit/` runs the full app in jsdom on ~70 cached real profiles, without network access. Save a baseline before changing a calculation, then compare afterwards:
+```bash
+npm install
+node tools/audit/audit.mjs --save-baseline && node tools/audit/bench.mjs --save-baseline
+# ...change the code...
+node tools/audit/audit.mjs --compare && node tools/audit/bench.mjs --compare
+```
+See [`tools/audit/README.md`](tools/audit/README.md).
+
+### 🔄 Refreshing game data
+| Command | Updates |
+|---|---|
+| `node tools/fetch-maxroll-honing.mjs` | Honing recipes, item level stats, Karma, Battle Point tables (after a game patch) |
+| `node tools/fetch-maxroll-names.mjs` | Ark Grid core names |
+| `node tools/harvest-live-peers.mjs` | Pool of real players for the Benchmark (~weekly) |
+| `node tools/rotation/build-ref.mjs` | Rotation references (see [`tools/rotation/README.md`](tools/rotation/README.md)) |
+
+All harvesting scripts are sequential and rate-limited, to be respectful of the sources.
 
 ---
 
 ## 🔄 Local Raid Tracker Companion (Optional)
 
-For players using a local DPS meter (such as **LOA Logs**), the project includes an optional, lightweight companion script located in the [`agent/`](agent/) folder. It automatically synchronizes your weekly raid clears, gates completed, and gold revenues directly with the web dashboard.
+For players using **LOA Logs**, an optional companion syncs your weekly raid clears, completed gates and gold earned with the Raids & Gold tab.
 
-### 🚀 How to Run the Companion
+- **Windows executable**: [`client-agent/`](client-agent/) (`LostArkRaidAgent.exe`, or `start-agent.bat` with Node.js).
+- **Script version**: [`agent/`](agent/) (`node agent/lostark-raid-agent.js`, or `start-agent-hidden.vbs` to run without a terminal window).
 
-1. **Option A (Instant Start via Batch File):**
-   - Navigate to the `agent/` folder.
-   - Double-click **`start-agent.bat`** (or run `node agent/lostark-raid-agent.js`).
-   - The agent starts locally on port `4848` and connects to your browser automatically.
-
-2. **Option B (Silent Background Service):**
-   - Run `start-agent-hidden.vbs` to launch silently without leaving a terminal window open.
+### 🛡️ Privacy & Anti-Cheat
+- 🔒 **100 % local** (`127.0.0.1:4848`): nothing is sent to any external server. It only answers this site's pages in your own browser.
+- 🛡️ **No game interaction (EAC safe)**: it never touches `LostArk.exe` or game memory. It only reads the SQLite database LOA Logs already writes to disk (`%LOCALAPPDATA%\LOA Logs\encounters.db`).
+- 🔍 **Open source**: a single readable JavaScript file, no obfuscation.
 
 ---
 
-### 🛡️ Privacy, Security & Anti-Cheat Guarantee
+## ⚙️ Self-hosting (OAuth)
 
-We take player security and privacy with the utmost seriousness:
-
-- 🔒 **100% Local Execution (`127.0.0.1:4848`)**: The companion only creates a local loopback server on your computer. **Zero data is ever transmitted, uploaded, or shared with external servers or third parties.** Everything stays strictly between your local logs and your local browser.
-- 🛡️ **Zero Game Process Interference (EAC Safe)**: The script **NEVER** hooks into `LostArk.exe`, does **NOT** read game memory, and has **zero interaction** with Easy Anti-Cheat (EAC). It simply performs passive, read-only queries on the local SQLite log database (`%LOCALAPPDATA%\LOA Logs\encounters.db`) already written to your disk by your meter.
-- 🔍 **100% Open Source & Auditable**: The script is fewer than 400 lines of standard, readable JavaScript with zero obfuscation. You can inspect every line yourself in [`agent/lostark-raid-agent.js`](agent/lostark-raid-agent.js).
-
----
-
-## ⚙️ Configuration (OAuth & API)
-
-If you plan to fork and host this project on your own domain, update the OAuth Configuration in `data.js`:
+To host your own copy, set your lostark.bible OAuth clients in `data.js`:
 
 ```javascript
-// In data.js
 window.OAUTH_CONFIG = {
     prodClientId: 'YOUR_PRODUCTION_CLIENT_ID',
     devClientId: 'YOUR_DEV_CLIENT_ID',
-    scopes: 'identify rosters logs',
-    authUrl: 'https://lostark.bible/oauth/authorize',
     ...
 };
 ```
-*Remember to whitelist your domain (and `http://localhost:3000`) in your OAuth provider's **Allowed Redirect URIs** list.*
+The client is picked automatically: production on the public site, development on localhost / local network. Remember to whitelist your domain and local URL in the OAuth provider's **Allowed Redirect URIs**.
 
 ---
 
 ## 🙏 Credits & Special Thanks
 
-This tool would not have been possible without the immense work, research, and data shared by the Lost Ark theorycrafting community:
+This tool would not exist without the work shared by the Lost Ark theorycrafting community:
 
-- **🔥 Arsonistic** — Author of the legendary *Lost Ark Arsonistic DPS Calculator.xlsx*. His mathematical models, Combat Power formulas, Support Buff Power equations, and Tier 4 accessory scaling formed the core foundation of our calculation engine.
-- **📊 Cracine, Portia & Riyon** — Creators of the *Automatic Gold to DMG Efficiency* spreadsheet. Their EUC gold-to-damage ROI frameworks directly inspired our dynamic priority roadmap and benchmark diagnostic logic.
-- **🌐 lostark.bible Team** — For providing exceptional character telemetry, public profiles, and seamless OAuth API integrations for the global Lost Ark community.
-- **💎 Loa-Buddy Project** — For open-sourcing live market scraping and community API access for European Central (EUC) Auction House prices.
-- **📖 Maxroll.gg** — For comprehensive, up-to-date game mechanics guides, honing probability tables, and Ark Grid system breakdowns.
-- **🇰🇷 Inven Community** — For early Tier 4 data mining, Relic Book scaling, and pioneer theorycrafting on the Ark Passive systems.
+- **📈 Loseii (loseii.com)**: GPD methodology, support contribution model, bracelet and astrogem ladders and graders, which the Smart Advisor follows and is checked against.
+- **🔥 Arsonistic**: author of the *Lost Ark Arsonistic DPS Calculator*, whose accessory scaling and support buff tables are used for accessory lines.
+- **📊 Cracine, Portia & Riyon**: creators of the *Automatic Gold to DMG Efficiency* spreadsheet, which inspired the roadmap and the Benchmark.
+- **🌐 lostark.bible**: character profiles, Battle Point data, raid rankings and the OAuth API.
+- **📖 Maxroll.gg**: the planner data feed (honing recipes, game tables, item names).
+- **💎 Loa-Buddy**: live EUC Auction House prices.
+- **🪵 LOA Logs**: the open-source DPS meter whose logs power the Rotation Analysis and the Raid Tracker.
+- **🇰🇷 Inven community**: early Tier 4 data mining and Belgardin bracer measurements.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome! 
+Issues and pull requests are welcome!
 1. Fork the project.
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
-
----
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
+3. Run the syntax check and the audit bench (see above).
+4. Commit your changes and open a Pull Request.
