@@ -192,11 +192,24 @@ const LOSEII_GPD = 'https://www.loseii.com/loa-gpd/data/';
 const LOSEII_ASTROGEM_JS = 'https://www.loseii.com/loa-astrogem-calc/model/astrogem.js?v=62';
 const LOSEII_ASTROGEM_SRI = 'sha384-kyWxDB+/DNZrb2NfgLFc/CWdufhq5PAoghXG0wi7NFERX15wP62RyvMdWMWMdvsC';
 const loseiiGpd = { rows: {}, arkgrid: { support: {}, dps: {} } };
+// Textes des tables de Loseii (notes, « minimum », « odds ») insérés tels quels dans le HTML du GPD :
+// table tierce sans empreinte, on retire tout caractère de balise ou de guillemet d'attribut.
+function stripMarkup(v) {
+  if (typeof v === 'string') return v.replace(/[<>"`]/g, '');
+  if (Array.isArray(v)) return v.map(stripMarkup);
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const k of Object.keys(v)) o[k] = stripMarkup(v[k]);
+    return o;
+  }
+  return v;
+}
+
 async function loadLoseiiGpd() {
   const get = async f => {
     const res = await fetch(LOSEII_GPD + f, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`${f} : HTTP ${res.status}`);
-    return res.json();
+    return stripMarkup(await res.json());
   };
   try {
     const [sup, dps, se, sr, de, dr] = await Promise.all(['rows.json', 'rows-dps.json',

@@ -3,7 +3,8 @@
 # sur CT 104 et Cloudflare Pages. Lancé chaque semaine par cron (crontab de l'utilisateur dev).
 #
 # - Garde-fou : si le nouveau réservoir est vide ou tronqué, l'ancien est conservé et rien n'est publié.
-# - Cloudflare reçoit le code COMMITÉ (git archive HEAD) + le nouveau réservoir : jamais un travail en cours.
+# - Cloudflare reçoit le code de PRODUCTION (git archive origin/master, mis à jour par chaque git push origin main:master) + le nouveau réservoir : jamais un travail en cours
+#   ni une autre branche (le dépôt local peut être sur dev).
 # - Le fichier data/live-peers.json du dépôt est mis à jour mais pas commité (à commiter avec le reste).
 set -euo pipefail
 
@@ -15,8 +16,9 @@ MIN_PLAYERS=800
 export NVM_DIR="$HOME/.nvm"
 # shellcheck disable=SC1091
 . "$NVM_DIR/nvm.sh" >/dev/null
-# Jeton Cloudflare (exporté en tête de ~/.bashrc, que cron ne lit pas)
-eval "$(grep '^export CLOUDFLARE_' "$HOME/.bashrc")"
+# Jeton Cloudflare : .env du dépôt (ignoré par Git), comme deploy.sh
+if [ -f "$REPO/.env" ]; then set -a; . "$REPO/.env"; set +a; fi
+[ -n "${CLOUDFLARE_API_TOKEN:-}" ] || { echo "CLOUDFLARE_API_TOKEN absent de $REPO/.env"; exit 1; }
 
 echo "=== $(date '+%F %T') rafraîchissement du réservoir de joueurs"
 cd "$REPO"
@@ -45,11 +47,16 @@ scp -q "$POOL" root@192.168.1.104:/opt/lostark-cp/public/data/
 echo "CT 104 : réservoir publié"
 
 # Cloudflare Pages : code commité + nouveau réservoir
-git -c safe.directory="$REPO" archive HEAD | tar -x -C "$WORK"
+git -c safe.directory="$REPO" archive origin/master | tar -x -C "$WORK"
 cp "$POOL" "$WORK/data/"
 cd "$WORK"
 mkdir site
 cp $(ls ./*.js | grep -vx ./server.js) ./*.html ./*.css site/
+[ -f _headers ] && cp _headers site/
 cp -r images data js site/
-npx -y wrangler pages deploy site --project-name lostark-cp --commit-dirty=true --branch master 2>&1 | grep -E "Success|complete|ERROR|✘" || true
+rm -f site/data/raid_status.json
+# Code de sortie de wrangler conservé (pipefail) : un échec de publication fait échouer le script
+npx -y wrangler pages deploy site --project-name lostark-cp --commit-dirty=true --branch master > "$WORK/wrangler.log" 2>&1 \
+  || { grep -E "ERROR|✘" "$WORK/wrangler.log"; echo "Publication Cloudflare échouée"; exit 1; }
+grep -E "Success|complete" "$WORK/wrangler.log" || true
 echo "=== $(date '+%F %T') terminé"

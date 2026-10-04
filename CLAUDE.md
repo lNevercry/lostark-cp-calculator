@@ -102,7 +102,9 @@ Lors de l'ingestion d'un profil via `parseBibleCharacter()`, les données brutes
    ./deploy.sh
    ```
    *(Ce script autonome vérifie la syntaxe JS, synchronise CT 104 + Nginx, déploie sur Cloudflare Pages via Wrangler et vérifie la mise en ligne : sur les deux sites, mêmes octets que les fichiers locaux (index.html, js/*.js, style.css, i18n.js, data.js, données) et versions de cache-busting d'index.html, jusqu'à 2 min de propagation ; sinon code de sortie 1)*
-   - Le token Cloudflare est lu dans `.env` (ignoré par Git) ou l'environnement : `CLOUDFLARE_API_TOKEN=...`. Ne jamais l'écrire dans un fichier versionné, le dépôt est public.
+   - Le token Cloudflare est lu dans `.env` (ignoré par Git) ou l'environnement : `CLOUDFLARE_API_TOKEN=...`. Ne jamais l'écrire dans un fichier versionné, le dépôt est public (`tools/refresh-live-peers.sh` lit aussi `.env` et publie `origin/master`, jamais la branche courante).
+   - `deploy.sh` refuse une autre branche que main / master (`DEPLOY_ANY_BRANCH=1` pour forcer), teste `nginx.conf` dans un conteneur jetable sur CT 104 avant tout envoi, ne publie jamais `data/raid_status.json` (écrit sur CT 104 par l'agent de raids, non versionné).
+   - Sécurité : même CSP dans `nginx.conf` (variable `$csp`) et `_headers` (Cloudflare Pages), à garder identiques ; aucun script inline (image de repli par `data-fallback`, écouteur de `js/core.js`). Proxy `/api/bible/character/` : GET / HEAD, chemin `RÉGION/pseudo/__data.json` seulement (`BIBLE_REGIONS`), même origine, cache sans query string. Agent de raids local : origines du site seulement (`isAllowedOrigin`), Host 127.0.0.1 / localhost ; l'exe de `client-agent/` est à reconstruire après une modification du script.
 
 ### Recettes d'affinage T4 (Maxroll)
 - `data/honing-t4.json` : recettes du jeu (or, matériaux, taux, bonus d'échec, artisan, souffles) pour l'Aegir (1640) et le Serka (1675), arme et armures, +10 à +25. Tirées du flux du planificateur Maxroll (`assets-ng.maxroll.gg/laplanner/game/stats.json`, même source que loseii.com).

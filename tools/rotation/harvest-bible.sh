@@ -46,7 +46,10 @@ fi
 
 # Tout est récolté : références reconstruites (base locale + logs lostark.bible), puis mail.
 REF=$(node --no-warnings tools/rotation/build-ref.mjs 2>&1)
+REF_CODE=$?
 echo "$REF"
+# Reconstruction ratée (ex. base locale non montée) : pas de fichier .done, la session suivante réessaie
+[ "$REF_CODE" -ne 0 ] && { echo "Échec de build-ref.mjs (code $REF_CODE) : récolte non marquée terminée."; exit "$REF_CODE"; }
 date '+%F %T' > "$DONE"
 MSG="Récolte lostark.bible terminée ($(date '+%F %T')).
 $(echo "$OUT" | tail -n 1)

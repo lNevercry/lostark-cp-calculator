@@ -652,7 +652,7 @@ function updateActiveCharacterCard(key, customProfile = null) {
   if (dom.charCardClass) {
     const cName = p.className || (isSupport ? 'Paladin' : 'Shadowhunter');
     const sigilSrc = getClassIconUrl(cName, p.role);
-    dom.charCardClass.innerHTML = `<img class="class-sigil-tag" src="${sigilSrc}" alt=""> <span>${cName}</span>`;
+    dom.charCardClass.innerHTML = `<img class="class-sigil-tag" src="${escapeHtml(sigilSrc)}" alt=""> <span>${escapeHtml(cName)}</span>`;
   }
   if (dom.charCardServer) {
     const sName = p.server || (isEnLang() ? 'Server' : 'Serveur');
@@ -1136,7 +1136,7 @@ function renderPresetsBar() {
     html += `
         <button type="button" class="preset-chip ${isActive ? 'active' : ''}" data-id="${cId}" data-role="${safeRole}" title="${safeClass} • ${safeName}">
           <span class="chip-avatar-frame">
-            <img class="chip-avatar-mini ${isFull ? 'ags-fullbody-zoom' : ''}" id="chipAvatar_${cId}" src="${faceAvatar}" alt="${safeName}" width="22" height="22" loading="eager" onerror="this.onerror=null; this.src='${classIconSrc}';">
+            <img class="chip-avatar-mini ${isFull ? 'ags-fullbody-zoom' : ''}" id="chipAvatar_${cId}" src="${faceAvatar}" alt="${safeName}" width="22" height="22" loading="eager" data-fallback="${classIconSrc}">
           </span>
           <span>${safeName} (${(c.ilvl || 1750).toFixed(1)})</span>
         </button>

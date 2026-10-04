@@ -13,6 +13,18 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Régions des profils lostark.bible (segment de chemin des appels : rien d'autre n'y entre)
+const BIBLE_REGIONS = ['CE', 'NA', 'NAE', 'NAW', 'SA'];
+
+// Image de repli (attribut data-fallback) : écouteur unique en capture, à la place des onerror inline
+// (la CSP n'autorise aucun script inline)
+document.addEventListener('error', e => {
+  const img = e.target;
+  if (!img || img.tagName !== 'IMG' || !img.dataset.fallback || img.dataset.fallbackDone) return;
+  img.dataset.fallbackDone = '1';
+  img.src = img.dataset.fallback;
+}, true);
+
 // --- 1. BASE DE CALIBRATION EMPIRIQUE (LOSTARK.BIBLE) ---
 // Paliers réels observés pour Supports et DPS en T4
 const CALIBRATION_DATA = {

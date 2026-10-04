@@ -14,6 +14,13 @@ if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
   exit 1
 fi
 
+# La production suit main / master : un déploiement depuis une autre branche publierait du code non fusionné
+BRANCH=$(git -c safe.directory="$REPO_DIR" rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" != main ] && [ "$BRANCH" != master ] && [ "${DEPLOY_ANY_BRANCH:-}" != 1 ]; then
+  echo "Erreur : branche « $BRANCH ». Fusionner dans main avant de déployer (ou DEPLOY_ANY_BRANCH=1 pour forcer)." >&2
+  exit 1
+fi
+
 echo "=== [1/4] Vérification de la syntaxe JS ==="
 # node -c ne vérifie que le premier fichier passé : une commande par fichier
 for f in *.js js/*.js functions/api/market/prices.js; do node -c "$f"; done
@@ -24,11 +31,15 @@ echo "Syntaxe JS : OK"
 echo "=== [2/4] Synchronisation CT 104 (Docker Nginx) ==="
 # Scripts du site : server.js (serveur Node local) n'est jamais publié
 SITE_JS=$(ls *.js | grep -vx server.js)
+# nginx.conf testé AVANT tout envoi, dans un conteneur jetable : une config cassée ne touche jamais le site
+ssh root@192.168.1.104 "cat > /tmp/lostark-cp-nginx.conf && docker run --rm -v /tmp/lostark-cp-nginx.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t" < nginx.conf >/dev/null 2>&1 \
+  || { echo "Erreur : nginx.conf refusé par nginx -t, rien n'est déployé." >&2; exit 1; }
 scp -q $SITE_JS *.html *.css root@192.168.1.104:/opt/lostark-cp/public/
-scp -rq images data js root@192.168.1.104:/opt/lostark-cp/public/ 2>/dev/null || true
+# data/raid_status.json : écrit sur CT 104 par l'agent de raids, jamais écrasé par le déploiement
+tar -c --exclude=raid_status.json images data js | ssh root@192.168.1.104 "tar -x --no-same-owner -C /opt/lostark-cp/public"
 # nginx.conf est monté seul dans le conteneur : réécrit en place (même inode), un scp ne serait pas vu
-ssh root@192.168.1.104 "cat > /opt/lostark-cp/nginx.conf" < nginx.conf
-ssh root@192.168.1.104 "docker exec lostark-cp nginx -t && docker exec lostark-cp nginx -s reload" >/dev/null
+ssh root@192.168.1.104 "cat /tmp/lostark-cp-nginx.conf > /opt/lostark-cp/nginx.conf && docker exec lostark-cp nginx -t && docker exec lostark-cp nginx -s reload" >/dev/null 2>&1 \
+  || { echo "Erreur : rechargement de Nginx sur CT 104 impossible." >&2; exit 1; }
 echo "CT 104 : déployé et Nginx rechargé"
 
 echo "=== [3/4] Déploiement Cloudflare Pages ==="
@@ -41,8 +52,10 @@ export NVM_DIR="$HOME/.nvm"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-cp $SITE_JS *.html *.css "$WORK/"
-cp -r images data js "$WORK/" 2>/dev/null || true
+cp $SITE_JS *.html *.css _headers "$WORK/"
+cp -r images data js "$WORK/"
+# État des raids de l'auteur (agent local) : jamais publié
+rm -f "$WORK/data/raid_status.json"
 
 npx -y wrangler pages deploy "$WORK" --project-name lostark-cp --commit-dirty=true --branch master
 

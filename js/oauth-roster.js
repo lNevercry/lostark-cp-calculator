@@ -201,8 +201,12 @@ async function checkOAuthCallback() {
   const savedState = sessionStorage.getItem('lostark_oauth_state');
   const verifier = sessionStorage.getItem('lostark_oauth_verifier');
 
-  if (stateParam && savedState && stateParam !== savedState) {
-    console.warn('OAuth state mismatch!');
+  // Retour sans state, sans vérificateur PKCE ou d'une autre session : refusé (connexion forcée à un autre compte)
+  if (!stateParam || !savedState || stateParam !== savedState || !verifier) {
+    console.warn('[OAuth] state ou vérificateur PKCE absent ou différent : retour ignoré');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    sessionStorage.removeItem('lostark_oauth_state');
+    sessionStorage.removeItem('lostark_oauth_verifier');
     return;
   }
 
@@ -224,7 +228,7 @@ async function checkOAuthCallback() {
       client_id: clientId,
       code: code,
       redirect_uri: redirectUri,
-      code_verifier: verifier || ''
+      code_verifier: verifier
     });
 
     const res = await fetch(OAUTH_CONFIG.tokenUrl, {
@@ -604,7 +608,7 @@ function renderSavedRosterManager() {
     html += `
         <div class="user-roster-card-item">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <img class="user-roster-avatar" src="${avatarSrc}" data-fallback="${classIconSrc}" onerror="this.onerror=null; this.src=this.getAttribute('data-fallback');" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #121310; border: 1px solid rgba(232, 230, 220,0.2);">
+            <img class="user-roster-avatar" src="${avatarSrc}" data-fallback="${classIconSrc}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #121310; border: 1px solid rgba(232, 230, 220,0.2);">
             <div>
               <div style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #E8E6DC;">
                 <img class="chip-class-sigil" src="${classIconSrc}" alt="${safeClass}" title="${safeClass}">

@@ -295,12 +295,40 @@ function extractRaidStatus(extraNames = []) {
   }
 }
 
+// Origines autorisées : le site public (et ses prévisualisations), le serveur local CT 104, le développement local
+function isAllowedOrigin(origin) {
+  let u;
+  try { u = new URL(origin); } catch (e) { return false; }
+  if (u.protocol === 'https:' && (u.hostname === 'lostark-cp.pages.dev' || u.hostname.endsWith('.lostark-cp.pages.dev'))) return true;
+  if (u.hostname === 'lostark.nevercry-prox.com') return true;
+  if (u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '192.168.1.104')) return true;
+  return false;
+}
+
 // Serveur HTTP local ultra-léger
 const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  // Seul le site du calculateur lit l'état des raids : un autre site ouvert dans le navigateur reçoit un 403
+  // (sinon n'importe quelle page pourrait lire les personnages et l'or du joueur). Host contrôlé contre le
+  // rebinding DNS. Sans en-tête Origin (page ouverte directement, curl) : accès normal.
+  const host = String(req.headers.host || '');
+  if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Forbidden host' }));
+    return;
+  }
+  const origin = req.headers.origin;
+  if (origin) {
+    if (!isAllowedOrigin(origin)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden origin' }));
+      return;
+    }
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  }
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);

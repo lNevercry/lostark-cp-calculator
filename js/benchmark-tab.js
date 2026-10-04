@@ -229,7 +229,7 @@ function renderBenchmarkTab() {
         <div class="bench-char-card player">
           <div class="bench-char-header">
             <div class="bench-avatar-frame">
-              <img src="${pAvatar}" alt="${escapeHtml(player.name)}" loading="eager" onerror="this.onerror=null; this.src='images/classes/paladin.png';">
+              <img src="${escapeHtml(pAvatar)}" data-fallback="images/classes/paladin.png" alt="${escapeHtml(player.name)}" loading="eager">
             </div>
             <div class="bench-char-info">
               <span style="font-size:12px; text-transform:uppercase; font-weight:700; color:#E0A43A;">${t('bench_card_player_title')}</span>
@@ -274,7 +274,7 @@ function renderBenchmarkTab() {
         <div class="bench-char-card benchmark">
           <div class="bench-char-header">
             <div class="bench-avatar-frame">
-              <img src="${tAvatar}" alt="${escapeHtml(target.name)}" loading="eager" onerror="this.onerror=null; this.src='images/classes/paladin.png';">
+              <img src="${escapeHtml(tAvatar)}" data-fallback="images/classes/paladin.png" alt="${escapeHtml(target.name)}" loading="eager">
             </div>
             <div class="bench-char-info">
               <div style="display: flex; align-items: center; gap: 6px;">

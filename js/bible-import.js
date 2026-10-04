@@ -864,7 +864,8 @@ async function fetchBibleProfile(region, name, autoAdd = null) {
     statusEl.innerHTML = trLang(`Interrogation de <strong>${escapeHtml(cleanName)} (${escapeHtml(region.toUpperCase())})</strong> en cours…`, `Fetching <strong>${escapeHtml(cleanName)} (${escapeHtml(region.toUpperCase())})</strong>…`);
   }
 
-  const reg = region.toUpperCase();
+  // Région venue de l'URL (?region=) ou de la modale : seulement les régions de lostark.bible, jamais un chemin
+  const reg = BIBLE_REGIONS.includes(String(region).toUpperCase()) ? String(region).toUpperCase() : 'CE';
   const encodedName = encodeURIComponent(cleanName);
   const proxyUrl = `/api/bible/character/${reg}/${encodedName}/__data.json`;
   const directUrl = `https://lostark.bible/character/${reg}/${encodedName}/__data.json`;

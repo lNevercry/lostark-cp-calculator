@@ -1,0 +1,8 @@
+# En-têtes de sécurité de Cloudflare Pages (fichiers statiques). Même politique que nginx.conf (CT 104) :
+# garder les deux identiques. Aucun script inline (images de repli par data-fallback, js/core.js).
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.loseii.com/loa-astrogem-calc/model/astrogem.js https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://lostark.bible https://cdn.discordapp.com https://character-cdn.ags.lol https://*.ags.lol https://*.game.onstove.com https://*.lostark.co.kr; connect-src 'self' https://lostark.bible https://www.loseii.com https://cloudflareinsights.com http://127.0.0.1:4848 http://localhost:4848 ws://127.0.0.1:4848 ws://localhost:4848; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'

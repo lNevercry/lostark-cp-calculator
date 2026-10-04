@@ -447,11 +447,11 @@ function renderRaidTrackerView() {
       const fallbackFace = isDemo ? FACE_AVATARS[cKey] : classIconFallback;
 
       html += `
-          <div class="char-raid-card" data-char="${cKey}">
+          <div class="char-raid-card" data-char="${escapeHtml(cKey)}">
             <div class="char-raid-card-header">
               <div class="char-meta-left">
                 <div class="char-raid-avatar-frame ${isSupp ? 'role-support' : 'role-dps'}">
-                  <img class="char-raid-avatar ${isFullBody ? 'ags-fullbody-zoom' : ''}" src="${avatarUrl}" alt="${escapeHtml(ch.name)}" width="44" height="44" loading="eager" onerror="this.onerror=null; this.src='${fallbackFace}';">
+                  <img class="char-raid-avatar ${isFullBody ? 'ags-fullbody-zoom' : ''}" src="${escapeHtml(avatarUrl)}" data-fallback="${escapeHtml(fallbackFace)}" alt="${escapeHtml(ch.name)}" width="44" height="44" loading="eager">
                 </div>
                 <div class="char-info-col">
                   <div class="char-raid-name-row">
@@ -467,10 +467,10 @@ function renderRaidTrackerView() {
               </div>
               <div class="char-header-right">
                 <div class="char-quick-actions">
-                  <button type="button" class="char-action-btn btn-char-clear-all" data-char="${cKey}" title="${isFr ? 'Valider ou réinitialiser tous les raids de ce personnage' : 'Toggle all raids cleared for this character'}">
+                  <button type="button" class="char-action-btn btn-char-clear-all" data-char="${escapeHtml(cKey)}" title="${isFr ? 'Valider ou réinitialiser tous les raids de ce personnage' : 'Toggle all raids cleared for this character'}">
                     ✓
                   </button>
-                  <button type="button" class="char-action-btn btn-char-chests-all" data-char="${cKey}" title="${isFr ? 'Acheter ou retirer tous les coffres de ce personnage' : 'Toggle all chests for this character'}">
+                  <button type="button" class="char-action-btn btn-char-chests-all" data-char="${escapeHtml(cKey)}" title="${isFr ? 'Acheter ou retirer tous les coffres de ce personnage' : 'Toggle all chests for this character'}">
                    
                   </button>
                 </div>
@@ -501,7 +501,7 @@ function renderRaidTrackerView() {
         const modeShort = mode === 'nightmare' ? 'NM' : (mode === 'hard' ? 'HM' : 'N');
 
         html += `
-            <div class="raid-chip" data-char="${cKey}" data-raid="${rKey}">
+            <div class="raid-chip" data-char="${escapeHtml(cKey)}" data-raid="${rKey}">
               <img class="raid-chip-art" src="${raidArtUrl}" alt="" loading="lazy">
 
               <div class="raid-chip-top">
@@ -511,7 +511,7 @@ function renderRaidTrackerView() {
                 </div>
 
                 <div class="raid-diff-badge-wrapper">
-                  <button type="button" class="raid-diff-pill diff-${mode}" data-char="${cKey}" data-raid="${rKey}" title="${isFr ? 'Cliquer pour changer de difficulté' : 'Click to cycle difficulty'}">
+                  <button type="button" class="raid-diff-pill diff-${mode}" data-char="${escapeHtml(cKey)}" data-raid="${rKey}" title="${isFr ? 'Cliquer pour changer de difficulté' : 'Click to cycle difficulty'}">
                     <span class="diff-short">${modeShort}</span>
                     <span class="diff-gold">(${(modeDef.total / 1000).toFixed(0)}k)</span>
                     ${cr.modeAuto ? '<span class="diff-auto-dot" title="Auto LOA Logs">●</span>' : ''}
@@ -525,17 +525,17 @@ function renderRaidTrackerView() {
 
               <div class="raid-chip-controls">
                 <div class="gate-pips-group">
-                  <button type="button" class="gate-pip ${cr.g1 ? 'cleared' : ''}" data-char="${cKey}" data-raid="${rKey}" data-gate="1">
+                  <button type="button" class="gate-pip ${cr.g1 ? 'cleared' : ''}" data-char="${escapeHtml(cKey)}" data-raid="${rKey}" data-gate="1">
                     <span class="gate-pip-lbl">${cr.g1 ? '✓ ' : ''}${isFr ? 'P1' : 'G1'}</span>
                     <span class="gate-pip-reward">+${(modeDef.g1 / 1000).toFixed(1).replace('.0', '')}k</span>
                   </button>
-                  <button type="button" class="gate-pip ${cr.g2 ? 'cleared' : ''}" data-char="${cKey}" data-raid="${rKey}" data-gate="2">
+                  <button type="button" class="gate-pip ${cr.g2 ? 'cleared' : ''}" data-char="${escapeHtml(cKey)}" data-raid="${rKey}" data-gate="2">
                     <span class="gate-pip-lbl">${cr.g2 ? '✓ ' : ''}${isFr ? 'P2' : 'G2'}</span>
                     <span class="gate-pip-reward">+${(modeDef.g2 / 1000).toFixed(1).replace('.0', '')}k</span>
                   </button>
                 </div>
 
-                <button type="button" class="chest-toggle-pill ${cr.chest ? 'active' : ''}" data-char="${cKey}" data-raid="${rKey}" title="${t('raid_chest_label').replace('{cost}', (chestCost / 1000).toFixed(1).replace('.0', '') + 'k')}">
+                <button type="button" class="chest-toggle-pill ${cr.chest ? 'active' : ''}" data-char="${escapeHtml(cKey)}" data-raid="${rKey}" title="${t('raid_chest_label').replace('{cost}', (chestCost / 1000).toFixed(1).replace('.0', '') + 'k')}">
                   <span class="chest-icon"></span>
                   <span class="chest-cost">-${(chestCost / 1000).toFixed(1).replace('.0', '')}k</span>
                 </button>
@@ -603,7 +603,7 @@ function renderRaidTrackerView() {
   rosterList.forEach(ch => {
     const cKey = (ch.id || ch.name).toLowerCase();
     const charState = raidTrackerState.roster[cKey] || { raids: {} };
-    const card = grid.querySelector(`.char-raid-card[data-char="${cKey}"]`);
+    const card = grid.querySelector(`.char-raid-card[data-char="${escapeHtml(cKey)}"]`);
     if (!card) return;
 
     let charEarnedGold = 0;

@@ -13,3 +13,7 @@ tools/samples/
 
 # Modules ES de l'analyseur de rotation : nécessaire à Node et au site
 !js/rotation/package.json
+
+# Dumps de profils de joueurs tiers et état des raids de l'auteur (agent local) : jamais versionnés
+*_dump.json
+data/raid_status.json
