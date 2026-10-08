@@ -17,18 +17,24 @@
 //
 // Une requête à la fois, PAUSE_MS entre deux ; chaque log lu est gardé dans tools/samples/bible-logs/ (jamais relu
 // en ligne). Sortie : tools/samples/bible-records.json, lu par build-ref.mjs.
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+// --campaign ID (harvest-bible.sh, une campagne toutes les 2 semaines) : récolte neuve, quotas comptés sur la campagne
+// seulement, en cours dans bible-records.next.json ; bible-records.json (campagne précédente) n'est remplacé qu'une fois
+// tout récolté. Un log déjà en cache reproposé par le site est repris sans appel.
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { findRemotes, remote, fetchLog, RateLimited } from './bible.mjs';
+import { findRemotes, latestPatch, remote, fetchLog, RateLimited } from './bible.mjs';
 import { playerBuild, quantile } from '../../js/rotation/metrics.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SAMPLES = path.join(HERE, '..', 'samples');
 const CACHE = path.join(SAMPLES, 'bible-logs');
 const OUT = path.join(SAMPLES, 'bible-records.json');
+const NEXT = path.join(SAMPLES, 'bible-records.next.json');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const SPECS_ARG = arg('--specs', 'auto');
+const CAMPAIGN = arg('--campaign', null);
+const WORK = CAMPAIGN ? NEXT : OUT;
 const SUPPORT_SPECS = new Set(['Blessed Aura', 'Desperate Salvation', 'Full Bloom', 'Liberator']);
 const LOCAL = JSON.parse(readFileSync(path.join(HERE, '..', '..', 'data', 'rotation-ref.json'), 'utf8')).refs;
 // Spés visées sur un boss : celles demandées, ou (auto) les spés DPS sans référence locale sur ce boss.
@@ -38,7 +44,7 @@ const targetsFor = (boss, statSpecs) => SPECS_ARG === 'auto'
 const PER_MEDIAN = +arg('--median', 10);
 const PER_BEST = +arg('--best', 5);
 const MIN_COUNT = 30; // combinaison boss / difficulté avec moins de logs de la spé : ignorée
-const PATCH = arg('--patch', 'sep26');
+let PATCH = arg('--patch', null); // résolu plus bas (patch de la campagne, sinon le dernier du site)
 // Logs téléchargés au plus par lancement : la récolte se fait en plusieurs sessions espacées (reprise automatique).
 const MAX_DOWNLOADS = +arg('--max-logs', 60);
 let downloads = 0;
@@ -78,7 +84,7 @@ function toRecord(info, p, sample) {
     out.push({ id: s.id, name: s.name, cpm: times.length / minutes, share: total ? (s.totalDamage || 0) / total : 0, fast: quantile(iv, 0.1), gemCd: null });
   }
   return {
-    source: 'bible', sample, logId: info.id, name: p.name, spec: p.spec, boss: enc.currentBossName, difficulty: enc.difficulty,
+    source: 'bible', sample, logId: info.id, date: new Date(enc.fightStart).toISOString().slice(0, 10), ...(CAMPAIGN && { campaign: CAMPAIGN }), name: p.name, spec: p.spec, boss: enc.currentBossName, difficulty: enc.difficulty,
     group: `${p.spec}|${enc.currentBossName}|${enc.difficulty}`, support: false,
     eff: p.combatPower ? (p.damageStats?.dps || total / (timelineMs / 1000)) / p.combatPower : null,
     activity: null, apRate: null, fullBuffRate: null,
@@ -111,15 +117,30 @@ async function logRecords(id, spec, sample, targets) {
     .map(p => toRecord(info, p, p.spec === spec ? sample : `${sample}-party`));
 }
 
-const prev = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')).records : [];
+const readRecords = f => (existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : null);
+// Campagne : reprise de la campagne en cours seulement (fichier d'une autre campagne : on repart de zéro).
+const work = readRecords(WORK);
+const prev = !work ? [] : CAMPAIGN && work.campaign !== CAMPAIGN ? [] : work.records;
 // Reprise : les enregistrements déjà faits sont gardés (un même joueur d'un même log une seule fois).
 // (enregistrements d'avant le nom du joueur : refaits depuis le cache, sans appel en ligne)
 // Hors des raids choisis (ex. Armoche, Normal) : retirés des références.
 const records = SPECS_ARG === 'auto' ? prev.filter(r => r.name && inScope(r)) : prev.filter(r => !SPECS_ARG.split(',').map(x => x.trim()).includes(r.spec));
 const seen = new Set(records.map(r => `${r.logId}|${r.name}`));
-const save = () => writeFileSync(OUT, JSON.stringify({ built: new Date().toISOString(), patch: PATCH, records }));
+const save = () => writeFileSync(WORK, JSON.stringify({ built: new Date().toISOString(), patch: PATCH, ...(CAMPAIGN && { campaign: CAMPAIGN }), records }));
 process.on('uncaughtException', e => { save(); console.error(e instanceof RateLimited ? `lostark.bible limite le débit (${e.message}) : arrêt, ${records.length} enregistrements gardés.` : e); process.exit(e instanceof RateLimited ? 2 : 1); });
 process.on('unhandledRejection', e => { save(); console.error(e instanceof RateLimited ? `lostark.bible limite le débit (${e.message}) : arrêt, ${records.length} enregistrements gardés.` : e); process.exit(e instanceof RateLimited ? 2 : 1); });
+// Patch : --patch, sinon celui de la campagne en cours, sinon (nouvelle campagne) le dernier « … Balance » du site ;
+// hors campagne, le dernier relevé (bible-patch.json).
+const PATCH_FILE = path.join(SAMPLES, 'bible-patch.json');
+const knownPatch = existsSync(PATCH_FILE) ? JSON.parse(readFileSync(PATCH_FILE, 'utf8')) : null;
+if (!PATCH && CAMPAIGN && work?.campaign === CAMPAIGN && work.patch) PATCH = work.patch;
+if (!PATCH && CAMPAIGN) {
+  const found = await latestPatch(knownPatch?.node);
+  writeFileSync(PATCH_FILE, JSON.stringify(found));
+  PATCH = found.patch;
+  console.log(`Patch de la campagne : ${found.label} (${found.patch})${knownPatch && knownPatch.patch !== found.patch ? `, nouveau (avant : ${knownPatch.patch})` : ''}`);
+}
+if (!PATCH) PATCH = knownPatch?.patch || 'sep26';
 const filters = { minGearScore: 1700, maxGearScore: 1800, minCombatPower: undefined, maxCombatPower: undefined, includeBus: false, includeWeird: false, patch: PATCH };
 // Identifiants des fonctions distantes gardés d'un lancement à l'autre (les retrouver lit ~70 fichiers du site) ;
 // recherchés à nouveau seulement s'ils ne répondent plus (mise à jour du site).
@@ -167,7 +188,10 @@ for (const [bosses, difficulties] of RAIDS) for (const boss of bosses) for (cons
   save();
 }
 save();
-console.log(`${records.length} enregistrements → ${path.relative(process.cwd(), OUT)} (${downloads} logs téléchargés${downloads >= MAX_DOWNLOADS ? ', plafond de la session atteint : relancer plus tard pour la suite' : ''})`);
+const complete = downloads < MAX_DOWNLOADS;
+// Campagne terminée : elle remplace la précédente.
+if (CAMPAIGN && complete) renameSync(NEXT, OUT);
+console.log(`${records.length} enregistrements → ${path.relative(process.cwd(), complete ? OUT : WORK)} (${downloads} logs téléchargés${downloads >= MAX_DOWNLOADS ? ', plafond de la session atteint : relancer plus tard pour la suite' : ''})`);
 // Code de sortie (lu par harvest-bible.sh) : 0 = tout est récolté, 3 = plafond atteint (relancer plus tard),
 // 2 = lostark.bible limite le débit (attendre avant de relancer).
-process.exit(downloads >= MAX_DOWNLOADS ? 3 : 0);
+process.exit(complete ? 0 : 3);

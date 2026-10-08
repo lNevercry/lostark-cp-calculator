@@ -80,6 +80,29 @@ export async function findRemotes(names) {
   return found;
 }
 
+// Patchs proposés par les statistiques de raid du site : objet { clé: `libellé` } du bundle, dans l'ordre (ex. jun26:
+// `June 2026 Balance`, sep26: `September 2026 Balance`, puis current / alltime). Le dernier « … Balance » est le patch en
+// cours. hint : fichier du bundle trouvé la fois précédente (3 requêtes au lieu d'en lire jusqu'à ~70).
+export function parsePatches(js) {
+  for (const m of js.matchAll(/\{((?:[a-z0-9]+:`[^`]*`,?)+)\}/g)) {
+    const entries = [...m[1].matchAll(/([a-z0-9]+):`([^`]*)`/g)].map(x => [x[1], x[2]]);
+    const balances = entries.filter(([, label]) => /Balance$/.test(label));
+    if (balances.length) return balances;
+  }
+  return null;
+}
+
+export async function latestPatch(hint) {
+  const page = await get(`${BASE}/leaderboards`);
+  const app = await get(`${BASE}/_app/immutable/entry/${page.match(/entry\/(app\.[A-Za-z0-9_-]+\.js)/)[1]}`);
+  const nodes = [...new Set(app.match(/nodes\/[0-9]+\.[A-Za-z0-9_-]+\.js/g) || [])];
+  for (const n of hint && nodes.includes(hint) ? [hint, ...nodes.filter(x => x !== hint)] : nodes) {
+    const balances = parsePatches(await get(`${BASE}/_app/immutable/${n}`));
+    if (balances) { const [patch, label] = balances.at(-1); return { patch, label, node: n }; }
+  }
+  throw new Error('Liste des patchs introuvable dans le bundle de lostark.bible');
+}
+
 export async function remote(id, args) {
   const body = JSON.parse(await get(`${BASE}/_app/remote/${id}?payload=${encodeURIComponent(payload(args))}`));
   if (body.type !== 'result' || !body.data) return null;
