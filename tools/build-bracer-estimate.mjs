@@ -3,16 +3,20 @@
 // par une lecture directe du flux dans tools/fetch-maxroll-honing.mjs (recette et table itemLevel du brassard).
 //
 // Chaque valeur porte sa source (`src`) :
-//  - 'official' : note des développeurs Stove (GMNote 1225) : taux de réussite par tranche, coût du niveau 1,
-//    déblocages de rareté (한계 해방) ;
-//  - 'inven'    : relevé du brassard +21 publié (Inven #3790814) : stat principale 52 381, puissance d'arme 21 726,
-//    Vitalité 4 600, PA de base +5 980 et +2,0 % ;
-//  - 'estimate' : estimation communautaire KR (simulateurs Inven 4821/110391 et Arca 178285665) : stats = courbe des
-//    pièces Serka (armures pour la stat principale et la Vitalité, arme pour la puissance d'arme) recalée sur le relevé +21 ;
-//    coûts = recette Serka (moitié arme, moitié armure) recalée sur le coût officiel du niveau 1.
+//  - 'official' : note des développeurs Stove (GMNote 1225, Lettre de Lisha du 2026-07-29) : infobulles du brassard
+//    +10 (héroïque), +15 (légendaire), +20 (relique) et +25 (ancien) — stat principale, puissance d'arme, Vitalité,
+//    PA de base fixe et % (images de la note, reprises sur Inven #3953370) ; taux de réussite par tranche, coût du
+//    niveau 1, déblocages de rareté (한계 해방) ;
+//  - 'estimate' : stats entre deux niveaux officiels interpolées linéairement (total exact à +10 / 15 / 20 / 25),
+//    +0 à +9 prolongés sur la pente +10 → +15 (aucun niveau officiel en dessous de +10) ;
+//    coûts = recette Serka (moitié arme, moitié armure) recalée sur le coût officiel du niveau 1
+//    (forme de courbe des simulateurs KR Inven 4821/110391 et Arca 178285665).
 //    Le modèle brut des simulateurs (sans recalage) donne 1 200 or au niveau 1 contre 5 200 officiels : seule la forme
 //    de la courbe est gardée. Règle d'artisan supposée identique aux autres recettes T4 (+10 % du taux par échec,
 //    plafond = taux de base, jauge pleine à 215 %), non publiée pour le brassard.
+// Avant (jusqu'au 2026-10-11) : courbe Serka recalée sur un relevé « +21 » de juin (Inven #3790814, 52 381 / 21 726),
+// antérieur au passage du premier palier de légendaire à héroïque : stat principale −15 % à +20, PA fixe −27 % à +25.
+// % de PA = rareté après déblocage : héroïque 0, légendaire 1, relique 2, ancien 3 % (avant : 2 % maximum).
 //
 // Usage : node tools/build-bracer-estimate.mjs [stats.json local]   → écrit data/bracer-t4.json
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -21,9 +25,9 @@ const FEED = 'https://assets-ng.maxroll.gg/laplanner/game/stats.json';
 const OUT = new URL('../data/bracer-t4.json', import.meta.url);
 const SRC = {
   official: 'https://m-lostark.game.onstove.com/News/GMNote/Views/1225',
-  inven: 'https://www.inven.co.kr/board/lostark/6271/3790814',
+  officialTooltips: 'https://www.inven.co.kr/board/lostark/6271/3953370',
+  mainStatMult: 'https://www.inven.co.kr/board/lostark/6271/3790814',
   estimate: ['https://www.inven.co.kr/board/lostark/4821/110391', 'https://arca.live/b/lostark/178285665'],
-  apStep: 'https://www.inven.co.kr/board/lostark/4821/110391',
   raid: 'https://www.loa.kakao.gg/guides/로스트아크-완갑-효율-공략-10강20강25강-강화-우선순위와-준비-재료',
   limitItem: 'https://lostark.inven.co.kr/dataninfo/item/?code=52810002'
 };
@@ -36,38 +40,22 @@ const stats = process.argv[2]
     return res.json();
   })();
 
-// Courbes Serka (mêmes objets que tools/fetch-maxroll-honing.mjs) : +N = iLvl 1675 + 5N
-const SERKA = { weapon: '12159000', armor: ['12159011', '12159012', '12159013', '12159014', '12159015'] };
-const statAt = (item, ilvl, id) => {
-  const row = stats.itemLevel[`${item}#${ilvl}`];
-  const s = row && row.find(x => x.stat === id);
-  if (!s) throw new Error(`Stat ${id} absente pour ${item}#${ilvl}`);
-  return s.value;
+// Infobulles officielles (GMNote 1225) : +N après déblocage, le % de PA suit la rareté
+const OFFICIAL = {
+  10: { mainStat: 34746, weaponPower: 10969, vitality: 3072, flatAp: 2030 },
+  15: { mainStat: 47268, weaponPower: 14817, vitality: 4173, flatAp: 3690 },
+  20: { mainStat: 60216, weaponPower: 18794, vitality: 5286, flatAp: 5980 },
+  25: { mainStat: 73710, weaponPower: 22940, vitality: 6414, flatAp: 9050 }
 };
-const curve = l => {
-  const ilvl = 1675 + 5 * l;
-  const avg = id => SERKA.armor.reduce((s, it) => s + statAt(it, ilvl, id), 0) / SERKA.armor.length;
-  return { ms: avg(3), vit: avg(6), wp: statAt(SERKA.weapon, ilvl, 151) };
-};
-
-// Relevé +21 (Inven #3790814)
-const ANCHOR_LVL = 21;
-const ANCHOR = { mainStat: 52381, weaponPower: 21726, vitality: 4600, flatAp: 5980, apPct: 2 };
-const c21 = curve(ANCHOR_LVL);
+const KEYS = ['mainStat', 'weaponPower', 'vitality', 'flatAp'];
+const apPctAt = l => (l >= 20 ? 3 : l >= 15 ? 2 : l >= 10 ? 1 : 0);
 const levels = [];
 for (let l = 0; l <= 25; l++) {
-  const c = curve(l);
-  const isAnchor = l === ANCHOR_LVL;
-  levels.push({
-    mainStat: isAnchor ? ANCHOR.mainStat : Math.round(ANCHOR.mainStat * c.ms / c21.ms),
-    weaponPower: isAnchor ? ANCHOR.weaponPower : Math.round(ANCHOR.weaponPower * c.wp / c21.wp),
-    vitality: isAnchor ? ANCHOR.vitality : Math.round(ANCHOR.vitality * c.vit / c21.vit),
-    // PA fixe : suit la PA de base des pièces, √(stat × puissance d'arme)
-    flatAp: isAnchor ? ANCHOR.flatAp : Math.round(ANCHOR.flatAp * Math.sqrt(c.ms * c.wp / (c21.ms * c21.wp))),
-    // % de PA : +1 % à +10, +2 % à +20 (2,0 % au relevé +21)
-    apPct: l >= 20 ? 2 : l >= 10 ? 1 : 0,
-    src: isAnchor ? 'inven' : 'estimate'
-  });
+  const lo = l < 10 ? 10 : Math.min(20, Math.floor(l / 5) * 5), hi = lo + 5;
+  const t = (l - lo) / 5;
+  const row = {};
+  for (const k of KEYS) row[k] = Math.max(0, Math.round(OFFICIAL[lo][k] + t * (OFFICIAL[hi][k] - OFFICIAL[lo][k])));
+  levels.push(Object.assign(row, { apPct: apPctAt(l), src: OFFICIAL[l] ? 'official' : 'estimate' }));
 }
 
 // Coût d'un essai (niveau N = passage de +N à +N+1). Niveau 0 : note officielle (« 1단계 »).
@@ -120,8 +108,7 @@ for (let l = 0; l < 25; l++) {
 const data = {
   generatedAt: new Date().toISOString(),
   sources: SRC,
-  note: 'levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 % ; src = official | inven | estimate',
-  anchorLevel: ANCHOR_LVL,
+  note: 'levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 % ; src = official | estimate',
   // Multiplicateurs de la stat principale du brassard (Inven #3790814) : avatars +8 %, ranch du familier +1 %
   mainStatMult: 1.09,
   // Le brassard ne donne ni iLvl, ni qualité, ni points d'Ark Passive (note officielle)
@@ -135,4 +122,4 @@ const data = {
   steps
 };
 writeFileSync(OUT, JSON.stringify(data, null, 1));
-console.log(`data/bracer-t4.json écrit (+0 → +25, ancre +${ANCHOR_LVL})`);
+console.log('data/bracer-t4.json écrit (+0 → +25, niveaux officiels +10 / 15 / 20 / 25)');

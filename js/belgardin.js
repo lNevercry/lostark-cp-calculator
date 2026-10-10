@@ -3,8 +3,8 @@
 'use strict';
 
 // === Brassard T4 (완갑, raid Belgardin) : projection, en attendant les tables du jeu ===
-// data/bracer-t4.json (tools/build-bracer-estimate.mjs) : chaque valeur porte sa source (official = note Stove 1225,
-// inven = relevé +21, estimate = estimation communautaire KR). Le brassard ne donne ni iLvl, ni qualité, ni points
+// data/bracer-t4.json (tools/build-bracer-estimate.mjs) : chaque valeur porte sa source (official = note Stove 1225 :
+// infobulles +10 / 15 / 20 / 25, taux, coût du niveau 1 ; estimate = interpolation entre ces niveaux, coûts recalés). Le brassard ne donne ni iLvl, ni qualité, ni points
 // d'Ark Passive : il n'entre ni dans l'iLvl du personnage, ni dans le GPD tant que les tables du jeu manquent.
 let bracerT4 = null;
 async function loadBracerT4() {
@@ -24,7 +24,7 @@ function calcBracerStats(level) {
   return l ? Object.assign({ level }, l) : null;
 }
 
-// Attaque du personnage avec le brassard à +level (-1 = sans brassard). Inven #3790814 :
+// Attaque du personnage avec le brassard à +level (-1 = sans brassard). Formule d'Inven #3790814 :
 // PA de base = (√(stat × puissance d'arme ÷ 6) + PA fixe) × (1 + % de PA) ; stat du brassard × 1,09 (avatars, ranch),
 // puissance d'arme × (1 + % boucles + Karma) comme celle de l'arme.
 function bracerAttackState(ctx, apPool, level) {
@@ -106,8 +106,8 @@ function simulateBracerImpact(charObj, level, isSupport, fromLevel = -1) {
 }
 
 // === ONGLET PROJECTION BELGARDIN (brassard T4) ===
-// Projection sur le personnage importé (simulateBracerImpact). Données officielles et relevé +21 signalés comme tels,
-// le reste porte le badge « Estimation communautaire KR ». Pas de ligne GPD tant que les tables du jeu manquent.
+// Projection sur le personnage importé (simulateBracerImpact). Niveaux officiels (+10 / 15 / 20 / 25) signalés comme
+// tels, le reste porte le badge « Estimation ». Pas de ligne GPD tant que les tables du jeu manquent.
 const belgState = { level: 10, from: 0 };
 const BRACER_GRADES = [
   { min: 20, key: 'ancient', fr: 'Ancien', en: 'Ancient' },
@@ -150,9 +150,8 @@ function updateBracerView() {
   const charObj = getCurrentActiveCharacter();
   const fmt = (v, d = 0) => Number(v).toLocaleString(isEn ? 'en-US' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
   const signed = (v, d = 2) => `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v), d)}`;
-  const estBadge = `<span class="belg-src belg-src-est">${isEn ? 'KR community estimate (Inven/Arca)' : 'Estimation communautaire KR (Inven/Arca)'}</span>`;
+  const estBadge = `<span class="belg-src belg-src-est">${isEn ? 'Estimate' : 'Estimation'}</span>`;
   const officialBadge = `<span class="belg-src belg-src-off">${isEn ? 'Official (Stove)' : 'Officiel (Stove)'}</span>`;
-  const anchorBadge = `<span class="belg-src belg-src-off">${isEn ? 'Published +21 bracer (Inven)' : 'Brassard +21 publié (Inven)'}</span>`;
 
   const level = Math.min(25, Math.max(0, belgState.level));
   if (belgState.from > level) belgState.from = level === 0 ? -1 : 0;
@@ -200,7 +199,7 @@ function updateBracerView() {
       html += card(isEn ? 'Ally buff' : 'Buff allié', `${signed(sim.allyBuffPct)} %`, isEn ? 'damage of each ally (GPD scale)' : 'dégâts de chaque allié (échelle du GPD)')
         + card(isEn ? 'Max HP' : 'PV max', `${signed(sim.hpGainPct)} %`, isEn ? 'Vitality of the bracer' : 'Vitalité du brassard') + cpCard;
     }
-    html += `</div><p class="belg-note">${isEn ? `From ${fromTxt} to +${level}.` : `De ${fromTxt} à +${level}.`} ${sim.statsEstimate ? estBadge : anchorBadge}</p>`;
+    html += `</div><p class="belg-note">${isEn ? `From ${fromTxt} to +${level}.` : `De ${fromTxt} à +${level}.`} ${sim.statsEstimate ? estBadge : officialBadge}</p>`;
   }
 
   // 2. Stats du brassard au niveau choisi
@@ -215,9 +214,9 @@ function updateBracerView() {
       <tr><td>${isEn ? 'Base attack power (flat)' : 'PA de base (fixe)'}</td><td class="market-num">+${fmt(stats.flatAp)}</td></tr>
       <tr><td>${isEn ? 'Base attack power' : 'PA de base'}</td><td class="market-num">+${fmt(stats.apPct, 1)} %</td></tr>
     </tbody></table>
-    <p class="belg-note">${stats.src === 'inven' ? anchorBadge : estBadge} ${isEn
-      ? 'No item level, quality or Ark Passive points: the character\'s item level stays the average of its 6 pieces.'
-      : "Ni iLvl, ni qualité, ni points d'Ark Passive : l'iLvl du personnage reste la moyenne de ses 6 pièces."}</p>`;
+    <p class="belg-note">${stats.src === 'official' ? officialBadge : estBadge} ${isEn
+      ? 'Official tooltips at +10, +15, +20 and +25 (developer letter); levels in between interpolated linearly, +0 to +9 extended on the +10 → +15 slope. Attack power % follows the grade after limit break (0 / 1 / 2 / 3 %). No item level, quality or Ark Passive points: the character\'s item level stays the average of its 6 pieces.'
+      : "Infobulles officielles à +10, +15, +20 et +25 (lettre des développeurs) ; niveaux intermédiaires interpolés linéairement, +0 à +9 prolongés sur la pente +10 → +15. Le % de PA suit la rareté après déblocage (0 / 1 / 2 / 3 %). Ni iLvl, ni qualité, ni points d'Ark Passive : l'iLvl du personnage reste la moyenne de ses 6 pièces."}</p>`;
   results.innerHTML = html;
 
   // 3. Plan de stockage
@@ -285,8 +284,8 @@ function updateBracerView() {
           : "Projection seulement : le brassard n'entre ni dans le Smart Advisor ni dans le GPD tant que les tables du jeu ne sont pas publiées (flux Maxroll). Les matériaux de déblocage viennent du raid, non chiffrés."}</p>`;
     }
     h += `<p class="belg-note">${isEn
-        ? 'KR community figures for comparison: +6.21 % damage at +10 and +19.05 % at +25 (kakao.gg guide), at least +6.37 % for +10 on a 1800 character (Inven #3954479, about 1.6 M gold in all: 363 k gold, 122 k guardian and 40 k destruction crystals, half our estimate). They do not say from which state they count; our low levels are estimated, so the +0 → +10 tier is the least reliable.'
-        : "Repères de la communauté KR : +6,21 % de dégâts à +10 et +19,05 % à +25 (guide kakao.gg), au moins +6,37 % pour +10 sur un personnage 1800 (Inven #3954479, environ 1,6 M d'or en tout : 363 k d'or, 122 k pierres de gardien et 40 k de destruction cristallisées, moitié moins que notre estimation). Ils ne disent pas depuis quel état ils comptent ; nos niveaux bas sont estimés, la tranche +0 → +10 est donc la moins sûre."}</p>`;
+        ? 'KR community figures for comparison: +5.63 / 9.07 / 12.95 / 17.37 % CP at +10 / 15 / 20 / 25 from no bracer on an end-game character (Inven #3951651), +6.21 % damage at +10 and +19.05 % at +25 (kakao.gg guide), at least +6.37 % for +10 on a 1800 character (Inven #3954479, about 1.6 M gold in all: 363 k gold, 122 k guardian and 40 k destruction crystals, half our estimate). They do not say from which state they count; our low levels are estimated, so the +0 → +10 tier is the least reliable.'
+        : "Repères de la communauté KR : +5,63 / 9,07 / 12,95 / 17,37 % de CP à +10 / 15 / 20 / 25 depuis aucun brassard sur un personnage de fin de jeu (Inven #3951651), +6,21 % de dégâts à +10 et +19,05 % à +25 (guide kakao.gg), au moins +6,37 % pour +10 sur un personnage 1800 (Inven #3954479, environ 1,6 M d'or en tout : 363 k d'or, 122 k pierres de gardien et 40 k de destruction cristallisées, moitié moins que notre estimation). Ils ne disent pas depuis quel état ils comptent ; nos niveaux bas sont estimés, la tranche +0 → +10 est donc la moins sûre."}</p>`;
     insight.innerHTML = h;
   }
 }

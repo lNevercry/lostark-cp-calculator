@@ -1,18 +1,17 @@
 {
- "generatedAt": "2026-10-01T12:07:21.837Z",
+ "generatedAt": "2026-10-10T22:53:19.351Z",
  "sources": {
   "official": "https://m-lostark.game.onstove.com/News/GMNote/Views/1225",
-  "inven": "https://www.inven.co.kr/board/lostark/6271/3790814",
+  "officialTooltips": "https://www.inven.co.kr/board/lostark/6271/3953370",
+  "mainStatMult": "https://www.inven.co.kr/board/lostark/6271/3790814",
   "estimate": [
    "https://www.inven.co.kr/board/lostark/4821/110391",
    "https://arca.live/b/lostark/178285665"
   ],
-  "apStep": "https://www.inven.co.kr/board/lostark/4821/110391",
   "raid": "https://www.loa.kakao.gg/guides/로스트아크-완갑-효율-공략-10강20강25강-강화-우선순위와-준비-재료",
   "limitItem": "https://lostark.inven.co.kr/dataninfo/item/?code=52810002"
  },
- "note": "levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 % ; src = official | inven | estimate",
- "anchorLevel": 21,
+ "note": "levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 % ; src = official | estimate",
  "mainStatMult": 1.09,
  "limitBreak": {
   "10": {
@@ -38,212 +37,212 @@
  },
  "levels": [
   {
-   "mainStat": 29883,
-   "weaponPower": 12399,
-   "vitality": 3337,
-   "flatAp": 3412,
+   "mainStat": 9702,
+   "weaponPower": 3273,
+   "vitality": 870,
+   "flatAp": 0,
    "apPct": 0,
    "src": "estimate"
   },
   {
-   "mainStat": 30666,
-   "weaponPower": 12724,
-   "vitality": 3389,
-   "flatAp": 3501,
+   "mainStat": 12206,
+   "weaponPower": 4043,
+   "vitality": 1090,
+   "flatAp": 0,
    "apPct": 0,
    "src": "estimate"
   },
   {
-   "mainStat": 31476,
-   "weaponPower": 13059,
-   "vitality": 3442,
-   "flatAp": 3594,
+   "mainStat": 14711,
+   "weaponPower": 4812,
+   "vitality": 1310,
+   "flatAp": 0,
    "apPct": 0,
    "src": "estimate"
   },
   {
-   "mainStat": 32314,
-   "weaponPower": 13407,
-   "vitality": 3496,
+   "mainStat": 17215,
+   "weaponPower": 5582,
+   "vitality": 1531,
+   "flatAp": 0,
+   "apPct": 0,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 19720,
+   "weaponPower": 6351,
+   "vitality": 1751,
+   "flatAp": 38,
+   "apPct": 0,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 22224,
+   "weaponPower": 7121,
+   "vitality": 1971,
+   "flatAp": 370,
+   "apPct": 0,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 24728,
+   "weaponPower": 7891,
+   "vitality": 2191,
+   "flatAp": 702,
+   "apPct": 0,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 27233,
+   "weaponPower": 8660,
+   "vitality": 2411,
+   "flatAp": 1034,
+   "apPct": 0,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 29737,
+   "weaponPower": 9430,
+   "vitality": 2632,
+   "flatAp": 1366,
+   "apPct": 0,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 32242,
+   "weaponPower": 10199,
+   "vitality": 2852,
+   "flatAp": 1698,
+   "apPct": 0,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 34746,
+   "weaponPower": 10969,
+   "vitality": 3072,
+   "flatAp": 2030,
+   "apPct": 1,
+   "src": "official"
+  },
+  {
+   "mainStat": 37250,
+   "weaponPower": 11739,
+   "vitality": 3292,
+   "flatAp": 2362,
+   "apPct": 1,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 39755,
+   "weaponPower": 12508,
+   "vitality": 3512,
+   "flatAp": 2694,
+   "apPct": 1,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 42259,
+   "weaponPower": 13278,
+   "vitality": 3733,
+   "flatAp": 3026,
+   "apPct": 1,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 44764,
+   "weaponPower": 14047,
+   "vitality": 3953,
+   "flatAp": 3358,
+   "apPct": 1,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 47268,
+   "weaponPower": 14817,
+   "vitality": 4173,
    "flatAp": 3690,
-   "apPct": 0,
-   "src": "estimate"
+   "apPct": 2,
+   "src": "official"
   },
   {
-   "mainStat": 33181,
-   "weaponPower": 13766,
-   "vitality": 3551,
-   "flatAp": 3789,
-   "apPct": 0,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 34079,
-   "weaponPower": 14139,
-   "vitality": 3607,
-   "flatAp": 3891,
-   "apPct": 0,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 35009,
-   "weaponPower": 14524,
-   "vitality": 3665,
-   "flatAp": 3997,
-   "apPct": 0,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 35971,
-   "weaponPower": 14923,
-   "vitality": 3723,
-   "flatAp": 4107,
-   "apPct": 0,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 36966,
-   "weaponPower": 15336,
-   "vitality": 3782,
-   "flatAp": 4221,
-   "apPct": 0,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 37997,
-   "weaponPower": 15763,
-   "vitality": 3842,
-   "flatAp": 4338,
-   "apPct": 0,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 39063,
-   "weaponPower": 16205,
-   "vitality": 3904,
-   "flatAp": 4460,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 40167,
-   "weaponPower": 16663,
-   "vitality": 3966,
-   "flatAp": 4586,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 41310,
-   "weaponPower": 17136,
-   "vitality": 4030,
-   "flatAp": 4716,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 42492,
-   "weaponPower": 17626,
-   "vitality": 4094,
-   "flatAp": 4851,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 43716,
-   "weaponPower": 18134,
-   "vitality": 4160,
-   "flatAp": 4991,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 44982,
-   "weaponPower": 18659,
-   "vitality": 4227,
-   "flatAp": 5136,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 46294,
-   "weaponPower": 19203,
-   "vitality": 4295,
-   "flatAp": 5285,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 47452,
-   "weaponPower": 19683,
-   "vitality": 4355,
-   "flatAp": 5417,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 48639,
-   "weaponPower": 20175,
-   "vitality": 4415,
-   "flatAp": 5553,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 49856,
-   "weaponPower": 20679,
-   "vitality": 4476,
-   "flatAp": 5692,
-   "apPct": 1,
-   "src": "estimate"
-  },
-  {
-   "mainStat": 51103,
-   "weaponPower": 21196,
-   "vitality": 4537,
-   "flatAp": 5834,
+   "mainStat": 49858,
+   "weaponPower": 15612,
+   "vitality": 4396,
+   "flatAp": 4148,
    "apPct": 2,
    "src": "estimate"
   },
   {
-   "mainStat": 52381,
-   "weaponPower": 21726,
-   "vitality": 4600,
+   "mainStat": 52447,
+   "weaponPower": 16408,
+   "vitality": 4618,
+   "flatAp": 4606,
+   "apPct": 2,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 55037,
+   "weaponPower": 17203,
+   "vitality": 4841,
+   "flatAp": 5064,
+   "apPct": 2,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 57626,
+   "weaponPower": 17999,
+   "vitality": 5063,
+   "flatAp": 5522,
+   "apPct": 2,
+   "src": "estimate"
+  },
+  {
+   "mainStat": 60216,
+   "weaponPower": 18794,
+   "vitality": 5286,
    "flatAp": 5980,
-   "apPct": 2,
-   "src": "inven"
+   "apPct": 3,
+   "src": "official"
   },
   {
-   "mainStat": 53691,
-   "weaponPower": 22269,
-   "vitality": 4664,
-   "flatAp": 6130,
-   "apPct": 2,
+   "mainStat": 62915,
+   "weaponPower": 19623,
+   "vitality": 5512,
+   "flatAp": 6594,
+   "apPct": 3,
    "src": "estimate"
   },
   {
-   "mainStat": 55034,
-   "weaponPower": 22826,
-   "vitality": 4728,
-   "flatAp": 6283,
-   "apPct": 2,
+   "mainStat": 65614,
+   "weaponPower": 20452,
+   "vitality": 5737,
+   "flatAp": 7208,
+   "apPct": 3,
    "src": "estimate"
   },
   {
-   "mainStat": 56410,
-   "weaponPower": 23396,
-   "vitality": 4793,
-   "flatAp": 6440,
-   "apPct": 2,
+   "mainStat": 68312,
+   "weaponPower": 21282,
+   "vitality": 5963,
+   "flatAp": 7822,
+   "apPct": 3,
    "src": "estimate"
   },
   {
-   "mainStat": 57821,
-   "weaponPower": 23981,
-   "vitality": 4859,
-   "flatAp": 6601,
-   "apPct": 2,
+   "mainStat": 71011,
+   "weaponPower": 22111,
+   "vitality": 6188,
+   "flatAp": 8436,
+   "apPct": 3,
    "src": "estimate"
+  },
+  {
+   "mainStat": 73710,
+   "weaponPower": 22940,
+   "vitality": 6414,
+   "flatAp": 9050,
+   "apPct": 3,
+   "src": "official"
   }
  ],
  "steps": [
