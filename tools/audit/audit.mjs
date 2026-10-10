@@ -120,7 +120,8 @@ for (const b of bibleFiles()) {
     const ph = A.predictHoningPath(c, c.ilvl + 10, isSup);
     const gems = A.gemCpBonus(c, 9, undefined, isSup);
     const brac = (lv, from) => { const s = win.__simulateBracerImpact(c, lv, isSup, from); return s && { gain: isSup ? s.allyBuffPct : s.dpsGainPct, cp: s.cpGain, value: s.costs && s.costs.value }; };
-    out.extra = { predictor: ph && { cp: ph.cpGain, gold: ph.gold }, gemsLv9Cp: gems, bracer0to10: brac(10, 0), bracerNoneTo21: brac(21, -1) };
+    out.extra = { predictor: ph && { cp: ph.cpGain, gold: ph.gold }, gemsLv9Cp: gems, bracer0to10: brac(10, 0), bracerNoneTo21: brac(21, -1),
+      avatar: (av => av && { pct: av.pct, buy: av.buy, gain: av.gain })(A.avatarGpdStep(c, isSup)) };
   } catch (e) { add('ERR', 'extra-throw', e.stack.split('\n').slice(0, 2).join(' | ')); }
   report.push(out);
 }

@@ -187,6 +187,74 @@ function karmaGpdStep(charObj, isSupport, lvlOverride) {
   return { lvl, attempts, rate: here.prob / 100, cost: attempts * here.gold, gain, dWp, wpTotal: next.wp / 100 };
 }
 
+// Avatars (tête, torse, jambes, arme) : stat principale +0,5 / 1 / 2 % par pièce rare / épique / légendaire, 8 % pour
+// 4 légendaires. Le profil ne donne que le total : stats 7 / 8 / 9 = % de Force / Dextérité / Intelligence en 0,01 %
+// (10 000 = 100 %), avatars = % de la stat principale − % des deux autres (le ranch du familier, +1 %, est sur les trois).
+// Mesuré sur 70 profils : 37 à 8 %, 22 à 4 %, le reste entre 1 et 7 % ; loa-sim lit le même total.
+const AVATAR_MAX_PCT = 8;
+function avatarBonusOf(charObj) {
+  const stats = charObj && charObj.rawProfile && charObj.rawProfile.loadout && charObj.rawProfile.loadout.stats;
+  if (!Array.isArray(stats)) return null;
+  const v = t => (stats.find(s => s.type === t) || {}).value;
+  const ms = [3, 4, 5].map(v);
+  if (ms.some(x => !(x > 0))) return null;
+  const main = 3 + ms.indexOf(Math.max(...ms));
+  const pct = [7, 8, 9].map(v);
+  if (pct.some(x => !(x >= 1e4))) return null;
+  const others = [3, 4, 5].filter(t => t !== main).map(t => pct[t - 3]);
+  if (others[0] !== others[1]) return null;
+  const bonus = (pct[main - 3] - others[0]) / 100;
+  return bonus >= 0 && bonus <= AVATAR_MAX_PCT && Number.isInteger(bonus * 2) ? { pct: bonus, mult: pct[main - 3] / 1e4 } : null;
+}
+
+// Répartition la plus probable du total sur les 4 pièces (comme loa-sim) : le plus de pièces portées, puis d'épiques
+// (4 % = 4 épiques, 7 % = 3 légendaires + 1 épique, 3,5 % = 3 épiques + 1 rare)
+function avatarPieces(total) {
+  const vals = [2, 1, 0.5, 0];
+  let best = null, bestScore = -Infinity;
+  for (const a of vals) for (const b of vals) for (const c of vals) for (const d of vals) {
+    const p = [a, b, c, d];
+    if (a + b + c + d !== total) continue;
+    const score = p.filter(x => x > 0).length * 100 + p.filter(x => x === 1).length * 10 - new Set(p).size;
+    if (score > bestScore) { best = p; bestScore = score; }
+  }
+  return best;
+}
+
+/**
+ * Avatars légendaires sur les pièces qui ne le sont pas (jusqu'à 8 %). Le bonus multiplie toute la stat principale :
+ * DPS 50 × ln(rapport des multiplicateurs), support canal ap (supportApGain). Coût = pièces à acheter × prix saisi
+ * (aucune source de prix : ni marché ni Loseii), cost null sans prix. null au maximum ou sans profil lisible.
+ */
+function avatarGpdStep(charObj, isSupport) {
+  const av = avatarBonusOf(charObj);
+  const ctx = gearStatContext(charObj);
+  if (!av || !ctx || av.pct >= AVATAR_MAX_PCT) return null;
+  const pieces = avatarPieces(av.pct);
+  if (!pieces) return null;
+  const buy = pieces.filter(x => x < 2).length;
+  const add = AVATAR_MAX_PCT - av.pct;
+  const dMs = ctx.ms * (add / 100) / av.mult;
+  const gain = isSupport ? supportApGain(charObj, ctx, 0, dMs) : 50 * Math.log(1 + dMs / ctx.ms);
+  const price = gpdUnitPrice('avatar');
+  return { pct: av.pct, pieces, buy, add, dMs, gain, cost: price > 0 ? buy * price : null };
+}
+
+// Libellés de la ligne « Avatars » (tableau GPD, ligne en attente de prix, Smart Advisor)
+function avatarRowText(av, isEn) {
+  const fmtPct = x => (isEn ? String(x) : String(x).replace('.', ','));
+  const tier = x => (x === 2 ? (isEn ? 'legendary' : 'légendaire') : x === 1 ? (isEn ? 'epic' : 'épique') : x === 0.5 ? (isEn ? 'rare' : 'rare') : (isEn ? 'none' : 'aucun'));
+  const split = av.pieces.map(tier).join(' / ');
+  return {
+    name: isEn ? `Avatars ${fmtPct(av.pct)}% ➔ ${AVATAR_MAX_PCT}% main stat` : `Avatars ${fmtPct(av.pct)} % ➔ ${AVATAR_MAX_PCT} % de stat principale`,
+    sub: isEn ? `${av.buy} legendary piece${av.buy > 1 ? 's' : ''} to buy (likely now: ${split})` : `${av.buy} pièce${av.buy > 1 ? 's' : ''} légendaire${av.buy > 1 ? 's' : ''} à acheter (probable : ${split})`,
+    state: isEn ? `${fmtPct(av.pct)}%` : `${fmtPct(av.pct)} %`,
+    comment: isEn
+      ? `Head, chest, pants and weapon avatars: main stat +0.5 / 1 / 2% per rare / epic / legendary piece. The profile only gives the total (${fmtPct(av.pct)}%), so the split per piece is the most likely one; check in game how many pieces are not legendary. Price per legendary piece set above the table (no market source).`
+      : `Avatars de tête, torse, jambes et arme : stat principale +0,5 / 1 / 2 % par pièce rare / épique / légendaire. Le profil ne donne que le total (${fmtPct(av.pct)} %) : répartition la plus probable par pièce, vérifie en jeu combien ne sont pas légendaires. Prix d'une pièce légendaire réglé au-dessus du tableau (pas de source marché).`
+  };
+}
+
 // Astrogemmes : effets et coût de base (8 / 9 / 10) d'après les options de la gemme (arkGridGems du jeu)
 const ASTRO_EFFECT_NAMES = { 2001: 'Attack Power', 2002: 'Additional Damage', 2003: 'Boss Damage',
   2011: 'Ally Damage Enh.', 2012: 'Brand Power', 2013: 'Ally Attack Enh.' };
@@ -625,6 +693,14 @@ function getDynamicGpdTable(charObj, role, isEn) {
       { state: isEn ? `lv ${karma.lvl}` : `niv. ${karma.lvl}`, lvl: karma.lvl });
   }
 
+  // 10b. Avatars légendaires (prix saisi par le joueur ; sans prix, ligne en attente sous le tableau)
+  const avatar = avatarGpdStep(charObj, isSupport);
+  if (avatar && avatar.cost) {
+    const t = avatarRowText(avatar, isEn);
+    pushRow('dyn_avatar', t.name, t.sub, avatar.gain, avatar.cost, t.comment,
+      { state: t.state, pct: avatar.pct, buy: avatar.buy, pieces: avatar.pieces });
+  }
+
   // 11. Astrogemmes : taille d'épiques et de rares, échelles de Loseii par note moyenne des gemmes
   const grid = astrogemGridBand(charObj, isSupport);
   [['epic', isEn ? 'cutting epics' : 'taille d\'épiques'], ['rare', isEn ? 'cutting rares' : 'taille de rares']].forEach(([rarity, word]) => {
@@ -781,17 +857,37 @@ function renderEfficiencyTable() {
           ? (isEn ? 'No priced upgrade for this character.' : 'Aucune amélioration chiffrée pour ce personnage.')
           : (isEn ? 'No character imported yet.' : 'Aucun personnage importé.')}</td></tr>`;
     }
+    // Avatars sans prix saisi : gain affiché, pas de ratio ni de rang (aucun prix inventé)
+    const av = activeChar ? avatarGpdStep(activeChar, isSupport) : null;
+    if (av && !av.cost && av.gain >= 1e-4) {
+      const t = avatarRowText(av, isEn);
+      rowsHtml += `
+          <tr class="eff-row eff-row-pending" title="${escapeHtml(t.comment)}">
+            <td class="col-rank">—</td>
+            <td class="col-name">
+              <div><strong>${t.name}</strong></div>
+              <span class="eff-subtext">${t.sub}</span>
+            </td>
+            <td class="col-state">${escapeHtml(t.state)}</td>
+            <td class="col-gain">+${av.gain.toFixed(2)}% ${isSupport ? 'Buff' : 'DPS'}</td>
+            <td class="col-cost">—</td>
+            <td class="col-ratio eff-pending-note" colspan="2">${isEn ? 'Enter the price of a legendary avatar above the table' : 'Saisis le prix d\'un avatar légendaire au-dessus du tableau'}</td>
+          </tr>
+        `;
+    }
     dom.effTableBody.innerHTML = rowsHtml;
   }
 }
 
-// Prix hors marché réglables (pheon, bracelet non relancé) au-dessus du tableau GPD ; vide = défaut Loseii
+// Prix hors marché réglables (pheon, bracelet non relancé, avatar légendaire) au-dessus du tableau GPD ;
+// vide = défaut Loseii (avatar : pas de défaut, ligne en attente)
 function renderGpdPriceInputs(isEn) {
   const box = document.getElementById('gpdPriceInputs');
   if (!box) return;
   const fields = [
     ['pheon', isEn ? 'Pheon (gold)' : 'Pheon (or)'],
-    ['bracelet', isEn ? 'Unrolled 90/90 bracelet (gold)' : 'Bracelet 90/90 non relancé (or)']
+    ['bracelet', isEn ? 'Unrolled 90/90 bracelet (gold)' : 'Bracelet 90/90 non relancé (or)'],
+    ['avatar', isEn ? 'Legendary avatar, 1 piece (gold)' : 'Avatar légendaire, 1 pièce (or)']
   ];
   if (!box.dataset.bound) {
     box.innerHTML = fields.map(([k, label]) => `
@@ -817,7 +913,7 @@ function renderGpdPriceInputs(isEn) {
     if (!inp) return;
     const own = state.gpdPrices && state.gpdPrices[k] > 0 ? state.gpdPrices[k] : '';
     if (document.activeElement !== inp) inp.value = own;
-    inp.placeholder = `${formatNumber(GPD_DEFAULT_PRICES[k])} (Loseii)`;
+    inp.placeholder = GPD_DEFAULT_PRICES[k] > 0 ? `${formatNumber(GPD_DEFAULT_PRICES[k])} (Loseii)` : (isEn ? 'to enter' : 'à saisir');
   });
 }
 

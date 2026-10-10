@@ -11,7 +11,7 @@ export const CACHE = path.resolve(HERE, 'cache');
 
 const AUDIT_NAMES = ['getDynamicGpdTable', 'buildMasterGpdData', 'buildPieceByPieceData', 'astrogemGridBand', 'getAbilityStoneUpgrade',
   'braceletBandOf', 'extractPlayerSystems', 'detectCharacterRole', 'gearStatContext', 'supportInputs', 'realGems', 'realGemLevels',
-  'weaponQualityUpgrade', 'karmaGpdStep', 'getRelicBookUpgrades', 'findBestAccessoryUpgrade', 'computeAccessoryLinesBonus',
+  'weaponQualityUpgrade', 'karmaGpdStep', 'avatarGpdStep', 'avatarBonusOf', 'renderEfficiencyTable', 'getRelicBookUpgrades', 'findBestAccessoryUpgrade', 'computeAccessoryLinesBonus',
   'state', 'updateActiveCharacterCard', 'getAbilityStone', 'pieceIsSerka', 'battlePointPartsOf', 'honingDpsGain', 'supportContribution',
   'braceletGpdStep', 'getKarmaBonus', 'benchmarkGpdGains', 'computeDynamicGapsAndPlan', 'getArkGridCoreIds', 'loseiiGpd',
   'getBraceletRerollEstimate', 'getLevelCost', 'honingStepFor', 'getAdvHoningLevels', 'roleFromEngravings', 'hasMixedRaidProfile',

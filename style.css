@@ -2019,6 +2019,20 @@ select optgroup {
   text-align: right;
 }
 
+/* Ligne sans prix (avatars) : gain visible, pas de rang ni de ratio */
+.eff-row-pending td {
+  color: var(--text-dim);
+}
+.eff-row-pending .col-gain {
+  color: var(--gain);
+}
+.eff-table .eff-pending-note {
+  font-family: inherit;
+  font-size: 13px;
+  white-space: normal;
+  color: var(--text-dim);
+}
+
 /* Rangs ROI lus à la luminosité */
 .prio-badge {
   font-family: var(--font-mono);

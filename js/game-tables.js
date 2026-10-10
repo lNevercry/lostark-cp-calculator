@@ -246,8 +246,9 @@ function refreshGpdViews() {
   if (typeof updateOptimizationView === 'function') updateOptimizationView();
 }
 
-// --- Prix hors marché du GPD, réglables dans l'onglet GPD : pheon et bracelet non relancé ---
+// --- Prix hors marché du GPD, réglables dans l'onglet GPD : pheon, bracelet non relancé, avatar légendaire ---
 // Défauts = prix unitaires des tables de Loseii (lus sur leurs achats de bracelet), sinon ces valeurs.
+// Avatar légendaire (une pièce) : aucun défaut (ni marché ni Loseii), la ligne attend le prix du joueur.
 const GPD_PRICE_KEY = 'lostark_gpd_prices';
 const GPD_DEFAULT_PRICES = { pheon: 2300, bracelet: 24000 };
 // Pierre d'aptitude non taillée : 9 pheons (Loseii : « uncut Ancient stones at 9 pheons each »)

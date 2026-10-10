@@ -254,6 +254,12 @@ function supportGpdRowCp(charObj, model, d, factors) {
     const ctx = gearStatContext(charObj);
     if (st && ctx) cp = gearCpGain(charObj, ctx, { dWp: st.dWp, dMs: 0, dVit: 0 }, true);
   } else if (id === 'dyn_stone') cp = model.stoneCp();
+  else if (id === 'dyn_avatar') {
+    // Stat principale seule : branche buff au rapport √(stat principale), comme l'affinage des armures
+    const av = avatarGpdStep(charObj, true);
+    const ctx = gearStatContext(charObj);
+    if (av && ctx) cp = gearCpGain(charObj, ctx, { dWp: 0, dMs: av.dMs, dVit: 0 }, true);
+  }
   else if (id.startsWith('dyn_acc')) cp = model.linesCp([15, 17], m.curPct, d.gainRaw);
   else if (id === 'dyn_brac') cp = model.linesCp([19, 20], m.curTotal, d.gainRaw);
   else if (id.startsWith('dyn_astro_')) {
@@ -413,6 +419,18 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         lastStep: '—',
         nextStep: `${m.lvl} ➔ ${m.lvl + 1}`,
         category: 'arkPassive'
+      }));
+    } else if (d.id === 'dyn_avatar') {
+      const pct = isEn ? `${m.pct}%` : `${String(m.pct).replace('.', ',')} %`;
+      rows.push(dynToMaster(d, {
+        icon: '',
+        system: 'Avatars',
+        whatItReads: isEn ? `Main stat +${pct}` : `Stat principale +${pct}`,
+        wherePutsYou: pct,
+        lastStep: '—',
+        nextStep: `${pct} ➔ ${AVATAR_MAX_PCT}${isEn ? '%' : ' %'}`,
+        stepDetail: isEn ? `${m.buy} legendary piece${m.buy > 1 ? 's' : ''} × price set in the GPD tab` : `${m.buy} pièce${m.buy > 1 ? 's' : ''} légendaire${m.buy > 1 ? 's' : ''} × prix réglé dans l'onglet GPD`,
+        category: 'gear'
       }));
     } else if (d.id.startsWith('dyn_astro_')) {
       rows.push(dynToMaster(d, {
