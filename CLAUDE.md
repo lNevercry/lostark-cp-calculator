@@ -138,6 +138,7 @@ Lors de l'ingestion d'un profil via `parseBibleCharacter()`, les données brutes
 
 ### Simulateur d'affinage (onglet 2)
 - Personnage importé : CP par `gearCpGain` (DPS et support : branches buff et défense), ramené au CP de base du simulateur ; coût pièce par pièce sur sa recette (Serka / Aegir), avancé sur les pièces Aegir seulement. Conseil calculé (`honingNextSteps`) : +1 sur chaque pièce depuis l'état simulé, CP marginal et coût attendu, classés par or / CP (cohérent avec le GPD : arme +19 ➔ +20 sur Kaarlach, 59 CP contre 58 au GPD).
+- Pity (idée de loa-sim) : `recipeStepCost` donne aussi le pire cas, avec le même nombre de souffles que le coût attendu (échecs jusqu'à la jauge d'artisan pleine, 215 % de taux cumulé, puis la tentative garantie ; souffles comptés sur chaque essai, comme le coût attendu). Affiché à côté du coût attendu, jamais dans les ratios ni les classements : total de la simulation (affinage avancé au coût attendu, sans jauge) et chaque prochain palier de l'onglet 2, sous le coût des lignes Arme / Armures du GPD (somme des pièces), détail des étapes d'affinage du Smart Advisor et de la feuille de route (`honingPityDetail`, chaque étape suivante a le sien). Mesuré sur 70 profils : 2,26 à 2,40 × le coût attendu (ex. Serka +24 armure, 0,5 % : 219 essais ; arme +23 avec 50 souffles : 110).
 - Sans personnage : ancien barème par pièce (estimation) et rappel général, sans chiffres inventés.
 
 ### Simulateur Ark Passive (onglet 4)

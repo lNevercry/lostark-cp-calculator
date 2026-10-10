@@ -194,24 +194,35 @@ function updateHoningView() {
   // Calcul du coût estimé en Gold brut (Honing Sheet)
   let totalSimGold = 0;
   let totalRawGold = 0;
+  // Pire cas : jauge d'artisan pleine à chaque palier (null dès qu'un palier n'a pas de recette du jeu)
+  let totalPity = 0, advSimGold = 0;
   for (const p of simPieces) {
     // Recette de la pièce : Serka au niveau affiché, sinon Aegir
     for (let l = p.lvl; l < p.toLvl; l++) {
       const costObj = getLevelCost(p.slot, l, p.isSerka ? 'serka' : 'aegir');
       totalSimGold += Math.round(costObj.totalValue);
       totalRawGold += Math.round(costObj.rawGold);
+      if (totalPity !== null) totalPity = costObj.pityValue > 0 ? totalPity + costObj.pityValue : null;
     }
     // Affinage avancé de la pièce (Aegir : sur le Serka il ne rapporte rien)
     if (!p.isSerka && p.toAdv > p.adv) {
       const advCost = advHoningCostBetween(p.slot, p.adv, p.toAdv);
       totalSimGold += advCost.totalValue;
       totalRawGold += advCost.rawGold;
+      advSimGold += advCost.totalValue;
     }
   }
 
   if (dom.simEstimatedGold) {
     const enG = isEnLang();
-    dom.simEstimatedGold.innerHTML = totalSimGold > 0 ? `${formatNumber(totalSimGold)} g <span style="font-size:13px; color:var(--text-muted); font-weight:normal;">(${enG ? 'gold + materials at market price' : 'or + matériaux au prix du marché'})</span><br><span style="font-size:15px; color:#ffb13b;">${formatNumber(totalRawGold)} g</span> <span style="font-size:13px; color:var(--text-muted); font-weight:normal;">(${enG ? 'gold fee only' : 'or des tentatives seul'})</span>` : '0 g';
+    const muted = 'font-size:13px; color:var(--text-muted); font-weight:normal;';
+    // Affinage avancé : pas de jauge d'artisan, compté à son coût attendu dans le pire cas
+    const pityLine = totalPity > 0
+      ? `<br><span style="font-size:15px;">${formatNumber(totalPity + advSimGold)} g</span> <span style="${muted}">(${enG
+          ? 'worst case: full artisan\'s energy on every step' + (advSimGold > 0 ? ', advanced honing at expected cost' : '')
+          : 'pire cas : jauge d\'artisan pleine à chaque palier' + (advSimGold > 0 ? ', affinage avancé au coût attendu' : '')})</span>`
+      : '';
+    dom.simEstimatedGold.innerHTML = totalSimGold > 0 ? `${formatNumber(totalSimGold)} g <span style="${muted}">(${enG ? 'gold + materials at market price' : 'or + matériaux au prix du marché'})</span>${pityLine}<br><span style="font-size:15px; color:#ffb13b;">${formatNumber(totalRawGold)} g</span> <span style="${muted}">(${enG ? 'gold fee only' : 'or des tentatives seul'})</span>` : '0 g';
   }
 
   if (dom.simGoldPerCp) {
@@ -276,11 +287,12 @@ function honingNextSteps(charObj, ctx, pieces, isSupport, cpScale) {
   const out = [];
   pieces.forEach((p, i) => {
     if (p.toLvl >= 25) return;
-    const cost = getLevelCost(p.slot === 'weapon' ? 'weapon' : 'armor', p.toLvl, p.isSerka ? 'serka' : 'aegir').totalValue;
+    const lc = getLevelCost(p.slot === 'weapon' ? 'weapon' : 'armor', p.toLvl, p.isSerka ? 'serka' : 'aegir');
+    const cost = lc.totalValue;
     const next = cpOf(pieces.map((q, j) => (j === i ? Object.assign({}, q, { toLvl: q.toLvl + 1 }) : q)));
     if (!(cost > 0) || next === null) return;
     const cp = (next - now) * cpScale;
-    if (cp > 0) out.push({ slot: p.slot, from: p.toLvl, to: p.toLvl + 1, cp, cost, ratio: cost / cp });
+    if (cp > 0) out.push({ slot: p.slot, from: p.toLvl, to: p.toLvl + 1, cp, cost, ratio: cost / cp, pity: lc.pityValue, pityTaps: lc.pityTaps });
   });
   return out.sort((a, b) => a.ratio - b.ratio);
 }
@@ -303,14 +315,15 @@ function updateHoningAdvice(diffCp = 0, totalSimGold = 0, nextSteps = null) {
     const names = isEn
       ? { weapon: 'Weapon', head: 'Head', shoulder: 'Shoulders', chest: 'Chest', pants: 'Pants', gloves: 'Gloves' }
       : { weapon: 'Arme', head: 'Tête', shoulder: 'Épaules', chest: 'Torse', pants: 'Jambes', gloves: 'Gants' };
-    const fmt = st => `${names[st.slot]} +${st.from} ➔ +${st.to} : +${formatNumber(Math.round(st.cp))} CP ${isEn ? 'for' : 'pour'} ${formatNumber(Math.round(st.cost))} ${isEn ? 'g' : 'or'} (${formatNumber(Math.round(st.ratio))} ${isEn ? 'g' : 'or'} / CP)`;
+    const pity = st => (st.pity > 0 ? (isEn ? `; at pity ${formatNumber(st.pity)} g, ${st.pityTaps} taps` : ` ; au pity ${formatNumber(st.pity)} or, ${st.pityTaps} essais`) : '');
+    const fmt = st => `${names[st.slot]} +${st.from} ➔ +${st.to} : +${formatNumber(Math.round(st.cp))} CP ${isEn ? 'for' : 'pour'} ${formatNumber(Math.round(st.cost))} ${isEn ? 'g' : 'or'} (${formatNumber(Math.round(st.ratio))} ${isEn ? 'g' : 'or'} / CP${pity(st)})`;
     const best = nextSteps[0];
     const others = nextSteps.slice(1).map(fmt).join('<br>');
     advice = `${simPrefix}${isEn ? 'Most cost-effective next step from this simulation' : 'Prochain palier le plus rentable depuis cette simulation'} : <strong>${fmt(best)}</strong>.` +
       (others ? `<div style="margin-top: 6px; font-size: 13px; color: var(--text-muted);">${others}</div>` : '') +
       `<div style="margin-top: 6px; font-size: 12px; color: var(--text-muted);">${isEn
-          ? 'Your real gear, game recipes and market prices (expected cost with artisan energy). CP from base attack power' + (role === 'support' ? ' and Vitality.' : '.')
-          : 'Ton vrai stuff, recettes du jeu et prix du marché (coût attendu avec l\'énergie d\'artisan). CP par l\'attaque de base' + (role === 'support' ? ' et la Vitalité.' : '.')}</div>`;
+          ? 'Your real gear, game recipes and market prices (expected cost with artisan energy; pity = worst case, full energy). CP from base attack power' + (role === 'support' ? ' and Vitality.' : '.')
+          : 'Ton vrai stuff, recettes du jeu et prix du marché (coût attendu avec l\'énergie d\'artisan ; pity = pire cas, jauge pleine). CP par l\'attaque de base' + (role === 'support' ? ' et la Vitalité.' : '.')}</div>`;
     dom.honingAdviceText.innerHTML = advice;
     return;
   }

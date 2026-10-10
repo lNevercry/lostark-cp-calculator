@@ -143,7 +143,9 @@ function getLevelCost(piece, lvl, track = 'aegir') {
     const recipe = honingT4 && honingT4.tracks[track] && honingT4.tracks[track][piece === 'weapon' ? 'weapon' : 'armor'][lvl];
     if (recipe) {
       const r = recipeStepCost(recipe);
-      return { totalValue: Math.round(r.cost), rawGold: Math.round(r.rawGold), taps: r.taps, breaths: r.breaths };
+      // Pity : pire cas (jauge d'artisan pleine) ; absent sur l'ancien barème de repli
+      return { totalValue: Math.round(r.cost), rawGold: Math.round(r.rawGold), taps: r.taps, breaths: r.breaths,
+        pityValue: Math.round(r.pityCost), pityRawGold: Math.round(r.pityRawGold), pityTaps: r.pityTaps };
     }
     if (track !== 'aegir') return { totalValue: 0, rawGold: 0 };
     

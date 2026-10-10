@@ -409,6 +409,29 @@ function armorStepLabel(levels, k, isEn, avgFallback) {
   };
 }
 
+// Pire cas d'une étape d'affinage (jauge d'artisan pleine sur chaque pièce) ; essais quand une seule pièce monte
+function honingPityText(pity, taps, isEn) {
+  if (!(pity > 0)) return '';
+  const n = taps > 0 ? (isEn ? ` (${taps} taps)` : ` (${taps} essais)`) : '';
+  return isEn ? `${formatNumber(pity)} g${n}` : `${formatNumber(pity)} or${n}`;
+}
+// Phrase ajoutée au commentaire d'une ligne d'affinage
+function honingPityComment(pityText, isEn) {
+  if (!pityText) return '';
+  return isEn ? ` Worst case (full artisan's energy): ${pityText}.` : ` Pire cas (jauge d'artisan pleine) : ${pityText}.`;
+}
+
+// Pity de +1 sur des pièces { l, track } (somme des pires cas) ; 0 si une recette manque
+function honingPityOf(piece, levels) {
+  let pity = 0;
+  for (const x of levels) {
+    const c = getLevelCost(piece, x.l, x.track);
+    if (!(c.pityValue > 0)) return { pity: 0, taps: 0 };
+    pity += c.pityValue;
+  }
+  return { pity, taps: levels.length === 1 ? getLevelCost(piece, levels[0].l, levels[0].track).pityTaps : 0 };
+}
+
 function getDynamicGpdTable(charObj, role, isEn) {
   const charRole = (charObj && detectCharacterRole(charObj)) || role || 'dps';
   if (!charObj) return [];
@@ -454,12 +477,15 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const dmgGain = realGain !== null ? realGain : ((1 + (curWeaponPct + WEAPON_HONING_BONUS_PER_LVL) / 100) / (1 + curWeaponPct / 100) - 1) * 100;
     // Coût attendu du palier : tentatives moyennes (artisan) × matériaux au prix du marché
     const cost = getLevelCost('weapon', wStep.lvl, wStep.track).totalValue;
+    const wPity = honingPityOf('weapon', [{ l: wStep.lvl, track: wStep.track }]);
+    const wPityText = honingPityText(wPity.pity, wPity.taps, isEn);
     pushRow('dyn_weapon',
       isEn ? `Honing — Weapon +${wLvl + 1}` : `Affinage — Arme +${wLvl + 1}`,
       isEn ? `From +${wLvl}` : `Depuis +${wLvl}`,
       dmgGain, cost,
-      isEn ? 'Expected cost (average taps with artisan energy, market-priced materials).' : 'Coût attendu (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).',
-      { from: wLvl, to: wLvl + 1 });
+      (isEn ? 'Expected cost (average taps with artisan energy, market-priced materials).' : 'Coût attendu (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).') +
+        honingPityComment(wPityText, isEn),
+      { from: wLvl, to: wLvl + 1, pity: wPity.pity, pityTaps: wPity.taps });
   }
 
   // 2. Armor Honing
@@ -487,12 +513,15 @@ function getDynamicGpdTable(charObj, role, isEn) {
       : getLevelCost('armor', aStep.lvl, aStep.track).totalValue * 5;
     const up = knownPieces ? armorPieces.filter(l => l < 25) : null;
     const lbl = armorStepLabel(up, 1, isEn, sys.armors.avgArmor);
+    // Pity : jauge pleine sur chaque pièce (pièces réelles seulement, pas sur l'estimation × 5)
+    const aPity = perPiece && perPiece.length ? honingPityOf('armor', perPiece) : { pity: 0, taps: 0 };
     pushRow('dyn_armor',
       isEn ? `Honing — Armors ${lbl.title}` : `Affinage — Armures ${lbl.title}`,
       lbl.sub,
       dmgGain, cost,
-      isEn ? 'Expected cost of +1 on each piece below +25 (average taps with artisan energy, market-priced materials).' : 'Coût attendu de +1 sur chaque pièce sous +25 (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).',
-      { from: aLvl, to: aLvl + 1, levels: up });
+      (isEn ? 'Expected cost of +1 on each piece below +25 (average taps with artisan energy, market-priced materials).' : 'Coût attendu de +1 sur chaque pièce sous +25 (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).') +
+        honingPityComment(honingPityText(aPity.pity, aPity.taps, isEn), isEn),
+      { from: aLvl, to: aLvl + 1, levels: up, pity: aPity.pity, pityTaps: aPity.taps });
   }
 
   // 2b. Affinage avancé : prochaine tranche de 10 niveaux (arme, puis armures les moins avancées).
@@ -844,7 +873,8 @@ function renderEfficiencyTable() {
             </td>
             <td class="col-state">${escapeHtml(gpdRowState(item, isEn))}</td>
             <td class="col-gain">${item.gainText}</td>
-            <td class="col-cost">${formatNumber(item.cost)} g</td>
+            <td class="col-cost">${formatNumber(item.cost)} g${item.meta && item.meta.pity > 0
+                ? `<span class="eff-subtext" title="${escapeHtml(isEn ? 'Worst case: success only at full artisan\'s energy' : 'Pire cas : réussite seulement à la jauge d\'artisan pleine')}">pity ${formatNumber(item.meta.pity)} g</span>` : ''}</td>
             <td class="col-ratio">${item.ratioText}</td>
             <td class="col-prio">
               <span class="prio-badge ${item.tier}">${itemTierLabel}</span>

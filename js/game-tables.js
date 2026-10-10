@@ -299,6 +299,8 @@ async function loadHoningT4() {
  * Taux en 0,01 % : p = base + min(échecs × failBonus, failMax) + souffles × rate.
  * Chaque échec charge l'énergie d'artisan du taux dépensé ; à `threshold` (215 %) la tentative suivante réussit.
  * On garde le nombre constant de souffles le moins cher (souvent 0 quand le souffle coûte plus que les tentatives qu'il évite).
+ * Pity (pire cas, même nombre de souffles) : échecs jusqu'à la jauge pleine, puis la tentative garantie
+ * (ex. Serka +24 armure, 0,5 % : 219 tentatives, 2,4 × le coût attendu).
  */
 function recipeStepCost(recipe) {
   const matGold = Object.entries(recipe.mats).reduce((sum, [slug, n]) => sum + n * (state.marketPrices[slug] || 0), 0);
@@ -308,16 +310,20 @@ function recipeStepCost(recipe) {
   const maxB = recipe.breath ? recipe.breath.max : 0;
   for (let b = 0; b <= maxB; b++) {
     const juice = recipe.breath ? b * recipe.breath.rate : 0;
-    let reach = 1, energy = 0, taps = 0;
+    let reach = 1, energy = 0, taps = 0, pityTaps = 0;
     for (let fails = 0; fails < 1000 && reach > 1e-9; fails++) {
-      if (energy >= recipe.threshold) { taps += reach; reach = 0; break; }
+      if (energy >= recipe.threshold) { taps += reach; reach = 0; pityTaps = fails + 1; break; }
       const p = Math.min(10000, recipe.success + Math.min(fails * recipe.failBonus, recipe.failMax) + juice);
       taps += reach;
       reach *= 1 - p / 10000;
       energy += p;
+      if (p >= 10000) pityTaps = fails + 1;
     }
-    const cost = taps * (baseTap + b * breathPrice);
-    if (!best || cost < best.cost) best = { cost, taps, breaths: b, rawGold: taps * recipe.gold };
+    const tapCost = baseTap + b * breathPrice;
+    const cost = taps * tapCost;
+    if (!best || cost < best.cost) {
+      best = { cost, taps, breaths: b, rawGold: taps * recipe.gold, pityTaps, pityCost: pityTaps * tapCost, pityRawGold: pityTaps * recipe.gold };
+    }
   }
   return best;
 }
