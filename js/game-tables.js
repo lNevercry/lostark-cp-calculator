@@ -298,32 +298,56 @@ async function loadHoningT4() {
  * Coût attendu d'une étape d'affinage (+lvl → +lvl+1) d'après la recette du jeu.
  * Taux en 0,01 % : p = base + min(échecs × failBonus, failMax) + souffles × rate.
  * Chaque échec charge l'énergie d'artisan du taux dépensé ; à `threshold` (215 %) la tentative suivante réussit.
- * On garde le nombre constant de souffles le moins cher (souvent 0 quand le souffle coûte plus que les tentatives qu'il évite).
- * Pity (pire cas, même nombre de souffles) : échecs jusqu'à la jauge pleine, puis la tentative garantie
+ * Souffles : pleins sur les N premiers essais puis aucun, N le moins cher (aucun, quelques-uns ou tous les essais).
+ * Un souffle rapporte son taux × le coût qui reste à payer, qui baisse en approchant de la jauge pleine : il vaut plus
+ * tôt que tard. Vérifié sur toutes les recettes, prix des souffles × 0,1 à × 4 : identique à l'optimum essai par
+ * essai (programmation dynamique) sauf un souffle isolé juste avant la jauge pleine (≤ 0,1 %, non retenu) ; jamais
+ * plus cher qu'un nombre constant de souffles à chaque essai (ancien modèle) à 0,003 % près, jusqu'à 1,1 % moins cher.
+ * Essai garanti (jauge pleine) ou déjà à 100 % : jamais de souffle.
+ * Pity (pire cas, même stratégie) : échecs jusqu'à la jauge pleine, puis la tentative garantie
  * (ex. Serka +24 armure, 0,5 % : 219 tentatives, 2,4 × le coût attendu).
+ * Résultat gardé par recette tant que les prix ne changent pas (appelé des milliers de fois par la feuille de route).
  */
+const recipeCostCache = new WeakMap();
 function recipeStepCost(recipe) {
   const matGold = Object.entries(recipe.mats).reduce((sum, [slug, n]) => sum + n * (state.marketPrices[slug] || 0), 0);
   const baseTap = recipe.gold + matGold;
   const breathPrice = recipe.breath ? (state.marketPrices[recipe.breath.slug] || 0) : 0;
-  let best = null;
+  const key = `${baseTap}|${breathPrice}`;
+  const hit = recipeCostCache.get(recipe);
+  if (hit && hit.key === key) return hit.res;
   const maxB = recipe.breath ? recipe.breath.max : 0;
-  for (let b = 0; b <= maxB; b++) {
-    const juice = recipe.breath ? b * recipe.breath.rate : 0;
-    let reach = 1, energy = 0, taps = 0, pityTaps = 0;
+  const rate = recipe.breath ? recipe.breath.rate : 0;
+  // Souffles pleins sur les n premiers essais ; all = chaque essai non garanti en a eu
+  const simulate = n => {
+    let reach = 1, energy = 0, taps = 0, breaths = 0, juiced = 0, plain = false, pityTaps = 0, pityBreaths = 0;
     for (let fails = 0; fails < 1000 && reach > 1e-9; fails++) {
-      if (energy >= recipe.threshold) { taps += reach; reach = 0; pityTaps = fails + 1; break; }
-      const p = Math.min(10000, recipe.success + Math.min(fails * recipe.failBonus, recipe.failMax) + juice);
+      if (energy >= recipe.threshold) { taps += reach; pityTaps = fails + 1; break; }
+      const base = Math.min(10000, recipe.success + Math.min(fails * recipe.failBonus, recipe.failMax));
+      const b = fails < n && base < 10000 ? maxB : 0;
+      if (b) juiced++; else if (base < 10000) plain = true;
+      const p = Math.min(10000, base + b * rate);
       taps += reach;
+      breaths += reach * b;
+      pityBreaths += b;
       reach *= 1 - p / 10000;
       energy += p;
-      if (p >= 10000) pityTaps = fails + 1;
+      if (p >= 10000) { pityTaps = fails + 1; break; }
     }
-    const tapCost = baseTap + b * breathPrice;
-    const cost = taps * tapCost;
-    if (!best || cost < best.cost) {
-      best = { cost, taps, breaths: b, rawGold: taps * recipe.gold, pityTaps, pityCost: pityTaps * tapCost, pityRawGold: pityTaps * recipe.gold };
-    }
+    return { cost: taps * baseTap + breaths * breathPrice, taps, breathsUsed: breaths, juiced, all: !plain, pityTaps, pityBreaths };
+  };
+  let best = null;
+  for (let n = 0; n <= 1000; n++) {
+    const r = simulate(n);
+    if (!best || r.cost < best.cost) best = r;
+    if (!maxB || r.all) break;
   }
-  return best;
+  const res = {
+    cost: best.cost, taps: best.taps, rawGold: best.taps * recipe.gold,
+    // breaths : souffles par essai (0 = aucun), sur les breathTaps premiers essais, ou sur tous (breathAll)
+    breaths: best.juiced > 0 ? maxB : 0, breathTaps: best.juiced, breathAll: best.juiced > 0 && best.all, breathsUsed: best.breathsUsed,
+    pityTaps: best.pityTaps, pityCost: best.pityTaps * baseTap + best.pityBreaths * breathPrice, pityRawGold: best.pityTaps * recipe.gold
+  };
+  recipeCostCache.set(recipe, { key, res });
+  return res;
 }

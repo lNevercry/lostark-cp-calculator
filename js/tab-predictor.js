@@ -292,7 +292,7 @@ function honingNextSteps(charObj, ctx, pieces, isSupport, cpScale) {
     const next = cpOf(pieces.map((q, j) => (j === i ? Object.assign({}, q, { toLvl: q.toLvl + 1 }) : q)));
     if (!(cost > 0) || next === null) return;
     const cp = (next - now) * cpScale;
-    if (cp > 0) out.push({ slot: p.slot, from: p.toLvl, to: p.toLvl + 1, cp, cost, ratio: cost / cp, pity: lc.pityValue, pityTaps: lc.pityTaps });
+    if (cp > 0) out.push({ slot: p.slot, from: p.toLvl, to: p.toLvl + 1, cp, cost, ratio: cost / cp, pity: lc.pityValue, pityTaps: lc.pityTaps, lc });
   });
   return out.sort((a, b) => a.ratio - b.ratio);
 }
@@ -315,15 +315,19 @@ function updateHoningAdvice(diffCp = 0, totalSimGold = 0, nextSteps = null) {
     const names = isEn
       ? { weapon: 'Weapon', head: 'Head', shoulder: 'Shoulders', chest: 'Chest', pants: 'Pants', gloves: 'Gloves' }
       : { weapon: 'Arme', head: 'Tête', shoulder: 'Épaules', chest: 'Torse', pants: 'Jambes', gloves: 'Gants' };
-    const pity = st => (st.pity > 0 ? (isEn ? `; at pity ${formatNumber(st.pity)} g, ${st.pityTaps} taps` : ` ; au pity ${formatNumber(st.pity)} or, ${st.pityTaps} essais`) : '');
+    const pity = st => {
+      const breath = breathPlanText(st.lc, isEn);
+      return (breath ? (isEn ? `; ${breath}` : ` ; ${breath}`) : '') +
+        (st.pity > 0 ? (isEn ? `; at pity ${formatNumber(st.pity)} g, ${st.pityTaps} taps` : ` ; au pity ${formatNumber(st.pity)} or, ${st.pityTaps} essais`) : '');
+    };
     const fmt = st => `${names[st.slot]} +${st.from} ➔ +${st.to} : +${formatNumber(Math.round(st.cp))} CP ${isEn ? 'for' : 'pour'} ${formatNumber(Math.round(st.cost))} ${isEn ? 'g' : 'or'} (${formatNumber(Math.round(st.ratio))} ${isEn ? 'g' : 'or'} / CP${pity(st)})`;
     const best = nextSteps[0];
     const others = nextSteps.slice(1).map(fmt).join('<br>');
     advice = `${simPrefix}${isEn ? 'Most cost-effective next step from this simulation' : 'Prochain palier le plus rentable depuis cette simulation'} : <strong>${fmt(best)}</strong>.` +
       (others ? `<div style="margin-top: 6px; font-size: 13px; color: var(--text-muted);">${others}</div>` : '') +
       `<div style="margin-top: 6px; font-size: 12px; color: var(--text-muted);">${isEn
-          ? 'Your real gear, game recipes and market prices (expected cost with artisan energy; pity = worst case, full energy). CP from base attack power' + (role === 'support' ? ' and Vitality.' : '.')
-          : 'Ton vrai stuff, recettes du jeu et prix du marché (coût attendu avec l\'énergie d\'artisan ; pity = pire cas, jauge pleine). CP par l\'attaque de base' + (role === 'support' ? ' et la Vitalité.' : '.')}</div>`;
+          ? 'Your real gear, game recipes and market prices (expected cost with artisan energy and the cheapest breath use; pity = worst case, full energy). CP from base attack power' + (role === 'support' ? ' and Vitality.' : '.')
+          : 'Ton vrai stuff, recettes du jeu et prix du marché (coût attendu avec l\'énergie d\'artisan et les souffles au moins cher ; pity = pire cas, jauge pleine). CP par l\'attaque de base' + (role === 'support' ? ' et la Vitalité.' : '.')}</div>`;
     dom.honingAdviceText.innerHTML = advice;
     return;
   }

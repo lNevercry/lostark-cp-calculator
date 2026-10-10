@@ -138,13 +138,35 @@ function advHoningDpsGain(charObj, slots, isSerka, toAdv, isSupport) {
   return gain > 0 ? gain : null;
 }
 
+// Stratégie de souffles d'une étape (getLevelCost) : aucun, à chaque essai ou sur les N premiers ; '' sans recette du jeu
+function breathPlanText(lc, isEn) {
+  if (!lc || lc.breaths === undefined) return '';
+  if (!(lc.breaths > 0)) return isEn ? 'no breath' : 'aucun souffle';
+  if (lc.breathAll) return isEn ? `${lc.breaths} breaths every tap` : `${lc.breaths} souffles à chaque essai`;
+  return isEn ? `${lc.breaths} breaths on the first ${lc.breathTaps} taps` : `${lc.breaths} souffles sur les ${lc.breathTaps} premiers essais`;
+}
+
+// Même chose pour +1 sur plusieurs pièces { l, track } : une stratégie commune, sinon par niveau (« +20 : … · +22 : … »)
+function breathPlanOf(piece, levels, isEn) {
+  const byText = new Map();
+  for (const x of levels) {
+    const t = breathPlanText(getLevelCost(piece, x.l, x.track), isEn);
+    if (!t) return '';
+    if (!byText.has(t)) byText.set(t, new Set());
+    byText.get(t).add(x.l);
+  }
+  if (byText.size <= 1) return [...byText.keys()][0] || '';
+  return [...byText].map(([t, ls]) => `${[...ls].sort((a, b) => a - b).map(l => `+${l}`).join(' / ')} : ${t}`).join(' · ');
+}
+
 function getLevelCost(piece, lvl, track = 'aegir') {
     if (lvl < 10 || lvl > 24) return { totalValue: 0, rawGold: 0 };
     const recipe = honingT4 && honingT4.tracks[track] && honingT4.tracks[track][piece === 'weapon' ? 'weapon' : 'armor'][lvl];
     if (recipe) {
       const r = recipeStepCost(recipe);
-      // Pity : pire cas (jauge d'artisan pleine) ; absent sur l'ancien barème de repli
-      return { totalValue: Math.round(r.cost), rawGold: Math.round(r.rawGold), taps: r.taps, breaths: r.breaths,
+      // Souffles (stratégie retenue) et pity (pire cas, jauge d'artisan pleine) : absents sur l'ancien barème de repli
+      return { totalValue: Math.round(r.cost), rawGold: Math.round(r.rawGold), taps: r.taps,
+        breaths: r.breaths, breathTaps: r.breathTaps, breathAll: r.breathAll,
         pityValue: Math.round(r.pityCost), pityRawGold: Math.round(r.pityRawGold), pityTaps: r.pityTaps };
     }
     if (track !== 'aegir') return { totalValue: 0, rawGold: 0 };

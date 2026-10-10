@@ -421,6 +421,12 @@ function honingPityComment(pityText, isEn) {
   return isEn ? ` Worst case (full artisan's energy): ${pityText}.` : ` Pire cas (jauge d'artisan pleine) : ${pityText}.`;
 }
 
+// Souffles dans le commentaire d'une ligne d'affinage (stratégie la moins chère aux prix du marché)
+function honingBreathComment(plan, isEn) {
+  if (!plan) return '';
+  return isEn ? `, breaths: ${plan} (cheapest)` : `, souffles : ${plan} (le moins cher)`;
+}
+
 // Pity de +1 sur des pièces { l, track } (somme des pires cas) ; 0 si une recette manque
 function honingPityOf(piece, levels) {
   let pity = 0;
@@ -479,13 +485,15 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const cost = getLevelCost('weapon', wStep.lvl, wStep.track).totalValue;
     const wPity = honingPityOf('weapon', [{ l: wStep.lvl, track: wStep.track }]);
     const wPityText = honingPityText(wPity.pity, wPity.taps, isEn);
+    // Souffles : stratégie la moins chère de l'étape (aucun, à chaque essai, N premiers essais)
+    const wBreath = breathPlanOf('weapon', [{ l: wStep.lvl, track: wStep.track }], isEn);
     pushRow('dyn_weapon',
       isEn ? `Honing — Weapon +${wLvl + 1}` : `Affinage — Arme +${wLvl + 1}`,
-      isEn ? `From +${wLvl}` : `Depuis +${wLvl}`,
+      (isEn ? `From +${wLvl}` : `Depuis +${wLvl}`) + (wBreath ? ` · ${wBreath}` : ''),
       dmgGain, cost,
-      (isEn ? 'Expected cost (average taps with artisan energy, market-priced materials).' : 'Coût attendu (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).') +
-        honingPityComment(wPityText, isEn),
-      { from: wLvl, to: wLvl + 1, pity: wPity.pity, pityTaps: wPity.taps });
+      (isEn ? 'Expected cost (average taps with artisan energy, market-priced materials' : 'Coût attendu (nombre moyen de tentatives avec artisanat, matériaux au prix du marché') +
+        honingBreathComment(wBreath, isEn) + ').' + honingPityComment(wPityText, isEn),
+      { from: wLvl, to: wLvl + 1, pity: wPity.pity, pityTaps: wPity.taps, breathPlan: wBreath });
   }
 
   // 2. Armor Honing
@@ -515,13 +523,14 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const lbl = armorStepLabel(up, 1, isEn, sys.armors.avgArmor);
     // Pity : jauge pleine sur chaque pièce (pièces réelles seulement, pas sur l'estimation × 5)
     const aPity = perPiece && perPiece.length ? honingPityOf('armor', perPiece) : { pity: 0, taps: 0 };
+    const aBreath = perPiece && perPiece.length ? breathPlanOf('armor', perPiece, isEn) : '';
     pushRow('dyn_armor',
       isEn ? `Honing — Armors ${lbl.title}` : `Affinage — Armures ${lbl.title}`,
-      lbl.sub,
+      lbl.sub + (aBreath ? ` · ${aBreath}` : ''),
       dmgGain, cost,
-      (isEn ? 'Expected cost of +1 on each piece below +25 (average taps with artisan energy, market-priced materials).' : 'Coût attendu de +1 sur chaque pièce sous +25 (nombre moyen de tentatives avec artisanat, matériaux au prix du marché).') +
-        honingPityComment(honingPityText(aPity.pity, aPity.taps, isEn), isEn),
-      { from: aLvl, to: aLvl + 1, levels: up, pity: aPity.pity, pityTaps: aPity.taps });
+      (isEn ? 'Expected cost of +1 on each piece below +25 (average taps with artisan energy, market-priced materials' : 'Coût attendu de +1 sur chaque pièce sous +25 (nombre moyen de tentatives avec artisanat, matériaux au prix du marché') +
+        honingBreathComment(aBreath, isEn) + ').' + honingPityComment(honingPityText(aPity.pity, aPity.taps, isEn), isEn),
+      { from: aLvl, to: aLvl + 1, levels: up, pity: aPity.pity, pityTaps: aPity.taps, breathPlan: aBreath });
   }
 
   // 2b. Affinage avancé : prochaine tranche de 10 niveaux (arme, puis armures les moins avancées).

@@ -76,8 +76,9 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const g1 = honingGainTo(charObj, piece, isSerka, isSupport, k), g0 = honingGainTo(charObj, piece, isSerka, isSupport, k - 1);
     if (g1 === null || g0 === null) return null;
     const cost = levels.reduce((sum, x) => sum + getLevelCost(isW ? 'weapon' : 'armor', x.l + k - 1, x.track).totalValue, 0);
-    const pity = honingPityOf(isW ? 'weapon' : 'armor', levels.map(x => ({ l: x.l + k - 1, track: x.track })));
-    const stepDetail = honingPityDetail(pity.pity, pity.taps, isEn);
+    const stepLevels = levels.map(x => ({ l: x.l + k - 1, track: x.track }));
+    const pity = honingPityOf(isW ? 'weapon' : 'armor', stepLevels);
+    const stepDetail = honingPityDetail(pity.pity, pity.taps, isEn, breathPlanOf(isW ? 'weapon' : 'armor', stepLevels, isEn));
     if (isW) {
       const from = Math.floor(sys.weapon.wLvl) + k - 1;
       return mk(`+${from} ➔ +${from + 1}`, cost, g1 - g0, { targetVal: from + 1, stepDetail });
@@ -287,10 +288,11 @@ function characterCp(charObj) {
   return cp > 0 ? cp : (state.currentCp || 0);
 }
 
-// Détail d'une étape d'affinage : pire cas (jauge d'artisan pleine), vide sans recette du jeu
-function honingPityDetail(pity, taps, isEn) {
+// Détail d'une étape d'affinage : souffles (stratégie la moins chère) et pire cas (jauge d'artisan pleine),
+// vide sans recette du jeu
+function honingPityDetail(pity, taps, isEn, breathPlan) {
   const t = honingPityText(pity, taps, isEn);
-  return t ? (isEn ? `at pity: ${t}` : `au pity : ${t}`) : '';
+  return [breathPlan || '', t ? (isEn ? `at pity: ${t}` : `au pity : ${t}`) : ''].filter(Boolean).join(' · ');
 }
 
 function buildMasterGpdData(charObj, isSupport, isEn) {
@@ -321,7 +323,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         wherePutsYou: `+${m.from}`,
         lastStep: `+${m.from - 1} ➔ +${m.from}`,
         nextStep: `+${m.from} ➔ +${m.to}`,
-        stepDetail: honingPityDetail(m.pity, m.pityTaps, isEn),
+        stepDetail: honingPityDetail(m.pity, m.pityTaps, isEn, m.breathPlan),
         category: 'gear',
         applyType: 'weapon',
         targetVal: m.to
@@ -337,7 +339,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         wherePutsYou: `+${m.from}`,
         lastStep: `+${m.from - 1} ➔ +${m.from}`,
         nextStep: lbl.step,
-        stepDetail: honingPityDetail(m.pity, m.pityTaps, isEn),
+        stepDetail: honingPityDetail(m.pity, m.pityTaps, isEn, m.breathPlan),
         category: 'gear',
         applyType: 'armors',
         targetVal: m.to
