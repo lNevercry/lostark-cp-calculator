@@ -102,6 +102,18 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const n = baseLv.filter(l => l === L).length;
     return mk(`${n}× ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1} ➔ ${L + k}`, n * GEM_UPGRADE_COST[L + k - 1], g1 - g0);
   }
+  // Gemme DPS seule (parts de dégâts de la spé) : niveaux suivants de la même gemme
+  const gi = /^dyn_gem_(\d+)$/.exec(base.id);
+  if (gi) {
+    const i = +gi[1];
+    const gems = realGems(charObj);
+    const g = gems && gems[i];
+    if (!g || g.level + k > 10) return null;
+    const at = j => gems.map((x, n) => (n === i ? x.level + j : x.level));
+    const g1 = dpsGemSetGain(charObj, at(k)), g0 = dpsGemSetGain(charObj, at(k - 1));
+    if (g1 === null || g0 === null) return null;
+    return mk(`${isEn ? 'Lv.' : 'Niv.'} ${g.level + k - 1} ➔ ${g.level + k}`, GEM_UPGRADE_COST[g.level + k - 1], g1 - g0);
+  }
   if (base.id === 'dyn_karma') {
     const lo = (charObj && charObj.rawProfile && charObj.rawProfile.loadout) || {};
     const lvl = lo.karma && lo.karma.enlightenment;
@@ -396,6 +408,21 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         wherePutsYou: `${m.n}/${m.total} ${lvlWord} ${m.lvl}`,
         lastStep: '—',
         nextStep: `${m.n}× ${lvlWord} ${m.lvl} ➔ ${m.lvl + 1}`,
+        category: 'gems',
+        applyType: 'gems',
+        targetVal: m.lvl + 1
+      }));
+    } else if (d.id.startsWith('dyn_gem_')) {
+      const kind = m.kind === 'dmg' ? (isEn ? 'Damage gem' : 'Gemme de dégâts') : (isEn ? 'Cooldown gem' : 'Gemme de recharge');
+      const who = m.name || (m.offClass ? (isEn ? 'another class' : 'autre classe') : (isEn ? 'skill not in the logs' : 'compétence absente des logs'));
+      rows.push(dynToMaster(d, {
+        icon: '',
+        system: `${kind} — ${who}`,
+        whatItReads: `${lvlWord} ${m.lvl}`,
+        wherePutsYou: `${lvlWord} ${m.lvl}`,
+        lastStep: '—',
+        nextStep: `${lvlWord} ${m.lvl} ➔ ${m.lvl + 1}`,
+        stepDetail: d.sub,
         category: 'gems',
         applyType: 'gems',
         targetVal: m.lvl + 1

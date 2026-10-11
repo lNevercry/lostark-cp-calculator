@@ -159,7 +159,10 @@ function realGemLevels(charObj) {
 }
 
 // Gemmes du profil avec leur effet de compétence, en % : dégâts (type 5) ou recharge (type 27).
-// Types 34 et 35 (effets 170 0xx, lus sur des profils lostark.bible) : mêmes valeurs que 5 et 27 (40 % / 22 % au niv. 9)
+// Types 34 et 35 (effets 170 0xx, lus sur des profils lostark.bible) : mêmes valeurs que 5 et 27 (40 % / 22 % au niv. 9),
+// mais l'ID de l'effet est un groupe de compétences du jeu (ex. 53000 « Barrage Skill » de l'Artilleur, 9 compétences,
+// data/gem-skill-groups.json) ; 5 / 27 portent directement l'ID de la compétence.
+// skills : compétences touchées ([] pour un groupe inconnu de la table), effect : ID de l'effet, group : nom du groupe.
 function realGems(charObj) {
   const raw = (charObj && charObj.rawProfile) || {};
   const gems = (raw.loadout && raw.loadout.gems) || [];
@@ -167,37 +170,78 @@ function realGems(charObj) {
     const ap = (g.effects || []).find(e => e.type === 2 && e.id === 150);
     const sk = (g.effects || []).find(e => [5, 34, 27, 35].includes(e.type));
     const level = ap ? GEM_AP_BY_VALUE[ap.value] : undefined;
-    return level && sk ? { level, kind: sk.type === 27 || sk.type === 35 ? 'cd' : 'dmg', pct: sk.value / 100 } : null;
+    if (!level || !sk) return null;
+    const grp = sk.type === 34 || sk.type === 35 ? ((gemSkillGroups && gemSkillGroups[sk.id]) || null) : undefined;
+    return {
+      level, kind: sk.type === 27 || sk.type === 35 ? 'cd' : 'dmg', pct: sk.value / 100, effect: sk.id,
+      skills: grp === undefined ? [sk.id] : (grp ? grp.skills : []), group: grp ? grp.name : null
+    };
   }).filter(Boolean);
   // Mêmes gemmes que realGemLevels (T4 seulement), dans le même ordre
   return out.length ? out : null;
 }
 
-// Part des dégâts d'un DPS portée par des compétences à recharge (Loseii, lignes gemmes DPS)
+// Part des dégâts d'un DPS portée par des compétences à recharge (Loseii, lignes gemmes DPS), sans parts par compétence
 const GEM_CD_DAMAGE_SHARE = 0.7;
 // Effet de compétence gagné par niveau de gemme T4 : +4 points de dégâts, +2 points de réduction de recharge
 const GEM_STEP = { dmg: 4, cd: 2 };
 
+// Parts de dégâts de la spé du personnage (data/skill-shares.json) : { spec, players, logs, skills: { id: [part, nom] } },
+// spé lue sur l'arbre d'Éclairage, noms comparés par specKey. null sans table ou sans spé connue.
+const specSharesMemo = new WeakMap();
+function specSkillShares(charObj) {
+  if (!skillShares || !charObj) return null;
+  const memo = specSharesMemo.get(charObj);
+  if (memo && memo.table === skillShares) return memo.value;
+  const spec = getCharacterSpecName(charObj);
+  const key = skillShares[spec] ? spec : Object.keys(skillShares).find(k => specKey(k) === specKey(spec));
+  const value = key ? Object.assign({ spec: key }, skillShares[key]) : null;
+  specSharesMemo.set(charObj, { table: skillShares, value });
+  return value;
+}
+
+// Part des dégâts couverte par une gemme : somme des parts des compétences qu'elle touche
+function gemDamageShare(gem, shares) {
+  return [...new Set(gem.skills)].reduce((sum, id) => sum + ((shares.skills[id] || [0])[0] || 0), 0);
+}
+
 /**
  * Gain DPS (%) quand les gemmes du profil passent aux niveaux `toLevels` (même ordre que realGems).
- * Trois effets, d'après les vraies gemmes du profil :
- *  - dégâts : moyenne des (1 + dégâts) des gemmes de dégâts (chaque compétence gemmée porte une part égale des dégâts) ;
- *  - recharge : les compétences sont lancées plus souvent, moyenne des 1 / (1 − recharge), sur 70 % des dégâts ;
- *  - PA de base : % de PA de chaque gemme, sur le multiplicateur de PA réel du Battle Point.
+ * Avec les parts de dégâts de la spé (logs LOA Logs et lostark.bible, specSkillShares) : chaque compétence pèse sa part
+ * des dégâts (idée de loa-sim.vercel.app) ; gemme de dégâts = dégâts de la compétence × (1 + effet visé) ÷ (1 + effet actuel),
+ * gemme de recharge = lancers × (1 − recharge actuelle) ÷ (1 − recharge visée), la compétence étant relancée dès sa
+ * recharge (meilleur cas, comme Loseii) ; une gemme d'une autre classe ou sur une compétence que la spé ne lance pas ne
+ * donne que sa PA de base. Sans parts (spé inconnue, table absente) : chaque compétence gemmée porte une part égale,
+ * dégâts sur 100 % des dégâts, recharge sur 70 % (Loseii).
+ * PA de base : % de PA de chaque gemme, sur le multiplicateur de PA réel du Battle Point.
  * Renvoie 100 × ln(produit), même échelle que l'affinage (négatif si des gemmes baissent). null si le profil manque de données.
  */
 function dpsGemSetGain(charObj, toLevels) {
   const gems = realGems(charObj);
   if (!gems || !toLevels || toLevels.length !== gems.length || toLevels.some(l => !(GEM_AP_PCT[l] > 0))) return null;
   const rows = gems.map((g, i) => ({ g, steps: toLevels[i] - g.level }));
-  const dmg = rows.filter(r => r.g.kind === 'dmg');
-  const cd = rows.filter(r => r.g.kind === 'cd');
-  const mean = (arr, f) => arr.reduce((sum, r) => sum + f(r), 0) / arr.length;
+  const shares = specSkillShares(charObj);
   let mult = 1;
-  if (dmg.length) mult *= mean(dmg, r => 1 + (r.g.pct + r.steps * GEM_STEP.dmg) / 100) / mean(dmg, r => 1 + r.g.pct / 100);
-  if (cd.length) {
-    const casts = mean(cd, r => 1 / (1 - (r.g.pct + r.steps * GEM_STEP.cd) / 100)) / mean(cd, r => 1 / (1 - r.g.pct / 100));
-    mult *= 1 + GEM_CD_DAMAGE_SHARE * (casts - 1);
+  if (shares) {
+    // Par compétence : rapport des dégâts (gemmes de dégâts) × rapport des lancers (gemmes de recharge)
+    const per = new Map();
+    rows.forEach(r => new Set(r.g.skills).forEach(id => {
+      if (!per.has(id)) per.set(id, 1);
+      const ratio = r.g.kind === 'dmg'
+        ? (1 + (r.g.pct + r.steps * GEM_STEP.dmg) / 100) / (1 + r.g.pct / 100)
+        : (1 - r.g.pct / 100) / (1 - (r.g.pct + r.steps * GEM_STEP.cd) / 100);
+      per.set(id, per.get(id) * ratio);
+    }));
+    per.forEach((ratio, id) => { mult += ((shares.skills[id] || [0])[0] || 0) * (ratio - 1); });
+  } else {
+    const dmg = rows.filter(r => r.g.kind === 'dmg');
+    const cd = rows.filter(r => r.g.kind === 'cd');
+    const mean = (arr, f) => arr.reduce((sum, r) => sum + f(r), 0) / arr.length;
+    if (dmg.length) mult *= mean(dmg, r => 1 + (r.g.pct + r.steps * GEM_STEP.dmg) / 100) / mean(dmg, r => 1 + r.g.pct / 100);
+    if (cd.length) {
+      const casts = mean(cd, r => 1 / (1 - (r.g.pct + r.steps * GEM_STEP.cd) / 100)) / mean(cd, r => 1 / (1 - r.g.pct / 100));
+      mult *= 1 + GEM_CD_DAMAGE_SHARE * (casts - 1);
+    }
   }
   const raw = (charObj && charObj.rawProfile) || {};
   const lo = raw.loadout || {};
@@ -206,6 +250,25 @@ function dpsGemSetGain(charObj, toLevels) {
   const dAp = rows.reduce((sum, r) => sum + GEM_AP_PCT[r.g.level + r.steps] - GEM_AP_PCT[r.g.level], 0);
   mult *= (1 + apPool + dAp / 100) / (1 + apPool);
   return 100 * Math.log(mult);
+}
+
+// Gemmes DPS une par une (lignes du GPD) : part des dégâts couverte, nom de la compétence (logs, sinon groupe du jeu) et
+// gemme d'une autre classe (aucune compétence touchée parmi celles du personnage). null sans parts de dégâts de la spé.
+function dpsGemDetails(charObj) {
+  const gems = realGems(charObj);
+  const shares = specSkillShares(charObj);
+  if (!gems || !shares) return null;
+  const lo = (charObj.rawProfile && charObj.rawProfile.loadout) || {};
+  const own = new Set((lo.skills || []).map(s => s.id));
+  return gems.map((g, i) => {
+    const share = gemDamageShare(g, shares);
+    const named = g.skills.find(id => shares.skills[id]);
+    return {
+      index: i, level: g.level, kind: g.kind, share, group: g.group,
+      name: g.group || (named ? shares.skills[named][1] : null),
+      offClass: own.size > 0 && g.skills.length > 0 && !g.skills.some(id => own.has(id))
+    };
+  });
 }
 
 // Gain DPS (%) d'une montée de gemmes : toutes les gemmes au niveau `lvl` passent à lvl + 1

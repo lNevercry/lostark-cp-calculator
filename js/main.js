@@ -15,6 +15,7 @@ async function initApp() {
   fetchMarketPrices();
   loadHoningT4();
   loadKarmaT4();
+  loadGemSkillTables();
   loadBracerT4();
   initBelgardinTab();
   initRotationTab();

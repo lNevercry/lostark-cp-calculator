@@ -183,7 +183,7 @@ This project stands on the shoulders of the Lost Ark theorycrafting community. A
 |---|---|
 | **Loa-Buddy** market API | Live EUC Auction House prices used by every gold calculation. |
 | **[LOA Logs](https://github.com/snoww/loa-logs)** (snoww) | The open-source DPS meter whose `encounters.db` powers the Rotation Analysis and the Raid Tracker; skill and boss metadata come from its `meter-data`. |
-| **[loa-sim](https://loa-sim.vercel.app/)** | Ideas reused with our own data: pity cost, breaths on the first N taps, bound materials used before buying, avatar line. |
+| **[loa-sim](https://loa-sim.vercel.app/)** | Ideas reused with our own data: pity cost, breaths on the first N taps, bound materials used before buying, avatar line, DPS gems weighted by the damage share of their skill. |
 | **[SQLite WebAssembly](https://sqlite.org/wasm)** | Reading LOA Logs databases directly in the browser (bundled, see its license in `js/rotation/vendor/`). |
 | **Class guide authors** | Rotation targets quoted from community guides, each one cited in the app, e.g. *Dimensionalist – Community Advanced Guide* by Mariabetaniah & Hhôpe (Nexus Discord). |
 

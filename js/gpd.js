@@ -341,7 +341,7 @@ function gpdRowState(row, isEn) {
   if (m.state !== undefined) return String(m.state);
   if (row.id === 'dyn_weapon' || row.id === 'dyn_armor') return `+${m.from}`;
   if (row.id.startsWith('dyn_adv_')) return `${m.from}/40`;
-  if (row.id.startsWith('dyn_gems_')) return isEn ? `Lv. ${m.lvl}` : `Niv. ${m.lvl}`;
+  if (row.id.startsWith('dyn_gems_') || row.id.startsWith('dyn_gem_')) return isEn ? `Lv. ${m.lvl}` : `Niv. ${m.lvl}`;
   if (row.id.startsWith('dyn_core_')) return `${m.pts} pts`;
   if (row.id.startsWith('dyn_relic_')) return isEn ? `Relic ${m.lvl}` : `Relique ${m.lvl}`;
   if (row.id === 'dyn_quality') return isEn ? `Quality ${m.quality}` : `Qualité ${m.quality}`;
@@ -587,11 +587,39 @@ function getDynamicGpdTable(charObj, role, isEn) {
     }
   }
 
-  // 3. Gems : une ligne par niveau présent
+  // 3. Gems : DPS avec les parts de dégâts de la spé, une ligne par gemme (une gemme sur une grosse compétence vaut bien
+  // plus qu'une gemme sur une petite ou d'une autre classe) ; sinon une ligne par niveau présent.
   // Vraies gemmes du profil : buff du modèle Loseii (support) ou dégâts, recharge et PA (DPS) ;
   // sinon (profil sans gemmes détaillées) gain relatif sur le bonus moyen du set
   const supGems = realGemLevels(charObj);
-  if (supGems) {
+  const gemDetails = !isSupport && supGems ? dpsGemDetails(charObj) : null;
+  if (gemDetails) {
+    const shares = specSkillShares(charObj);
+    const all = realGems(charObj);
+    const fmt1 = x => (isEn ? x.toFixed(1) : x.toFixed(1).replace('.', ','));
+    gemDetails.forEach(g => {
+      if (!(GEM_UPGRADE_COST[g.level] > 0)) return;
+      const gain = dpsGemSetGain(charObj, all.map((x, j) => (j === g.index ? x.level + 1 : x.level)));
+      if (gain === null) return;
+      const kind = g.kind === 'dmg' ? (isEn ? 'Damage gem' : 'Gemme de dégâts') : (isEn ? 'Cooldown gem' : 'Gemme de recharge');
+      const who = g.name || (g.offClass ? (isEn ? 'another class' : 'autre classe') : (isEn ? 'skill not in the logs' : 'compétence absente des logs'));
+      const sub = g.share > 0
+        ? (isEn ? `${fmt1(g.share * 100)}% of damage (${shares.spec}, ${shares.players} players)` : `${fmt1(g.share * 100)} % des dégâts (${shares.spec}, ${shares.players} joueurs)`)
+        : (g.offClass
+          ? (isEn ? 'Skill of another class: base AP only' : 'Compétence d\'une autre classe : PA de base seule')
+          : (isEn ? `Skill not played in the ${shares.spec} logs: base AP only` : `Compétence non jouée dans les logs ${shares.spec} : PA de base seule`));
+      const effect = g.kind === 'dmg'
+        ? (isEn ? '+4% damage on the skill' : '+4 % de dégâts sur la compétence')
+        : (isEn ? '-2% cooldown, the skill being recast as soon as it is ready (best case)' : '−2 % de recharge, la compétence étant relancée dès qu\'elle est prête (meilleur cas)');
+      pushRow(`dyn_gem_${g.index}`,
+        `${kind} — ${who} ${isEn ? 'Lv.' : 'Niv.'} ${g.level} ➔ ${g.level + 1}`,
+        sub, gain, GEM_UPGRADE_COST[g.level],
+        isEn
+          ? `Share of damage: median of ${shares.players} ${shares.spec} players (LOA Logs and lostark.bible raid logs, one vote per player). ${effect}, weighted by that share, plus the gem's base attack power.`
+          : `Part des dégâts : médiane de ${shares.players} joueurs ${shares.spec} (logs de raid LOA Logs et lostark.bible, une voix par joueur). ${effect}, au prorata de cette part, plus la PA de base de la gemme.`,
+        { gem: g.index, lvl: g.level, kind: g.kind, name: g.name, share: g.share, offClass: g.offClass, total: all.length });
+    });
+  } else if (supGems) {
     const counts = { 6: 0, 7: 0, 8: 0, 9: 0, 10: 0 };
     supGems.forEach(l => { counts[l]++; });
     [6, 7, 8, 9].forEach(lvl => {

@@ -63,7 +63,7 @@ echo "=== [4/4] Vérification en ligne ==="
 # Chaque site doit servir les versions d'index.html et les mêmes octets que les fichiers locaux
 # (paramètre anti-cache ; Cloudflare peut mettre quelques secondes à propager). Échec = code de sortie 1.
 sha() { sha256sum | cut -d' ' -f1; }
-FILES="index.html $(ls js/*.js js/rotation/*.js | tr '\n' ' ')style.css i18n.js data.js data/bracer-t4.json data/honing-t4.json data/rotation-ref.json"
+FILES="index.html $(ls js/*.js js/rotation/*.js | tr '\n' ' ')style.css i18n.js data.js data/bracer-t4.json data/honing-t4.json data/rotation-ref.json data/skill-shares.json data/gem-skill-groups.json"
 verify_site() {
   local base="$1" f bust
   bust="nocache=$(date +%s%N)"

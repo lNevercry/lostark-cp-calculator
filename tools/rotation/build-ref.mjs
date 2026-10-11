@@ -1,8 +1,9 @@
 // Références de rotation par spé et par boss, tirées de tous les raids de la base LOA Logs.
 // Seules des distributions (quantiles tous les 5 %) et des fréquences sont écrites, aucun nom de joueur.
-// Usage : node tools/rotation/build-ref.mjs [--db encounters.db] [--out fichier.json] [--days 120]
-// Sortie par défaut : data/rotation-ref.json, servi au site (onglet Rotation). Groupes de moins de REF_MIN_SAMPLES logs
-// non écrits : pickReference ne les utilise jamais.
+// Usage : node tools/rotation/build-ref.mjs [--db encounters.db] [--out fichier.json] [--shares-out fichier.json] [--days 120]
+// Sortie par défaut : data/rotation-ref.json, servi au site (onglet Rotation), et data/skill-shares.json (--shares-out :
+// parts de dégâts par spé, gemmes DPS du GPD, skill-shares.mjs). Groupes de moins de REF_MIN_SAMPLES logs non écrits :
+// pickReference ne les utilise jamais.
 // --days : seulement les combats des N derniers jours avant le plus récent (les façons de jouer changent avec les patchs).
 //
 // refs["spé|boss"] et refs["spé|*"] : rythme (activité, buffs, placement, utilisations par minute, rythme le plus rapide
@@ -14,10 +15,12 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { openDb, raidIds, loadEncounter } from './db.mjs';
 import { analyzeEncounter, toQuantiles, scorePlayer, coverageMean, REF_MIN_SAMPLES, isStoneMalus } from '../../js/rotation/metrics.js';
+import { writeSkillShares } from './skill-shares.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const OUT = arg('--out', path.join(HERE, '..', '..', 'data', 'rotation-ref.json'));
+const SHARES_OUT = arg('--shares-out', path.join(HERE, '..', '..', 'data', 'skill-shares.json'));
 
 // Refontes de classe : les logs d'avant ne décrivent plus la classe (compétences, rythmes). Date du patch EU, vérifiée
 // sur les logs : Soulfist, dernière Energy Overflow le 2026-09-15, première Supreme Art (nouvelle spé) le 2026-09-18.
@@ -43,7 +46,7 @@ for (const [i, id] of ids.entries()) {
     const minutes = a.availableMs / 60000;
     const sd = a.supportDetails;
     records.push({
-      spec: a.spec, boss: enc.boss, group: `${a.spec}|${enc.boss}|${enc.difficulty}`, support: a.support,
+      spec: a.spec, player: a.name, boss: enc.boss, group: `${a.spec}|${enc.boss}|${enc.difficulty}`, support: a.support,
       eff: a.support ? a.supportCoverage?.ap ?? null : a.combatPower ? a.dps / a.combatPower : null,
       activity: a.activity, apRate: a.apRate, fullBuffRate: a.fullBuffRate,
       positionalRate: a.positionalRate, positionalShare: a.positionalShare ?? 0,
@@ -186,5 +189,9 @@ for (const [key, ref] of Object.entries(refs)) {
   if (ref.support) ref.support.mean = toQuantiles(rs.map(r => coverageMean(r.coverage)));
 }
 
-writeFileSync(OUT, JSON.stringify({ built: new Date().toISOString(), since: new Date(since).toISOString().slice(0, 10), encounters: ids.length, players: records.length, refs, builds }));
+const rotRef = { built: new Date().toISOString(), since: new Date(since).toISOString().slice(0, 10), encounters: ids.length, players: records.length, refs, builds };
+writeFileSync(OUT, JSON.stringify(rotRef));
+// Parts de dégâts par spé (gemmes DPS du GPD) : logs locaux et lostark.bible réunis, une voix par joueur
+const shares = writeSkillShares([...records, ...bible.map(r => ({ ...r, player: r.name }))], SHARES_OUT, { built: rotRef.built, since: rotRef.since });
+console.log(`Parts de dégâts : ${Object.keys(shares).length} spés → ${path.relative(process.cwd(), SHARES_OUT)}`);
 console.log(`${ids.length} combats, ${records.length} joueurs, ${Object.keys(refs).length} groupes spé|boss, ${Object.keys(builds).length} builds → ${path.relative(process.cwd(), OUT)} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);

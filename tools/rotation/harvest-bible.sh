@@ -5,8 +5,9 @@
 # - verrou : jamais deux sessions à la fois ;
 # - refus 429 de lostark.bible : plus aucune session pendant COOLDOWN_H heures ;
 # - campagne terminée : références reconstruites (build-ref.mjs), contrôlées (check-ref.mjs, contre la version de
-#   production), puis commitées (data/rotation-ref.json et data/live-peers.json seulement), poussées sur main et master
-#   et publiées (tools/publish-data.sh). Contrôle en échec : rien n'est publié, ancienne version remise.
+#   production), puis commitées (data/rotation-ref.json, data/skill-shares.json et data/live-peers.json seulement),
+#   poussées sur main et master et publiées (tools/publish-data.sh). Contrôle en échec : rien n'est publié, ancienne
+#   version remise.
 # - commit impossible (autre branche que main, main local différent d'origin/main) : publication retentée à chaque
 #   session tant que le fichier « publish » existe, rien n'est récolté entre-temps.
 # - mail à WATCH_MAIL_TO (.env) en fin de campagne, s'il est défini.
@@ -50,7 +51,7 @@ publish() {
   "${G[@]}" fetch -q origin || { echo "Publication en attente : git fetch impossible."; return 1; }
   [ "$("${G[@]}" rev-parse HEAD)" = "$("${G[@]}" rev-parse origin/main)" ] \
     || { echo "Publication en attente : main local différent d'origin/main (commits non poussés ou en retard)."; return 1; }
-  local files=(data/rotation-ref.json)
+  local files=(data/rotation-ref.json data/skill-shares.json)
   "${G[@]}" diff --quiet -- data/live-peers.json || files+=(data/live-peers.json)
   if ! "${G[@]}" diff --quiet -- "${files[@]}"; then
     "${G[@]}" commit -q -m "data: références de rotation, campagne lostark.bible du $(cat "$CAMP") ($(node -e 'const r=require("./data/rotation-ref.json");const k=Object.keys(r.refs);console.log(`${k.length} groupes spé|boss, ${k.filter(x=>x.startsWith("bible|")).length} lostark.bible`)'))" -- "${files[@]}" || { echo "Commit impossible."; return 1; }
@@ -58,7 +59,7 @@ publish() {
       || { echo "Publication en attente : git push refusé."; return 1; }
     echo "Commit $("${G[@]}" log -1 --format=%h) poussé sur main et master."
   fi
-  tools/publish-data.sh data/rotation-ref.json
+  tools/publish-data.sh data/rotation-ref.json data/skill-shares.json
 }
 
 # Publication en attente d'une campagne précédente
@@ -115,8 +116,9 @@ $(echo "$REF" | tail -n 1)
 $CHECK"
 if [ "$CHECK_CODE" -ne 0 ]; then
   cp "$PROD" data/rotation-ref.json
+  "${G[@]}" show origin/master:data/skill-shares.json > data/skill-shares.json 2>/dev/null || "${G[@]}" checkout -q -- data/skill-shares.json
   date '+%F %T' > "$DONE"
-  echo "Contrôles en échec : rien n'est publié, version de production remise dans data/rotation-ref.json."
+  echo "Contrôles en échec : rien n'est publié, version de production remise dans data/rotation-ref.json et data/skill-shares.json."
   notify "Références de rotation NON publiées" "Campagne du $(cat "$CAMP") terminée ($(date '+%F %T')), contrôles en échec : rien n'est publié.
 $SUMMARY"
   exit 1

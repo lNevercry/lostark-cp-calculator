@@ -184,6 +184,29 @@ async function loadKarmaT4() {
   }
 }
 
+// Gemmes DPS pondérées par compétence : part des dégâts de chaque compétence par spé (data/skill-shares.json, logs
+// LOA Logs et lostark.bible, une voix par joueur, tools/rotation/build-ref.mjs) et compétences des gemmes de groupe
+// (data/gem-skill-groups.json, table skillGroup du jeu, tools/fetch-maxroll-honing.mjs). Sans elles : parts égales.
+let skillShares = null;
+let gemSkillGroups = null;
+async function loadGemSkillTables() {
+  try {
+    const [shares, groups] = await Promise.all(['data/skill-shares.json', 'data/gem-skill-groups.json'].map(async f => {
+      const res = await fetch(f);
+      if (!res.ok) throw new Error(`${f} : HTTP ${res.status}`);
+      return res.json();
+    }));
+    skillShares = shares.specs || null;
+    gemSkillGroups = groups.groups || null;
+    if (typeof updatePredictorView === 'function') updatePredictorView();
+    refreshGpdViews();
+    const benchTab = document.getElementById('tab-benchmark');
+    if (benchTab && benchTab.classList.contains('active') && typeof renderBenchmarkTab === 'function') renderBenchmarkTab();
+  } catch (e) {
+    console.warn('[GEMMES] Parts de dégâts par compétence indisponibles, parts égales :', e.message);
+  }
+}
+
 // --- Tables du GPD de Loseii (loseii.com/loa-gpd), chargées en direct (CORS ouvert, lookup.js est fait pour ça) ---
 // rows.json (support, % de dégâts d'UN allié) et rows-dps.json : échelles du bracelet par note, avec leurs achats
 // (bracelets non relancés, pheons) ; arkgrid-rows-*.json : taille d'astrogemmes épiques / rares par note moyenne des

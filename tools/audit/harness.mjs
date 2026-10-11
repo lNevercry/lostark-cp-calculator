@@ -15,7 +15,7 @@ const AUDIT_NAMES = ['getDynamicGpdTable', 'buildMasterGpdData', 'buildPieceByPi
   'state', 'updateActiveCharacterCard', 'getAbilityStone', 'pieceIsSerka', 'battlePointPartsOf', 'honingDpsGain', 'supportContribution',
   'braceletGpdStep', 'getKarmaBonus', 'benchmarkGpdGains', 'computeDynamicGapsAndPlan', 'getArkGridCoreIds', 'loseiiGpd',
   'getBraceletRerollEstimate', 'getLevelCost', 'honingStepFor', 'getAdvHoningLevels', 'roleFromEngravings', 'hasMixedRaidProfile',
-  'supportBraceletBuff', 'dpsGemUpgradeGain', 'supportGemUpgradeGain', 'weaponCoreGain', 'gearDpsGain', 'accessoryMaxBonusPct',
+  'supportBraceletBuff', 'dpsGemUpgradeGain', 'dpsGemSetGain', 'dpsGemDetails', 'specSkillShares', 'supportGemUpgradeGain', 'weaponCoreGain', 'gearDpsGain', 'accessoryMaxBonusPct',
   'getAccessoryLineKey', 'raidCombatPowerOf', 'arkGridBp', 'evaluateCharacterAccessories', 'advHoningDpsGain', 'getAdvHoningCost', 'arkCoreBpAt', 'ARK_CORE_DEFS', 'getArkGridStatus', 'accessoryGrade', 'supportBpBranches', 'getBaselineCp', 'updateHoningView', 'honingNextSteps', 'gearCpGain', 'predictCp', 'predictHoningPath', 'gemCpBonus', 'getDynamicGemsForActiveCharacter', 'computeGearIlvl', 'honingGainTo', 'buildGpdRoadmap', 'gpdFollowUp', 'hasIncompleteBattlePoint', 'battlePointCoherence', 'extractCharacterGemParts', 'isEnLang', 'activeCharacterId', 'getCurrentActiveCharacter', 'getUserRoster', 'computeOptimizationSim', 'optSim', 'updateOptimizationView',
   'recipeStepCost', 'honingT4', 'getBoundMats', 'setBoundMat', 'honingStepsCost', 'predictHoningPath', 'buildGpdRoadmap', 'renderBelgardinReadiness', 'updatePredictorView'];
 

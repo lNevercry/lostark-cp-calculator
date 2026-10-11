@@ -1,8 +1,8 @@
 // Recettes d'affinage T4 (Aegir 1640 et Serka 1675) tirées du flux du planificateur Maxroll,
 // les tables qu'utilise leur propre calculateur d'amélioration (même source que loseii.com).
-// Usage : node tools/fetch-maxroll-honing.mjs   → écrit data/honing-t4.json
-// À relancer après un patch qui touche l'affinage, puis redéployer.
-import { writeFileSync } from 'node:fs';
+// Usage : node tools/fetch-maxroll-honing.mjs [stats.json local]   → écrit data/honing-t4.json (et les tables ci-dessous)
+// À relancer après un patch qui touche l'affinage, puis redéployer. Avec un fichier local : aucun appel à Maxroll.
+import { writeFileSync, readFileSync } from 'node:fs';
 
 const FEED = 'https://assets-ng.maxroll.gg/laplanner/game/stats.json';
 const OUT = new URL('../data/honing-t4.json', import.meta.url);
@@ -33,9 +33,13 @@ const STAT_ITEMS = {
   serka: { baseIlvl: 1675, weapon: '12159000', armor: { head: '12159011', chest: '12159012', pants: '12159013', gloves: '12159014', shoulder: '12159015' } }
 };
 
-const res = await fetch(FEED, { headers: { 'User-Agent': 'lostark-cp-calculator' } });
-if (!res.ok) throw new Error(`Flux Maxroll : HTTP ${res.status}`);
-const stats = await res.json();
+let stats;
+if (process.argv[2]) stats = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+else {
+  const res = await fetch(FEED, { headers: { 'User-Agent': 'lostark-cp-calculator' } });
+  if (!res.ok) throw new Error(`Flux Maxroll : HTTP ${res.status}`);
+  stats = await res.json();
+}
 const common = stats.enhanceCommon;
 const quality = stats.itemQuality;
 const itemLevel = stats.itemLevel;
@@ -164,3 +168,19 @@ for (const rank of Object.values(stats.karma['20000'].ranks)) {
 const KARMA_OUT = new URL('../data/karma-t4.json', import.meta.url);
 writeFileSync(KARMA_OUT, JSON.stringify({ source: FEED, generatedAt: new Date().toISOString(), enlightenment: karmaLevels }));
 console.log(`data/karma-t4.json écrit (${Object.keys(karmaLevels).length} niveaux d'Illumination)`);
+
+// Gemmes de groupe (effets de type 34 dégâts / 35 recharge des profils lostark.bible, ex. « Barrage Skill » de l'Artilleur) :
+// l'ID de l'effet est un groupe de compétences (table skillGroup), pas une compétence. Groupes tirés des options des
+// gemmes T4 (itemRandom 650…), compétences et nom du groupe. Les effets 5 / 27 portent directement l'ID de la compétence.
+const gemGroups = {};
+for (const [key, opts] of Object.entries(stats.itemRandom)) {
+  if (!key.startsWith('650')) continue;
+  for (const m of JSON.stringify(opts).matchAll(/"type":3[45],"stat":0,"index":(\d+)/g)) {
+    const g = stats.skillGroup[m[1]];
+    if (!g || !Array.isArray(g.skills) || !g.skills.length) throw new Error(`Groupe de compétences ${m[1]} absent de skillGroup`);
+    gemGroups[m[1]] = { name: g.name, skills: g.skills };
+  }
+}
+const GEM_GROUPS_OUT = new URL('../data/gem-skill-groups.json', import.meta.url);
+writeFileSync(GEM_GROUPS_OUT, JSON.stringify({ source: FEED, generatedAt: new Date().toISOString(), groups: gemGroups }));
+console.log(`data/gem-skill-groups.json écrit (${Object.keys(gemGroups).length} groupes)`);
