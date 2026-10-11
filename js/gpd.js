@@ -427,15 +427,16 @@ function honingBreathComment(plan, isEn) {
   return isEn ? `, breaths: ${plan} (cheapest)` : `, souffles : ${plan} (le moins cher)`;
 }
 
-// Pity de +1 sur des pièces { l, track } (somme des pires cas) ; 0 si une recette manque
-function honingPityOf(piece, levels) {
-  let pity = 0;
-  for (const x of levels) {
-    const c = getLevelCost(piece, x.l, x.track);
-    if (!(c.pityValue > 0)) return { pity: 0, taps: 0 };
-    pity += c.pityValue;
-  }
-  return { pity, taps: levels.length === 1 ? getLevelCost(piece, levels[0].l, levels[0].track).pityTaps : 0 };
+// Pity de +1 sur des pièces { l, track } (somme des pires cas, matériaux liés consommés au pire cas) ; 0 si une recette manque
+function honingPityOf(piece, levels, owned = null) {
+  const r = honingStepsCost(levels.map(x => ({ piece, l: x.l, track: x.track })), owned);
+  return { pity: r.pity, taps: r.pity > 0 && levels.length === 1 ? r.perStep[0].pityTaps : 0 };
+}
+
+// Commentaire d'une ligne d'affinage quand le stock de matériaux liés du personnage a servi
+function honingBoundComment(used, isEn) {
+  if (!used) return '';
+  return isEn ? ' Your bound materials (entered above the table) are used first, the rest is bought.' : ' Tes matériaux liés (saisis au-dessus du tableau) servent d\'abord, le reste est acheté.';
 }
 
 function getDynamicGpdTable(charObj, role, isEn) {
@@ -471,6 +472,9 @@ function getDynamicGpdTable(charObj, role, isEn) {
     });
   };
 
+  // Matériaux liés saisis pour ce personnage (affinage normal seulement)
+  const owned = getBoundMats(charObj);
+
   // 1. Weapon Honing
   let wLvl = sys.weapon.wLvl || 12;
   // Serka : sa propre recette au niveau affiché (Maxroll) ; sans elle, estimation Aegir au niveau effectif (+9)
@@ -482,18 +486,22 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const realGain = honingDpsGain(charObj, 'weapon', sys.weapon.isSerka, isSupport);
     const dmgGain = realGain !== null ? realGain : ((1 + (curWeaponPct + WEAPON_HONING_BONUS_PER_LVL) / 100) / (1 + curWeaponPct / 100) - 1) * 100;
     // Coût attendu du palier : tentatives moyennes (artisan) × matériaux au prix du marché
-    const cost = getLevelCost('weapon', wStep.lvl, wStep.track).totalValue;
-    const wPity = honingPityOf('weapon', [{ l: wStep.lvl, track: wStep.track }]);
+    // Matériaux liés du personnage utilisés d'abord (chaque ligne compte avec tout le stock, comme loa-sim)
+    const wLc = getLevelCost('weapon', wStep.lvl, wStep.track, owned);
+    const cost = wLc.totalValue;
+    const wPity = honingPityOf('weapon', [{ l: wStep.lvl, track: wStep.track }], owned);
     const wPityText = honingPityText(wPity.pity, wPity.taps, isEn);
     // Souffles : stratégie la moins chère de l'étape (aucun, à chaque essai, N premiers essais)
-    const wBreath = breathPlanOf('weapon', [{ l: wStep.lvl, track: wStep.track }], isEn);
+    const wBreath = breathPlanOf('weapon', [{ l: wStep.lvl, track: wStep.track }], isEn, owned);
+    const wBound = !!(wLc.boundUse && Object.keys(wLc.boundUse).length);
     pushRow('dyn_weapon',
       isEn ? `Honing — Weapon +${wLvl + 1}` : `Affinage — Arme +${wLvl + 1}`,
       (isEn ? `From +${wLvl}` : `Depuis +${wLvl}`) + (wBreath ? ` · ${wBreath}` : ''),
       dmgGain, cost,
       (isEn ? 'Expected cost (average taps with artisan energy, market-priced materials' : 'Coût attendu (nombre moyen de tentatives avec artisanat, matériaux au prix du marché') +
-        honingBreathComment(wBreath, isEn) + ').' + honingPityComment(wPityText, isEn),
-      { from: wLvl, to: wLvl + 1, pity: wPity.pity, pityTaps: wPity.taps, breathPlan: wBreath });
+        honingBreathComment(wBreath, isEn) + ').' + honingPityComment(wPityText, isEn) + honingBoundComment(wBound, isEn),
+      { from: wLvl, to: wLvl + 1, pity: wPity.pity, pityTaps: wPity.taps, breathPlan: wBreath, bound: wBound,
+        honingSteps: [{ piece: 'weapon', l: wStep.lvl, track: wStep.track }] });
   }
 
   // 2. Armor Honing
@@ -516,21 +524,24 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const perPiece = honingT4 && knownPieces
       ? GEAR_ARMOR_SLOTS.map(sl => ({ l: gearLv[sl], track: pieceIsSerka(gearLv, sl) ? 'serka' : 'aegir' })).filter(x => x.l >= 10 && x.l < 25)
       : null;
-    const cost = perPiece && perPiece.length
-      ? perPiece.reduce((sum, x) => sum + getLevelCost('armor', x.l, x.track).totalValue, 0)
-      : getLevelCost('armor', aStep.lvl, aStep.track).totalValue * 5;
+    // Matériaux liés : consommés pièce par pièce sur les 5 pièces de la ligne
+    const aSteps = perPiece && perPiece.length ? perPiece.map(x => ({ piece: 'armor', l: x.l, track: x.track })) : null;
+    const aSeq = aSteps ? honingStepsCost(aSteps, owned) : null;
+    const cost = aSeq ? aSeq.cost : getLevelCost('armor', aStep.lvl, aStep.track).totalValue * 5;
     const up = knownPieces ? armorPieces.filter(l => l < 25) : null;
     const lbl = armorStepLabel(up, 1, isEn, sys.armors.avgArmor);
     // Pity : jauge pleine sur chaque pièce (pièces réelles seulement, pas sur l'estimation × 5)
-    const aPity = perPiece && perPiece.length ? honingPityOf('armor', perPiece) : { pity: 0, taps: 0 };
-    const aBreath = perPiece && perPiece.length ? breathPlanOf('armor', perPiece, isEn) : '';
+    const aPity = aSeq ? { pity: aSeq.pity, taps: 0 } : { pity: 0, taps: 0 };
+    const aBreath = perPiece && perPiece.length ? breathPlanOf('armor', perPiece, isEn, owned) : '';
     pushRow('dyn_armor',
       isEn ? `Honing — Armors ${lbl.title}` : `Affinage — Armures ${lbl.title}`,
       lbl.sub + (aBreath ? ` · ${aBreath}` : ''),
       dmgGain, cost,
       (isEn ? 'Expected cost of +1 on each piece below +25 (average taps with artisan energy, market-priced materials' : 'Coût attendu de +1 sur chaque pièce sous +25 (nombre moyen de tentatives avec artisanat, matériaux au prix du marché') +
-        honingBreathComment(aBreath, isEn) + ').' + honingPityComment(honingPityText(aPity.pity, aPity.taps, isEn), isEn),
-      { from: aLvl, to: aLvl + 1, levels: up, pity: aPity.pity, pityTaps: aPity.taps, breathPlan: aBreath });
+        honingBreathComment(aBreath, isEn) + ').' + honingPityComment(honingPityText(aPity.pity, aPity.taps, isEn), isEn) +
+        honingBoundComment(aSeq && aSeq.bound, isEn),
+      { from: aLvl, to: aLvl + 1, levels: up, pity: aPity.pity, pityTaps: aPity.taps, breathPlan: aBreath, bound: !!(aSeq && aSeq.bound),
+        honingSteps: aSteps });
   }
 
   // 2b. Affinage avancé : prochaine tranche de 10 niveaux (arme, puis armures les moins avancées).
@@ -838,6 +849,7 @@ function renderEfficiencyTable() {
   const stateHeader = document.getElementById('effColStateHeader');
   if (stateHeader) stateHeader.textContent = isEn ? 'Where you are' : 'Ton état';
   renderGpdPriceInputs(isEn);
+  renderBoundMatsPanel(document.getElementById('gpdBoundMats'), isEn);
   if (dom.effColRatioHeader) {
     dom.effColRatioHeader.textContent = isSupport 
       ? (isEn ? 'Cost / 0.01% Buff' : 'Coût / 0.01% Buff') 
@@ -954,6 +966,66 @@ function renderGpdPriceInputs(isEn) {
     if (document.activeElement !== inp) inp.value = own;
     inp.placeholder = GPD_DEFAULT_PRICES[k] > 0 ? `${formatNumber(GPD_DEFAULT_PRICES[k])} (Loseii)` : (isEn ? 'to enter' : 'à saisir');
   });
+}
+
+/**
+ * Panneau « Matériaux liés » du personnage actif (onglets GPD et simulateur d'affinage) : stock par matériau, utilisé
+ * avant l'achat au marché. Groupes affichés selon le stuff (Serka / Aegir encore sous +25) ; souffles toujours.
+ * Noms des objets en anglais, comme l'onglet Marché (MARKET_PRICE_GROUPS).
+ */
+function renderBoundMatsPanel(box, isEn) {
+  if (!box) return;
+  const c = getCurrentActiveCharacter();
+  if (!c) { box.innerHTML = ''; box.dataset.sig = ''; return; }
+  const gear = c.gear || (c.rawProfile && c.rawProfile.gear) || null;
+  const open = sl => gear && gear[sl] >= 0 && gear[sl] < 25;
+  const hasSerka = !gear || HONING_SIM_PIECES.some(sl => open(sl) && pieceIsSerka(gear, sl));
+  const hasAegir = !!gear && HONING_SIM_PIECES.some(sl => open(sl) && !pieceIsSerka(gear, sl));
+  const groups = (typeof MARKET_PRICE_GROUPS !== 'undefined' ? MARKET_PRICE_GROUPS : [])
+    .filter(g => (g.en === 'Serka honing' ? hasSerka : g.en === 'Aegir honing' ? hasAegir : true));
+  const owned = getBoundMats(c) || {};
+  const n = Object.keys(owned).length;
+  const sig = `${boundMatsId(c)}|${groups.map(g => g.en).join(',')}|${isEn}`;
+  if (box.dataset.sig !== sig) {
+    const name = escapeHtml(c.name || '');
+    box.innerHTML = `
+      <details class="bound-mats"${n ? ' open' : ''}>
+        <summary>${isEn ? `Bound materials of ${name}` : `Matériaux liés de ${name}`} <span class="bound-mats-count"></span></summary>
+        <p class="bound-mats-note">${isEn
+          ? 'Used before buying at the market in honing costs (GPD, Smart Advisor, roadmap, honing simulator, predictor, Belgardin). Each GPD row counts with your whole stock; a plan uses it up step by step. Advanced honing and the Benchmark stay at market price.'
+          : 'Utilisés avant l\'achat au marché dans les coûts d\'affinage (GPD, Smart Advisor, feuille de route, simulateur, prédicteur, Belgardin). Chaque ligne du GPD compte avec tout ton stock ; un plan le consomme étape par étape. Affinage avancé et Benchmark : prix du marché.'}</p>
+        <div class="bound-mats-groups">${groups.map(g => `
+          <fieldset class="bound-mats-group">
+            <legend>${isEn ? g.en : g.fr}</legend>
+            ${g.items.map(([slug, label]) => `
+            <label class="gpd-price-field">
+              <span>${escapeHtml(label)}</span>
+              <input type="number" min="0" step="1" inputmode="numeric" data-bound-mat="${slug}" placeholder="0">
+            </label>`).join('')}
+          </fieldset>`).join('')}
+        </div>
+      </details>`;
+    box.querySelectorAll('input[data-bound-mat]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        setBoundMat(getCurrentActiveCharacter(), inp.dataset.boundMat, Number(inp.value));
+        refreshBoundMatsViews();
+      });
+    });
+    box.dataset.sig = sig;
+  }
+  box.querySelectorAll('input[data-bound-mat]').forEach(inp => {
+    if (document.activeElement !== inp) inp.value = owned[inp.dataset.boundMat] > 0 ? owned[inp.dataset.boundMat] : '';
+  });
+  const count = box.querySelector('.bound-mats-count');
+  if (count) count.textContent = n ? (isEn ? `· ${n} entered` : `· ${n} renseigné${n > 1 ? 's' : ''}`) : (isEn ? '· none' : '· aucun');
+}
+
+// Après une saisie de stock : tout ce qui chiffre l'affinage
+function refreshBoundMatsViews() {
+  refreshGpdViews();
+  if (typeof updateHoningView === 'function') updateHoningView();
+  if (typeof updatePredictorView === 'function') updatePredictorView();
+  if (typeof renderBelgardinReadiness === 'function') renderBelgardinReadiness();
 }
 
 function capitalize(str) {

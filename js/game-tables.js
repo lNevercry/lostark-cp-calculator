@@ -306,23 +306,29 @@ async function loadHoningT4() {
  * Essai garanti (jauge pleine) ou déjà à 100 % : jamais de souffle.
  * Pity (pire cas, même stratégie) : échecs jusqu'à la jauge pleine, puis la tentative garantie
  * (ex. Serka +24 armure, 0,5 % : 219 tentatives, 2,4 × le coût attendu).
- * Résultat gardé par recette tant que les prix ne changent pas (appelé des milliers de fois par la feuille de route).
+ * owned : matériaux liés du personnage ({ slug: quantité }), utilisés avant l'achat au marché (stratégie de souffles
+ * choisie avec : des souffles possédés sont gratuits). Méthode de loa-sim.vercel.app.
+ * Résultat gardé par recette, prix et stock (appelé des milliers de fois par la feuille de route).
  */
 const recipeCostCache = new WeakMap();
-function recipeStepCost(recipe) {
+function recipeStepCost(recipe, owned) {
   const matGold = Object.entries(recipe.mats).reduce((sum, [slug, n]) => sum + n * (state.marketPrices[slug] || 0), 0);
   const baseTap = recipe.gold + matGold;
   const breathPrice = recipe.breath ? (state.marketPrices[recipe.breath.slug] || 0) : 0;
-  const key = `${baseTap}|${breathPrice}`;
-  const hit = recipeCostCache.get(recipe);
-  if (hit && hit.key === key) return hit.res;
+  const own = recipeOwned(recipe, owned);
+  const key = `${baseTap}|${breathPrice}${own ? '|' + JSON.stringify(own) : ''}`;
+  let cache = recipeCostCache.get(recipe);
+  if (!cache) recipeCostCache.set(recipe, cache = new Map());
+  if (cache.has(key)) return cache.get(key);
   const maxB = recipe.breath ? recipe.breath.max : 0;
   const rate = recipe.breath ? recipe.breath.rate : 0;
-  // Souffles pleins sur les n premiers essais ; all = chaque essai non garanti en a eu
+  // Souffles pleins sur les n premiers essais ; all = chaque essai non garanti en a eu ;
+  // dist[t - 1] = probabilité de réussir au t-ième essai (inventaire de matériaux liés)
   const simulate = n => {
     let reach = 1, energy = 0, taps = 0, breaths = 0, juiced = 0, plain = false, pityTaps = 0, pityBreaths = 0;
+    const dist = [];
     for (let fails = 0; fails < 1000 && reach > 1e-9; fails++) {
-      if (energy >= recipe.threshold) { taps += reach; pityTaps = fails + 1; break; }
+      if (energy >= recipe.threshold) { taps += reach; dist.push(reach); pityTaps = fails + 1; break; }
       const base = Math.min(10000, recipe.success + Math.min(fails * recipe.failBonus, recipe.failMax));
       const b = fails < n && base < 10000 ? maxB : 0;
       if (b) juiced++; else if (base < 10000) plain = true;
@@ -330,11 +336,31 @@ function recipeStepCost(recipe) {
       taps += reach;
       breaths += reach * b;
       pityBreaths += b;
+      dist.push(reach * p / 10000);
       reach *= 1 - p / 10000;
       energy += p;
       if (p >= 10000) { pityTaps = fails + 1; break; }
     }
-    return { cost: taps * baseTap + breaths * breathPrice, taps, breathsUsed: breaths, juiced, all: !plain, pityTaps, pityBreaths };
+    const r = { cost: taps * baseTap + breaths * breathPrice, taps, breathsUsed: breaths, juiced, all: !plain, pityTaps, pityBreaths,
+      pityCost: pityTaps * baseTap + pityBreaths * breathPrice, boundUse: {}, pityBoundUse: {} };
+    return own ? withOwned(r, dist) : r;
+  };
+  // Matériaux liés utilisés d'abord : coût de t essais X(t) = or + achats au-delà du stock, espérance exacte
+  // sur la distribution des essais (pas seulement le besoin moyen moins le stock), usage moyen du stock
+  const withOwned = (r, dist) => {
+    const mats = Object.entries(recipe.mats).map(([slug, q]) => ({ slug, q, price: state.marketPrices[slug] || 0, own: own[slug] || 0, cap: Infinity }));
+    if (r.juiced > 0) mats.push({ slug: recipe.breath.slug, q: maxB, price: breathPrice, own: own[recipe.breath.slug] || 0, cap: r.juiced });
+    const need = (m, t) => m.q * Math.min(t, m.cap);
+    const X = t => mats.reduce((g, m) => g + m.price * Math.max(0, need(m, t) - m.own), t * recipe.gold);
+    let cost = 0;
+    const use = {};
+    dist.forEach((pr, i) => {
+      cost += pr * X(i + 1);
+      mats.forEach(m => { if (m.own > 0) use[m.slug] = (use[m.slug] || 0) + pr * Math.min(m.own, need(m, i + 1)); });
+    });
+    const pityUse = {};
+    mats.forEach(m => { if (m.own > 0) pityUse[m.slug] = Math.min(m.own, need(m, r.pityTaps)); });
+    return Object.assign(r, { cost, pityCost: X(r.pityTaps), boundUse: use, pityBoundUse: pityUse });
   };
   let best = null;
   for (let n = 0; n <= 1000; n++) {
@@ -346,8 +372,20 @@ function recipeStepCost(recipe) {
     cost: best.cost, taps: best.taps, rawGold: best.taps * recipe.gold,
     // breaths : souffles par essai (0 = aucun), sur les breathTaps premiers essais, ou sur tous (breathAll)
     breaths: best.juiced > 0 ? maxB : 0, breathTaps: best.juiced, breathAll: best.juiced > 0 && best.all, breathsUsed: best.breathsUsed,
-    pityTaps: best.pityTaps, pityCost: best.pityTaps * baseTap + best.pityBreaths * breathPrice, pityRawGold: best.pityTaps * recipe.gold
+    pityTaps: best.pityTaps, pityCost: best.pityCost, pityRawGold: best.pityTaps * recipe.gold,
+    // Stock de matériaux liés consommé : en moyenne (boundUse) et au pity (pityBoundUse)
+    boundUse: best.boundUse, pityBoundUse: best.pityBoundUse
   };
-  recipeCostCache.set(recipe, { key, res });
+  if (cache.size > 64) cache.clear();
+  cache.set(key, res);
   return res;
+}
+
+// Stock utile à une recette (matériaux et souffle de la recette, quantités > 0) ; null si rien
+function recipeOwned(recipe, owned) {
+  if (!owned) return null;
+  const slugs = Object.keys(recipe.mats).concat(recipe.breath ? [recipe.breath.slug] : []);
+  const out = {};
+  slugs.forEach(slug => { if (owned[slug] > 0) out[slug] = owned[slug]; });
+  return Object.keys(out).length ? out : null;
 }

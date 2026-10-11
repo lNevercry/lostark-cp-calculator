@@ -7,8 +7,9 @@
  * Chaque +1 d'une pièce vaut +5 iLvl sur la pièce (+0,83 au total) quelle qu'elle soit : on prend à chaque fois le
  * palier le moins cher (recettes du jeu, prix du marché), à coût égal celui qui rapporte le plus. CP par le modèle
  * validé (gearCpGain). null sans données (pas de personnage, table d'affinage absente).
+ * Matériaux liés du personnage utilisés d'abord, consommés étape par étape (left : stock restant à la fin).
  */
-function predictHoningPath(charObj, targetIlvl, isSupport) {
+function predictHoningPath(charObj, targetIlvl, isSupport, owned = getBoundMats(charObj)) {
   const ctx = gearStatContext(charObj);
   if (!ctx || !honingT4) return null;
   const g = ctx.gear;
@@ -19,25 +20,27 @@ function predictHoningPath(charObj, targetIlvl, isSupport) {
   const ilvlOf = p => (p.isSerka ? 1675 + 5 * p.to : 1590 + 5 * p.to + p.adv);
   const avg = () => pieces.reduce((sum, p) => sum + ilvlOf(p), 0) / 6;
   const startIlvl = avg();
-  let gold = 0;
+  let gold = 0, left = owned || null;
   const changes = () => pieces.map(p => ({ slot: p.slot, isSerka: p.isSerka, lvl: p.lvl, adv: p.adv, toLvl: p.to, toAdv: p.adv }));
   while (avg() < targetIlvl - 1e-6) {
     let best = null;
     pieces.forEach(p => {
       if (p.to >= 25) return;
-      const cost = getLevelCost(p.slot === 'weapon' ? 'weapon' : 'armor', p.to, p.isSerka ? 'serka' : 'aegir').totalValue;
+      const c = getLevelCost(p.slot === 'weapon' ? 'weapon' : 'armor', p.to, p.isSerka ? 'serka' : 'aegir', left);
+      const cost = c.totalValue;
       if (!(cost > 0)) return;
-      if (!best || cost < best.cost - 1 || (Math.abs(cost - best.cost) <= 1 && p.slot === 'weapon')) best = { p, cost };
+      if (!best || cost < best.cost - 1 || (Math.abs(cost - best.cost) <= 1 && p.slot === 'weapon')) best = { p, cost, c };
     });
     if (!best) break;
     best.p.to++;
     gold += best.cost;
+    left = boundMatsAfter(left, best.c.boundUse);
   }
   const r = gearDpsGain(ctx, changes());
   const cpGain = gearCpGain(charObj, ctx, r, isSupport);
   if (cpGain === null) return null;
   return {
-    cpGain, gold, startIlvl, reachedIlvl: avg(), reached: avg() >= targetIlvl - 1e-6,
+    cpGain, gold, startIlvl, reachedIlvl: avg(), reached: avg() >= targetIlvl - 1e-6, owned: owned || null, left,
     steps: pieces.filter(p => p.to > p.lvl).map(p => ({ slot: p.slot, from: p.lvl, to: p.to }))
   };
 }
@@ -146,11 +149,13 @@ function breathPlanText(lc, isEn) {
   return isEn ? `${lc.breaths} breaths on the first ${lc.breathTaps} taps` : `${lc.breaths} souffles sur les ${lc.breathTaps} premiers essais`;
 }
 
-// Même chose pour +1 sur plusieurs pièces { l, track } : une stratégie commune, sinon par niveau (« +20 : … · +22 : … »)
-function breathPlanOf(piece, levels, isEn) {
+// Même chose pour +1 sur plusieurs pièces { l, track } : une stratégie commune, sinon par niveau (« +20 : … · +22 : … ») ;
+// owned : matériaux liés, consommés pièce par pièce (des souffles possédés changent la stratégie)
+function breathPlanOf(piece, levels, isEn, owned = null) {
   const byText = new Map();
-  for (const x of levels) {
-    const t = breathPlanText(getLevelCost(piece, x.l, x.track), isEn);
+  const per = honingStepsCost(levels.map(x => ({ piece, l: x.l, track: x.track })), owned).perStep;
+  for (const [i, x] of levels.entries()) {
+    const t = breathPlanText(per[i], isEn);
     if (!t) return '';
     if (!byText.has(t)) byText.set(t, new Set());
     byText.get(t).add(x.l);
@@ -159,15 +164,79 @@ function breathPlanOf(piece, levels, isEn) {
   return [...byText].map(([t, ls]) => `${[...ls].sort((a, b) => a - b).map(l => `+${l}`).join(' / ')} : ${t}`).join(' · ');
 }
 
-function getLevelCost(piece, lvl, track = 'aegir') {
+// --- Matériaux liés : stock saisi par personnage (idée de loa-sim), utilisé avant l'achat au marché ---
+// Par personnage (région / pseudo) : un matériau lié au roster se saisit sur le personnage qui va l'utiliser.
+// Affinage normal seulement (recettes du jeu) ; l'affinage avancé et le Benchmark restent au prix du marché.
+const BOUND_MATS_KEY = 'lostark_bound_mats';
+const BOUND_MAT_SLUGS = ['great-destiny-leapstone', 'destiny-crystallized-destruction-stone', 'destiny-crystallized-guardian-stone',
+  'superior-abidos-fusion-material', 'destiny-leapstone', 'destiny-destruction-stone', 'destiny-guardian-stone', 'abidos-fusion-material',
+  'lavas-breath', 'glaciers-breath'];
+function boundMatsId(c) {
+  return c ? `${characterRegion(c)}/${c.id || String(c.name || '').toLowerCase()}` : null;
+}
+function loadBoundMatsAll() {
+  try { return JSON.parse(lsGet(BOUND_MATS_KEY)) || {}; } catch (e) { return {}; }
+}
+// Stock du personnage ({ slug: quantité > 0 }) ; null si rien n'est saisi
+function getBoundMats(c) {
+  const id = boundMatsId(c);
+  const mine = id ? loadBoundMatsAll()[id] : null;
+  if (!mine) return null;
+  const out = {};
+  BOUND_MAT_SLUGS.forEach(slug => { if (mine[slug] > 0) out[slug] = mine[slug]; });
+  return Object.keys(out).length ? out : null;
+}
+function setBoundMat(c, slug, qty) {
+  const id = boundMatsId(c);
+  if (!id || !BOUND_MAT_SLUGS.includes(slug)) return;
+  const all = loadBoundMatsAll();
+  const mine = all[id] || {};
+  if (qty > 0) mine[slug] = Math.floor(qty); else delete mine[slug];
+  if (Object.keys(mine).length) all[id] = mine; else delete all[id];
+  lsSet(BOUND_MATS_KEY, JSON.stringify(all));
+}
+
+// Stock restant après une consommation { slug: quantité } ; null s'il ne reste rien (moins d'un objet : rien)
+function boundMatsAfter(owned, use) {
+  if (!owned) return null;
+  const out = {};
+  Object.entries(owned).forEach(([slug, q]) => { const left = q - ((use && use[slug]) || 0); if (left >= 1) out[slug] = left; });
+  return Object.keys(out).length ? out : null;
+}
+
+/**
+ * Étapes d'affinage { piece, l, track } chiffrées dans l'ordre, le stock de matériaux liés consommé au fur et à mesure
+ * (en moyenne pour le coût attendu, au pire cas pour le pity). Somme des coûts, pity (0 si une recette manque) et stock
+ * restant (left : après l'usage moyen) ; perStep : getLevelCost de chaque étape avec le stock qui lui reste.
+ */
+function honingStepsCost(steps, owned) {
+  let cost = 0, rawGold = 0, pity = 0, left = owned || null, pityLeft = owned || null, bound = false;
+  const perStep = [];
+  for (const st of steps) {
+    const c = getLevelCost(st.piece, st.l, st.track, left);
+    cost += c.totalValue;
+    rawGold += c.rawGold;
+    if (c.boundUse && Object.keys(c.boundUse).length) bound = true;
+    left = boundMatsAfter(left, c.boundUse);
+    const cp = getLevelCost(st.piece, st.l, st.track, pityLeft);
+    if (pity !== null) pity = cp.pityValue > 0 ? pity + cp.pityValue : null;
+    pityLeft = boundMatsAfter(pityLeft, cp.pityBoundUse);
+    perStep.push(c);
+  }
+  return { cost, rawGold, pity: pity || 0, left, bound, perStep };
+}
+
+function getLevelCost(piece, lvl, track = 'aegir', owned = null) {
     if (lvl < 10 || lvl > 24) return { totalValue: 0, rawGold: 0 };
     const recipe = honingT4 && honingT4.tracks[track] && honingT4.tracks[track][piece === 'weapon' ? 'weapon' : 'armor'][lvl];
     if (recipe) {
-      const r = recipeStepCost(recipe);
-      // Souffles (stratégie retenue) et pity (pire cas, jauge d'artisan pleine) : absents sur l'ancien barème de repli
+      const r = recipeStepCost(recipe, owned);
+      // Souffles (stratégie retenue) et pity (pire cas, jauge d'artisan pleine) : absents sur l'ancien barème de repli ;
+      // boundUse / pityBoundUse : stock de matériaux liés consommé (owned)
       return { totalValue: Math.round(r.cost), rawGold: Math.round(r.rawGold), taps: r.taps,
         breaths: r.breaths, breathTaps: r.breathTaps, breathAll: r.breathAll,
-        pityValue: Math.round(r.pityCost), pityRawGold: Math.round(r.pityRawGold), pityTaps: r.pityTaps };
+        pityValue: Math.round(r.pityCost), pityRawGold: Math.round(r.pityRawGold), pityTaps: r.pityTaps,
+        boundUse: r.boundUse, pityBoundUse: r.pityBoundUse };
     }
     if (track !== 'aegir') return { totalValue: 0, rawGold: 0 };
     

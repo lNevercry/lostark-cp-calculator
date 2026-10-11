@@ -75,8 +75,8 @@ function updateAnalysisText(currentIlvl, targetIlvl, pred) {
         : { weapon: 'Arme', head: 'Tête', shoulder: 'Épaules', chest: 'Torse', pants: 'Jambes', gloves: 'Gants' };
       const steps = pred.path.steps.map(st => `${names[st.slot]} +${st.from} ➔ +${st.to}`).join(', ');
       msg = isEn
-        ? `<strong>Cheapest honing path on your real gear:</strong> ${steps}. Expected cost <strong>${formatNumber(Math.round(pred.path.gold))} g</strong> (game recipes, market prices), for <strong>+${formatNumber(pred.diffCp)} CP</strong> (${pred.slope} CP / iLvl). Every +1 is worth the same iLvl whatever the piece, so the cheapest steps (mostly armor) come first; raising the weapon gives about 5 times more CP per iLvl but costs much more.`
-        : `<strong>Chemin d'affinage le moins cher sur ton vrai stuff :</strong> ${steps}. Coût attendu <strong>${formatNumber(Math.round(pred.path.gold))} or</strong> (recettes du jeu, prix du marché), pour <strong>+${formatNumber(pred.diffCp)} CP</strong> (${pred.slope} CP / iLvl). Chaque +1 vaut le même iLvl quelle que soit la pièce : les paliers les moins chers (surtout les armures) passent d'abord ; l'arme rapporte environ 5 fois plus de CP par iLvl mais coûte bien plus cher.`;
+        ? `<strong>Cheapest honing path on your real gear:</strong> ${steps}. Expected cost <strong>${formatNumber(Math.round(pred.path.gold))} g</strong> (game recipes, ${pred.path.owned ? 'your bound materials first, then market prices' : 'market prices'}), for <strong>+${formatNumber(pred.diffCp)} CP</strong> (${pred.slope} CP / iLvl). Every +1 is worth the same iLvl whatever the piece, so the cheapest steps (mostly armor) come first; raising the weapon gives about 5 times more CP per iLvl but costs much more.`
+        : `<strong>Chemin d'affinage le moins cher sur ton vrai stuff :</strong> ${steps}. Coût attendu <strong>${formatNumber(Math.round(pred.path.gold))} or</strong> (recettes du jeu, ${pred.path.owned ? 'tes matériaux liés d\'abord, puis prix du marché' : 'prix du marché'}), pour <strong>+${formatNumber(pred.diffCp)} CP</strong> (${pred.slope} CP / iLvl). Chaque +1 vaut le même iLvl quelle que soit la pièce : les paliers les moins chers (surtout les armures) passent d'abord ; l'arme rapporte environ 5 fois plus de CP par iLvl mais coûte bien plus cher.`;
     } else if (pred.mode === 'honing') {
       msg = isEn
         ? `<strong>Pure Honing Gain (Gear Only):</strong> Going from <strong>${currentIlvl.toFixed(2)}</strong> to <strong>${targetIlvl.toFixed(2)}</strong> (+${diff.toFixed(2)} iLvl) grants approx. <strong>+${formatNumber(pred.diffCp)} CP</strong> (<strong>${pred.slope} CP / iLvl</strong>, average for the cheapest path, mostly armor; the weapon gives about 5 times more per iLvl). Estimate without an imported character: import yours for the real path, its cost and its CP.`
@@ -192,18 +192,16 @@ function updateHoningView() {
   dom.simDiffCp.textContent = `${diffCp >= 0 ? '+' : ''}${formatNumber(diffCp)} CP`;
 
   // Calcul du coût estimé en Gold brut (Honing Sheet)
-  let totalSimGold = 0;
-  let totalRawGold = 0;
-  // Pire cas : jauge d'artisan pleine à chaque palier (null dès qu'un palier n'a pas de recette du jeu)
-  let totalPity = 0, advSimGold = 0;
+  // Paliers simulés, pièce par pièce (recette de la pièce : Serka au niveau affiché, sinon Aegir) ; matériaux liés
+  // du personnage consommés dans cet ordre. Pity : jauge d'artisan pleine à chaque palier (0 sans recette du jeu)
+  const simOwned = simCtx ? getBoundMats(simChar) : null;
+  const simSteps = [];
+  simPieces.forEach(p => { for (let l = p.lvl; l < p.toLvl; l++) simSteps.push({ piece: p.slot, l, track: p.isSerka ? 'serka' : 'aegir' }); });
+  const simSeq = honingStepsCost(simSteps, simOwned);
+  let totalSimGold = simSeq.cost;
+  let totalRawGold = simSeq.rawGold;
+  let totalPity = simSeq.pity, advSimGold = 0;
   for (const p of simPieces) {
-    // Recette de la pièce : Serka au niveau affiché, sinon Aegir
-    for (let l = p.lvl; l < p.toLvl; l++) {
-      const costObj = getLevelCost(p.slot, l, p.isSerka ? 'serka' : 'aegir');
-      totalSimGold += Math.round(costObj.totalValue);
-      totalRawGold += Math.round(costObj.rawGold);
-      if (totalPity !== null) totalPity = costObj.pityValue > 0 ? totalPity + costObj.pityValue : null;
-    }
     // Affinage avancé de la pièce (Aegir : sur le Serka il ne rapporte rien)
     if (!p.isSerka && p.toAdv > p.adv) {
       const advCost = advHoningCostBetween(p.slot, p.adv, p.toAdv);
@@ -222,7 +220,10 @@ function updateHoningView() {
           ? 'worst case: full artisan\'s energy on every step' + (advSimGold > 0 ? ', advanced honing at expected cost' : '')
           : 'pire cas : jauge d\'artisan pleine à chaque palier' + (advSimGold > 0 ? ', affinage avancé au coût attendu' : '')})</span>`
       : '';
-    dom.simEstimatedGold.innerHTML = totalSimGold > 0 ? `${formatNumber(totalSimGold)} g <span style="${muted}">(${enG ? 'gold + materials at market price' : 'or + matériaux au prix du marché'})</span>${pityLine}<br><span style="font-size:15px; color:#ffb13b;">${formatNumber(totalRawGold)} g</span> <span style="${muted}">(${enG ? 'gold fee only' : 'or des tentatives seul'})</span>` : '0 g';
+    const priced = simSeq.bound
+      ? (enG ? 'gold + materials beyond your bound stock, at market price' : 'or + matériaux au-delà de ton stock lié, au prix du marché')
+      : (enG ? 'gold + materials at market price' : 'or + matériaux au prix du marché');
+    dom.simEstimatedGold.innerHTML = totalSimGold > 0 ? `${formatNumber(totalSimGold)} g <span style="${muted}">(${priced})</span>${pityLine}<br><span style="font-size:15px; color:#ffb13b;">${formatNumber(totalRawGold)} g</span> <span style="${muted}">(${enG ? 'gold fee only' : 'or des tentatives seul'})</span>` : '0 g';
   }
 
   if (dom.simGoldPerCp) {
@@ -261,8 +262,9 @@ function updateHoningView() {
   }
 
   // Conseils : calculés sur le personnage importé (prochain palier le plus rentable), sinon règles générales
-  const nextSteps = simCtx ? honingNextSteps(simChar, simCtx, simPieces, role === 'support', simProfileCp > 0 ? baseCp / simProfileCp : 1) : null;
+  const nextSteps = simCtx ? honingNextSteps(simChar, simCtx, simPieces, role === 'support', simProfileCp > 0 ? baseCp / simProfileCp : 1, simSeq.left) : null;
   updateHoningAdvice(diffCp, totalSimGold, nextSteps);
+  renderBoundMatsPanel(document.getElementById('honingBoundMats'), isEnLang());
   if (dom.charCardIlvl) dom.charCardIlvl.textContent = `${computedIlvl.toFixed(2)} iLvl`;
   if (dom.charCardCp) dom.charCardCp.textContent = `${formatNumber(predictedCp)} CP`;
   if (dom.charCardWeapon) dom.charCardWeapon.textContent = `+${state.gear.weapon}`;
@@ -278,16 +280,16 @@ function updateHoningView() {
 
 /**
  * Simulateur : +1 sur chaque pièce depuis l'état simulé, CP marginal du modèle (gearCpGain) et coût attendu
- * (recette de la pièce, prix du marché), classés par or / CP. null sans données.
+ * (recette de la pièce, matériaux liés restants `owned` puis prix du marché), classés par or / CP. null sans données.
  */
-function honingNextSteps(charObj, ctx, pieces, isSupport, cpScale) {
+function honingNextSteps(charObj, ctx, pieces, isSupport, cpScale, owned = null) {
   const cpOf = list => { const r = gearDpsGain(ctx, list); return r ? gearCpGain(charObj, ctx, r, isSupport) : null; };
   const now = cpOf(pieces);
   if (now === null) return null;
   const out = [];
   pieces.forEach((p, i) => {
     if (p.toLvl >= 25) return;
-    const lc = getLevelCost(p.slot === 'weapon' ? 'weapon' : 'armor', p.toLvl, p.isSerka ? 'serka' : 'aegir');
+    const lc = getLevelCost(p.slot === 'weapon' ? 'weapon' : 'armor', p.toLvl, p.isSerka ? 'serka' : 'aegir', owned);
     const cost = lc.totalValue;
     const next = cpOf(pieces.map((q, j) => (j === i ? Object.assign({}, q, { toLvl: q.toLvl + 1 }) : q)));
     if (!(cost > 0) || next === null) return;

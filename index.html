@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=28.5">
+  <link rel="stylesheet" href="style.css?v=28.6">
 </head>
 <body>
   <div class="app-container">
@@ -662,6 +662,9 @@
               </div>
             </div>
 
+            <!-- Matériaux liés du personnage (utilisés avant l'achat au marché) -->
+            <div id="honingBoundMats"></div>
+
             <div class="advice-card">
               <div class="advice-icon"></div>
               <div class="advice-body">
@@ -1081,6 +1084,8 @@
 
           <!-- Prix hors marché réglables (pheon, bracelet non relancé) -->
           <div class="gpd-price-inputs" id="gpdPriceInputs"></div>
+          <!-- Matériaux liés du personnage (utilisés avant l'achat au marché) -->
+          <div id="gpdBoundMats"></div>
 
           <!-- Table scrollable -->
           <div class="eff-table-wrapper">
@@ -1903,37 +1908,37 @@
   <script src="bracelet-model.js?v=1.0"></script>
   <script src="subrank.js?v=1.0"></script>
   <!-- Appli : scripts de js/, dans cet ordre (ils partagent leurs déclarations de premier niveau) -->
-  <script src="js/core.js?v=55.16"></script>
-  <script src="js/app-state.js?v=55.16"></script>
-  <script src="js/game-tables.js?v=55.16"></script>
-  <script src="js/models.js?v=55.16"></script>
-  <script src="js/honing.js?v=55.16"></script>
-  <script src="js/upgrades.js?v=55.16"></script>
-  <script src="js/tab-predictor.js?v=55.16"></script>
-  <script src="js/optimization.js?v=55.16"></script>
-  <script src="js/gpd.js?v=55.16"></script>
-  <script src="js/ark-grid.js?v=55.16"></script>
-  <script src="js/bracelet.js?v=55.16"></script>
-  <script src="js/advisor.js?v=55.16"></script>
-  <script src="js/ark-passive.js?v=55.16"></script>
-  <script src="js/astrogem-grader.js?v=55.16"></script>
-  <script src="js/bible-import.js?v=55.16"></script>
-  <script src="js/oauth-roster.js?v=55.16"></script>
-  <script src="js/app-ui.js?v=55.16"></script>
-  <script src="js/raid-tracker.js?v=55.16"></script>
-  <script src="js/benchmark-core.js?v=55.16"></script>
-  <script src="js/accessories.js?v=55.16"></script>
-  <script src="js/benchmark-systems.js?v=55.16"></script>
-  <script src="js/benchmark-gains.js?v=55.16"></script>
-  <script src="js/breakdown-acc-bracelet.js?v=55.16"></script>
-  <script src="js/breakdown-character.js?v=55.16"></script>
-  <script src="js/breakdown-cores.js?v=55.16"></script>
-  <script src="js/benchmark-peers.js?v=55.16"></script>
-  <script src="js/benchmark-tab.js?v=55.16"></script>
-  <script src="js/market.js?v=55.16"></script>
-  <script src="js/belgardin.js?v=55.16"></script>
-  <script src="js/tab-rotation.js?v=55.16"></script>
-  <script src="js/main.js?v=55.16"></script>
+  <script src="js/core.js?v=55.17"></script>
+  <script src="js/app-state.js?v=55.17"></script>
+  <script src="js/game-tables.js?v=55.17"></script>
+  <script src="js/models.js?v=55.17"></script>
+  <script src="js/honing.js?v=55.17"></script>
+  <script src="js/upgrades.js?v=55.17"></script>
+  <script src="js/tab-predictor.js?v=55.17"></script>
+  <script src="js/optimization.js?v=55.17"></script>
+  <script src="js/gpd.js?v=55.17"></script>
+  <script src="js/ark-grid.js?v=55.17"></script>
+  <script src="js/bracelet.js?v=55.17"></script>
+  <script src="js/advisor.js?v=55.17"></script>
+  <script src="js/ark-passive.js?v=55.17"></script>
+  <script src="js/astrogem-grader.js?v=55.17"></script>
+  <script src="js/bible-import.js?v=55.17"></script>
+  <script src="js/oauth-roster.js?v=55.17"></script>
+  <script src="js/app-ui.js?v=55.17"></script>
+  <script src="js/raid-tracker.js?v=55.17"></script>
+  <script src="js/benchmark-core.js?v=55.17"></script>
+  <script src="js/accessories.js?v=55.17"></script>
+  <script src="js/benchmark-systems.js?v=55.17"></script>
+  <script src="js/benchmark-gains.js?v=55.17"></script>
+  <script src="js/breakdown-acc-bracelet.js?v=55.17"></script>
+  <script src="js/breakdown-character.js?v=55.17"></script>
+  <script src="js/breakdown-cores.js?v=55.17"></script>
+  <script src="js/benchmark-peers.js?v=55.17"></script>
+  <script src="js/benchmark-tab.js?v=55.17"></script>
+  <script src="js/market.js?v=55.17"></script>
+  <script src="js/belgardin.js?v=55.17"></script>
+  <script src="js/tab-rotation.js?v=55.17"></script>
+  <script src="js/main.js?v=55.17"></script>
 
   <!-- Cloudflare Web Analytics -->
   <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ab628174dd6d4aec9cb0a47449a6b62f"}'></script>

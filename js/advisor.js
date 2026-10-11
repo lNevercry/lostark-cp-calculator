@@ -79,13 +79,15 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const stepLevels = levels.map(x => ({ l: x.l + k - 1, track: x.track }));
     const pity = honingPityOf(isW ? 'weapon' : 'armor', stepLevels);
     const stepDetail = honingPityDetail(pity.pity, pity.taps, isEn, breathPlanOf(isW ? 'weapon' : 'armor', stepLevels, isEn));
+    // Étapes de la ligne : la feuille de route les rechiffre avec le stock de matériaux liés qui lui reste
+    const honingSteps = stepLevels.map(x => ({ piece, l: x.l, track: x.track }));
     if (isW) {
       const from = Math.floor(sys.weapon.wLvl) + k - 1;
-      return mk(`+${from} ➔ +${from + 1}`, cost, g1 - g0, { targetVal: from + 1, stepDetail });
+      return mk(`+${from} ➔ +${from + 1}`, cost, g1 - g0, { targetVal: from + 1, stepDetail, honingSteps });
     }
     // Armures : pièces réelles encore sous +25 à cette étape (niveaux différents : « +1 sur n pièces »)
     const lbl = armorStepLabel(levels.map(x => x.l), k, isEn, sys.armors.avgArmor);
-    return mk(lbl.step, cost, g1 - g0, { targetVal: Math.min(...levels.map(x => x.l)) + k, armorStep: k, stepDetail });
+    return mk(lbl.step, cost, g1 - g0, { targetVal: Math.min(...levels.map(x => x.l)) + k, armorStep: k, stepDetail, honingSteps });
   }
   const gm = /^dyn_gems_(\d+)_\d+$/.exec(base.id);
   if (gm) {
@@ -138,6 +140,21 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal, opts = {}) 
   const maxSteps = opts.maxSteps || 40;
   const cpGoal = opts.cpGoal > 0 ? opts.cpGoal : null;
   const startK = opts.startK || {};
+  // Matériaux liés : consommés dans l'ordre des étapes (usage moyen reporté, comme loa-sim) ; les étapes d'affinage
+  // encore en lice sont rechiffrées à chaque tour avec le stock restant (opts.owned : stock après une étape précédente)
+  const owned0 = 'owned' in opts ? opts.owned : getBoundMats(charObj);
+  let inv = owned0;
+  const reprice = row => {
+    if (!owned0 || !row.honingSteps || !row.honingSteps.length) return;
+    const seq = honingStepsCost(row.honingSteps, inv);
+    if (!(seq.cost > 0)) return;
+    if (row.cost > 0) row.rate *= seq.cost / row.cost;
+    row.cost = Math.round(seq.cost);
+    row.invLeft = seq.left;
+    const piece = row.honingSteps[0].piece;
+    const one = row.honingSteps.length === 1 && seq.pity > 0 ? seq.perStep[0].pityTaps : 0;
+    row.stepDetail = honingPityDetail(seq.pity, one, isEn, breathPlanOf(piece, row.honingSteps, isEn, inv));
+  };
   const avail = masterRows.map(r => {
     const k = startK[r.id] > 1 ? startK[r.id] : 1;
     if (k === 1) return { row: Object.assign({ chain: r.id, step: 1 }, r), k: 1 };
@@ -148,6 +165,7 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal, opts = {}) 
   let cum = 0, cumCp = 0, gold = 0, arkChain = null;
   const currentCp = characterCp(charObj);
   while (avail.length && (cpGoal ? cumCp < cpGoal : cum < goal) && plan.length < maxSteps) {
+    avail.forEach(a => reprice(a.row));
     avail.sort((a, b) => a.row.rate - b.row.rate);
     const it = avail.shift();
     if (it.row.category === 'arkGrid') {
@@ -165,13 +183,14 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal, opts = {}) 
     }
     plan.push(row);
     gold += row.cost;
+    if (row.invLeft !== undefined) inv = row.invLeft;
     cum += isSupport ? gain : row.cpGain;
     if (row.cpGain > 0) cumCp += row.cpGain;
     const base = masterRows.find(r => r.id === row.chain);
     const next = base && gpdFollowUp(charObj, isSupport, isEn, base, it.k + 1);
     if (next) avail.push({ row: next, k: it.k + 1 });
   }
-  return { plan, gold, cum, cumCp, reached: cpGoal ? cumCp >= cpGoal : cum >= goal };
+  return { plan, gold, cum, cumCp, reached: cpGoal ? cumCp >= cpGoal : cum >= goal, bound: !!owned0 };
 }
 
 /**
@@ -324,6 +343,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         lastStep: `+${m.from - 1} ➔ +${m.from}`,
         nextStep: `+${m.from} ➔ +${m.to}`,
         stepDetail: honingPityDetail(m.pity, m.pityTaps, isEn, m.breathPlan),
+        honingSteps: m.honingSteps,
         category: 'gear',
         applyType: 'weapon',
         targetVal: m.to
@@ -340,6 +360,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         lastStep: `+${m.from - 1} ➔ +${m.from}`,
         nextStep: lbl.step,
         stepDetail: honingPityDetail(m.pity, m.pityTaps, isEn, m.breathPlan),
+        honingSteps: m.honingSteps,
         category: 'gear',
         applyType: 'armors',
         targetVal: m.to

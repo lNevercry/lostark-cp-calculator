@@ -405,7 +405,9 @@ function renderBelgardinReadiness() {
       : { weapon: 'Arme', head: 'Casque', shoulder: 'Épaulières', chest: 'Plastron', pants: 'Jambières', gloves: 'Gants' })[s] || s;
     if (honing && honing.reached) {
       h += `<p class="belg-step"><strong>1. ${isEn ? `Item level ${sel.diff.ilvl}` : `iLvl ${sel.diff.ilvl}`}</strong> — ${honing.steps.map(st => `${slotName(st.slot)} +${st.from} ➔ +${st.to}`).join(', ')} :
-          ${fmt(Math.round(honing.gold))} ${isEn ? 'gold (expected, market prices)' : 'or (moyenne attendue, prix du marché)'}, ${isSupport ? '~' : ''}+${fmt(Math.round(honing.cpGain))} CP.</p>`;
+          ${fmt(Math.round(honing.gold))} ${isEn
+            ? `gold (expected, ${honing.owned ? 'your bound materials first, then market prices' : 'market prices'})`
+            : `or (moyenne attendue, ${honing.owned ? 'tes matériaux liés d\'abord, puis prix du marché' : 'prix du marché'})`}, ${isSupport ? '~' : ''}+${fmt(Math.round(honing.cpGain))} CP.</p>`;
     } else if (honing) {
       // Stuff Aegir : l'affinage normal plafonne à +25 (1715 + affinage avancé)
       h += `<p class="belg-step"><strong>1. ${isEn ? `Item level ${sel.diff.ilvl}` : `iLvl ${sel.diff.ilvl}`}</strong> — ${isEn
@@ -437,7 +439,10 @@ function renderBelgardinReadiness() {
         const armor = GEAR_ARMOR_SLOTS.filter(sl => ctx && ctx.gear[sl] < 25).map(raise);
         if (armor.length) startK.dyn_armor = Math.min(...armor) + 1;
       }
-      if (rows.length) road = buildGpdRoadmap(charObj, isSupport, isEn, rows, Infinity, { cpGoal: gap, maxSteps: 80, startK, maxRate: BELG_MAX_RATE * (isSupport ? 0.01 : 1) });
+      // Matériaux liés : ce que l'affinage de l'étape 1 n'a pas consommé
+      const roadOpts = { cpGoal: gap, maxSteps: 80, startK, maxRate: BELG_MAX_RATE * (isSupport ? 0.01 : 1) };
+      if (honingDone) roadOpts.owned = honing.left;
+      if (rows.length) road = buildGpdRoadmap(charObj, isSupport, isEn, rows, Infinity, roadOpts);
     } catch (e) {
       console.warn('[BELGARDIN] Feuille de route indisponible :', e.message);
     }

@@ -48,7 +48,7 @@ Every way to improve your character, priced in gold and ranked like [Loseii's GP
 
 ### 🧮 Simulators
 - **Quick Predictor (iLvl ➔ CP)**: the cheapest honing path to a target item level, using real game recipes and market prices.
-- **Piece-by-Piece Honing Simulator**: expected cost per piece (artisan energy, failure bonus, breath), CP gain and a gold-per-CP recommendation.
+- **Piece-by-Piece Honing Simulator**: expected and worst-case (pity) cost per piece (artisan energy, failure bonus, cheapest breath use), your bound materials used before buying, CP gain and a gold-per-CP recommendation.
 - **Ark Passive Simulator**: projected CP from the game's per-point Battle Point values, plus an **astrogem evaluator** (grade, rank and gain).
 - **T4 Optimization**: try different accessory tiers and gem levels on your own character.
 - **Canonical Engine**: your Battle Point, part by part, rebuilt exactly from the profile.
@@ -183,6 +183,7 @@ This project stands on the shoulders of the Lost Ark theorycrafting community. A
 |---|---|
 | **Loa-Buddy** market API | Live EUC Auction House prices used by every gold calculation. |
 | **[LOA Logs](https://github.com/snoww/loa-logs)** (snoww) | The open-source DPS meter whose `encounters.db` powers the Rotation Analysis and the Raid Tracker; skill and boss metadata come from its `meter-data`. |
+| **[loa-sim](https://loa-sim.vercel.app/)** | Ideas reused with our own data: pity cost, breaths on the first N taps, bound materials used before buying, avatar line. |
 | **[SQLite WebAssembly](https://sqlite.org/wasm)** | Reading LOA Logs databases directly in the browser (bundled, see its license in `js/rotation/vendor/`). |
 | **Class guide authors** | Rotation targets quoted from community guides, each one cited in the app, e.g. *Dimensionalist – Community Advanced Guide* by Mariabetaniah & Hhôpe (Nexus Discord). |
 
