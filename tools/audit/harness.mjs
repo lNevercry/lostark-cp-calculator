@@ -9,7 +9,7 @@ const { JSDOM, requestInterceptor, VirtualConsole } = require('jsdom');
 export const REPO = path.resolve(HERE, '../..');
 export const CACHE = path.resolve(HERE, 'cache');
 
-const AUDIT_NAMES = ['getDynamicGpdTable', 'buildMasterGpdData', 'buildPieceByPieceData', 'astrogemGridBand', 'getAbilityStoneUpgrade', 'abilityStoneOptions', 'stoneOptionText',
+const AUDIT_NAMES = ['getDynamicGpdTable', 'buildMasterGpdData', 'buildPieceByPieceData', 'astrogemGridBand', 'getAbilityStoneUpgrade', 'abilityStoneOptions', 'stoneOptionText', 'getStoneKits', 'setStoneKits',
   'braceletBandOf', 'extractPlayerSystems', 'detectCharacterRole', 'gearStatContext', 'supportInputs', 'realGems', 'realGemLevels',
   'weaponQualityUpgrade', 'karmaGpdStep', 'avatarGpdStep', 'avatarBonusOf', 'renderEfficiencyTable', 'renderStoneOptionsPanel', 'getRelicBookUpgrades', 'findBestAccessoryUpgrade', 'computeAccessoryLinesBonus',
   'state', 'updateActiveCharacterCard', 'getAbilityStone', 'pieceIsSerka', 'battlePointPartsOf', 'honingDpsGain', 'supportContribution',

@@ -744,6 +744,8 @@ function getDynamicGpdTable(charObj, role, isEn) {
   if (stoneUp) {
     const odds = Math.round(stoneUp.stones);
     const stoneGold = formatNumber(Math.round(stoneUp.stonePrice));
+    const bought = stoneBoughtText(stoneUp);
+    const kits = stoneUp.kits;
     const txt = stoneOptionText(stoneUp, isEn);
     const toLabel = stoneUp.same ? stoneUp.toLabel : txt.target;
     const what = [
@@ -757,9 +759,9 @@ function getDynamicGpdTable(charObj, role, isEn) {
       isEn ? `${what}, 1 stone in ${formatNumber(odds)}` : `${what}, 1 pierre sur ${formatNumber(odds)}`,
       stoneUp.gain, stoneUp.cost,
       isEn
-        ? `Exact odds with optimal faceting: 1 stone in ${formatNumber(odds)} reaches ${txt.target} (${(stoneUp.p * 100).toFixed(3)}%). Cost = ${formatNumber(odds)} uncut stones × ${stoneGold} g (auction-house price of the pair + ${ABILITY_STONE_PHEONS} pheons, set below the table; a farmed stone counts the same); faceting costs silver, not counted. Gain measured from the stone you wear${stoneUp.changes.length ? ` (${txt.changes})` : ''}.${stoneUp.apBonus > 0 ? ' Includes the +1.5% base Atk. Power at 5 levels.' : ''} All the stones you could aim for are ranked below the table.`
-        : `Probabilité exacte avec une taille optimale : 1 pierre sur ${formatNumber(odds)} atteint ${txt.target} (${(stoneUp.p * 100).toFixed(3)} %). Coût = ${formatNumber(odds)} pierres non taillées × ${stoneGold} or (prix HV de la paire + ${ABILITY_STONE_PHEONS} pheons, réglables sous le tableau ; une pierre farmée compte autant) ; la taille coûte de l'argent, non comptée. Gain mesuré depuis ta pierre actuelle${stoneUp.changes.length ? ` (${txt.changes})` : ''}.${stoneUp.apBonus > 0 ? ' Inclut la PA de base +1,5 % à 5 niveaux.' : ''} Toutes les pierres possibles sont classées sous le tableau.`,
-      { state: stoneUp.fromLabel, from: stoneUp.fromLabel, to: toLabel, current: txt.current, odds, stoneGold });
+        ? `Exact odds with optimal faceting: 1 stone in ${formatNumber(odds)} reaches ${txt.target} (${(stoneUp.p * 100).toFixed(3)}%). Cost = ${bought} uncut stones bought × ${stoneGold} g (auction-house price of the pair + ${ABILITY_STONE_PHEONS} pheons, set below the table; a farmed stone counts the same)${kits ? `; your ${kits} engraving setting kit${kits > 1 ? 's' : ''} (free stones with the engravings you pick) are faceted first: stones bought = (1 − p)^${kits} ÷ p on average` : ''}; faceting costs silver, not counted. Gain measured from the stone you wear${stoneUp.changes.length ? ` (${txt.changes})` : ''}.${stoneUp.apBonus > 0 ? ' Includes the +1.5% base Atk. Power at 5 levels.' : ''} All the stones you could aim for are ranked below the table.`
+        : `Probabilité exacte avec une taille optimale : 1 pierre sur ${formatNumber(odds)} atteint ${txt.target} (${(stoneUp.p * 100).toFixed(3)} %). Coût = ${bought} pierres non taillées achetées × ${stoneGold} or (prix HV de la paire + ${ABILITY_STONE_PHEONS} pheons, réglables sous le tableau ; une pierre farmée compte autant)${kits ? ` ; tes ${kits} kit${kits > 1 ? 's' : ''} de réglage (pierres gratuites aux gravures choisies) passent d'abord : pierres achetées = (1 − p)^${kits} ÷ p en moyenne` : ''} ; la taille coûte de l'argent, non comptée. Gain mesuré depuis ta pierre actuelle${stoneUp.changes.length ? ` (${txt.changes})` : ''}.${stoneUp.apBonus > 0 ? ' Inclut la PA de base +1,5 % à 5 niveaux.' : ''} Toutes les pierres possibles sont classées sous le tableau.`,
+      { state: stoneUp.fromLabel, from: stoneUp.fromLabel, to: toLabel, current: txt.current, odds, bought, kits, stoneGold });
   }
 
   // 10. Karma d'Illumination : niveau suivant, 900 or par essai
@@ -985,6 +987,7 @@ function renderStoneOptionsPanel(box, charObj, isSupport, isEn) {
   [{ pair: stonePairKey(stone.positives[0], stone.positives[1]), x: stone.positives[0], y: stone.positives[1] }, ...shown]
     .forEach(o => { if (!pairs.some(p => p.pair === o.pair)) pairs.push({ pair: o.pair, label: `${nm(o.x)} + ${nm(o.y)}` }); });
   const best = opts[0];
+  const kits = getStoneKits(charObj);
   const wasOpen = !!(box.querySelector('details') && box.querySelector('details').open);
   const rows = shown.map(o => {
     const txt = stoneOptionText(o, isEn);
@@ -997,7 +1000,7 @@ function renderStoneOptionsPanel(box, charObj, isSupport, isEn) {
     return `
           <tr class="eff-row${best === o ? ' top-pick' : ''}">
             <td class="col-name"><div><strong>${escapeHtml(txt.target)}</strong></div><span class="eff-subtext">${escapeHtml(detail)}</span></td>
-            <td class="col-cost">${isEn ? '1 in' : '1 sur'} ${formatNumber(Math.round(o.stones))}<span class="eff-subtext">× ${formatNumber(Math.round(o.stonePrice))} g</span></td>
+            <td class="col-cost">${isEn ? '1 in' : '1 sur'} ${formatNumber(Math.round(o.stones))}<span class="eff-subtext">${o.kits ? `${isEn ? 'buy' : 'achat'} ${stoneBoughtText(o)} ` : ''}× ${formatNumber(Math.round(o.stonePrice))} g</span></td>
             <td class="col-gain">+${o.gain.toFixed(2)}% ${isSupport ? 'Buff' : 'DPS'}</td>
             <td class="col-cost">${formatNumber(Math.round(o.cost))} g</td>
             <td class="col-ratio">${formatNumber(Math.round(o.cost / (o.gain * unit)))} g</td>
@@ -1011,8 +1014,8 @@ function renderStoneOptionsPanel(box, charObj, isSupport, isEn) {
         <p class="bound-mats-note">${isSupport
           ? (isEn ? 'Supports: only the +1.5% base Atk. Power at 5 levels moves the buff, so only your own pair is listed. ' : 'Supports : seule la PA de base +1,5 % à 5 niveaux change le buff, seule ta paire est listée. ')
           : (isEn ? 'Every pair of your equipped engravings (a stone carries two), every level pattern. Gain measured from the stone you wear: levels lost by engravings leaving the stone and the +1.5% base Atk. Power count. ' : 'Toutes les paires de tes gravures équipées (une pierre en porte deux), tous les profils de niveaux. Gain mesuré depuis ta pierre actuelle : les niveaux perdus des gravures qui la quittent et la PA de base +1,5 % comptent. ')}${isEn
-          ? `Cost = stones to facet (exact odds, optimal faceting) × (auction-house price of the pair + ${ABILITY_STONE_PHEONS} pheons); a farmed stone counts the same. Best ${shown.length} of ${opts.length} within ${formatNumber(STONE_GPD_MAX_STONES)} stones${beyond ? `; ${beyond} beyond, not listed` : ''}.`
-          : `Coût = pierres à tailler (probabilité exacte, taille optimale) × (prix HV de la paire + ${ABILITY_STONE_PHEONS} pheons) ; une pierre farmée compte autant. Les ${shown.length} meilleures sur ${opts.length} à moins de ${formatNumber(STONE_GPD_MAX_STONES)} pierres${beyond ? ` ; ${beyond} au-delà, non listées` : ''}.`}</p>
+          ? `Cost = stones to facet (exact odds, optimal faceting) × (auction-house price of the pair + ${ABILITY_STONE_PHEONS} pheons); a farmed stone counts the same. Engraving setting kits (Paradise, Hell…: a free stone with the two engravings you pick) are faceted first. Best ${shown.length} of ${opts.length} within ${formatNumber(STONE_GPD_MAX_STONES)} stones${beyond ? `; ${beyond} beyond, not listed` : ''}.`
+          : `Coût = pierres à tailler (probabilité exacte, taille optimale) × (prix HV de la paire + ${ABILITY_STONE_PHEONS} pheons) ; une pierre farmée compte autant. Les kits de réglage des gravures (Paradis, Hell… : une pierre gratuite aux deux gravures choisies) passent d'abord. Les ${shown.length} meilleures sur ${opts.length} à moins de ${formatNumber(STONE_GPD_MAX_STONES)} pierres${beyond ? ` ; ${beyond} au-delà, non listées` : ''}.`}</p>
         ${shown.length ? `<div class="eff-table-wrapper">
           <table class="eff-table stone-options-table">
             <thead><tr>
@@ -1026,7 +1029,11 @@ function renderStoneOptionsPanel(box, charObj, isSupport, isEn) {
             <tbody>${rows}</tbody>
           </table>
         </div>` : `<p class="bound-mats-note">${isEn ? 'No stone within reach.' : 'Aucune pierre à portée.'}</p>`}
-        <div class="gpd-price-inputs">${pairs.map(p => `
+        <div class="gpd-price-inputs">
+          <label class="gpd-price-field">
+            <span>${isEn ? 'Engraving setting kits owned' : 'Kits de réglage des gravures possédés'}</span>
+            <input type="number" min="0" step="1" inputmode="numeric" data-stone-kits value="${kits > 0 ? kits : ''}" placeholder="0">
+          </label>${pairs.map(p => `
           <label class="gpd-price-field">
             <span>${escapeHtml(p.label)} ${isEn ? '(gold, uncut)' : '(or, non taillée)'}</span>
             <input type="number" min="0" step="1" inputmode="numeric" data-stone-pair="${escapeHtml(p.pair)}"
@@ -1044,6 +1051,11 @@ function renderStoneOptionsPanel(box, charObj, isSupport, isEn) {
       saveGpdPrices();
       refreshGpdViews();
     });
+  });
+  const kitInput = box.querySelector('input[data-stone-kits]');
+  if (kitInput) kitInput.addEventListener('change', () => {
+    setStoneKits(charObj, Number(kitInput.value));
+    refreshGpdViews();
   });
 }
 

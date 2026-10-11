@@ -16,6 +16,25 @@ function stonePairPrice(pair) {
 }
 // Or par pierre non taillée achetée : prix HV de la paire + 9 pheons au prix réglable (défaut Loseii)
 const abilityStonePrice = pair => stonePairPrice(pair) + ABILITY_STONE_PHEONS * gpdUnitPrice('pheon');
+// Kits de réglage des gravures (« Soaring Stone Engraving Setting Kit », récompenses du Paradis, du Hell…, présents sur
+// EU, confirmé par l'utilisateur le 2026-10-11) : une pierre non taillée aux deux gravures choisies, sans or ni pheons.
+// Stock par personnage (`lostark_stone_kits`, même identifiant que les matériaux liés), taillé avant tout achat.
+const STONE_KITS_KEY = 'lostark_stone_kits';
+function loadStoneKitsAll() {
+  try { return JSON.parse(lsGet(STONE_KITS_KEY)) || {}; } catch (e) { return {}; }
+}
+function getStoneKits(c) {
+  const id = boundMatsId(c);
+  const n = id ? loadStoneKitsAll()[id] : 0;
+  return n > 0 ? Math.floor(n) : 0;
+}
+function setStoneKits(c, n) {
+  const id = boundMatsId(c);
+  if (!id) return;
+  const all = loadStoneKitsAll();
+  if (n > 0) all[id] = Math.floor(n); else delete all[id];
+  lsSet(STONE_KITS_KEY, JSON.stringify(all));
+}
 // Niveau de pierre 1…4 atteint à 6 / 7 / 9 / 10 nœuds
 const STONE_LEVEL_NODES = [6, 7, 9, 10];
 // Somme des niveaux positifs >= 5 : Puissance d'attaque de base +1,5 %
@@ -261,8 +280,9 @@ const STONE_ANY_ORDER = [[3, 2], [2, 3], [4, 1], [1, 4]];
  * gravures équipées (DPS : celles dont la pierre change les dégâts ; support : la paire portée, seule la PA de base
  * compte) × chaque profil de niveaux 0 à 4, plus « 5 niveaux dans n'importe quel ordre » (9/7 · 7/9 · 10/6 · 6/10,
  * PA de base +1,5 %, gain de la pire des quatre). Gain depuis la pierre portée : niveaux perdus des gravures qui la
- * quittent et PA de base perdue comptés ; une gravure de la pierre non équipée ne compte pas. Coût = pierres à
- * tailler (1 / probabilité exacte, taille optimale) × (prix HV de la paire + 9 pheons). Triées par or / gain.
+ * quittent et PA de base perdue comptés ; une gravure de la pierre non équipée ne compte pas. Coût = pierres achetées
+ * × (prix HV de la paire + 9 pheons) ; pierres achetées attendues = (1 − p)^kits / p (kits de réglage taillés d'abord,
+ * chaque pierre réussit avec la probabilité exacte p de la taille optimale). Triées par or / gain.
  */
 function abilityStoneOptions(charObj, isSupport) {
   const stone = getAbilityStone(charObj);
@@ -296,6 +316,7 @@ function abilityStoneOptions(charObj, isSupport) {
   };
   const apDelta = sum => ((sum >= 5 ? 1 : 0) - (curSum >= 5 ? 1 : 0)) * apGain;
   const fromLabel = `${e1.nodes}/${e2.nodes}`;
+  const kits = getStoneKits(charObj);
   const out = [];
   for (let i = 0; i < choices.length; i++) for (let j = i + 1; j < choices.length; j++) {
     const x = choices[i], y = choices[j];
@@ -304,7 +325,8 @@ function abilityStoneOptions(charObj, isSupport) {
     const same = i === 0 && j === 1;
     const push = o => {
       if (!(o.gain >= 1e-4) || !(o.p > 0)) return;
-      out.push(Object.assign(o, { x, y, pair, same, stone, fromLabel, stonePrice, stones: 1 / o.p, cost: stonePrice / o.p }));
+      const bought = Math.pow(1 - o.p, kits) / o.p;
+      out.push(Object.assign(o, { x, y, pair, same, stone, fromLabel, stonePrice, kits, stones: 1 / o.p, bought, cost: stonePrice * bought }));
     };
     for (let lx = 0; lx <= 4; lx++) for (let ly = 0; ly <= 4; ly++) {
       if (!lx && !ly) continue;
@@ -329,6 +351,9 @@ function abilityStoneOptions(charObj, isSupport) {
 function getAbilityStoneUpgrade(charObj, isSupport, samePair = false) {
   return abilityStoneOptions(charObj, isSupport).find(o => (samePair ? o.same : o.stones <= STONE_GPD_MAX_STONES)) || null;
 }
+
+// Pierres achetées attendues, lisibles (moins de 10 : une décimale, les kits de réglage peuvent en laisser < 1)
+const stoneBoughtText = o => (o.bought >= 10 ? formatNumber(Math.round(o.bought)) : o.bought.toFixed(1));
 
 // Texte d'une pierre visée : gravures et nœuds visés, niveaux qui changent par rapport à la pierre portée
 function stoneOptionText(o, isEn) {

@@ -467,8 +467,8 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         lastStep: '—',
         nextStep: `${m.from} ➔ ${m.to}`,
         stepDetail: isEn
-          ? `${formatNumber(m.odds)} uncut stones × ${m.stoneGold} g (auction-house price + ${ABILITY_STONE_PHEONS} pheons; faceting in silver, not counted)`
-          : `${formatNumber(m.odds)} pierres non taillées × ${m.stoneGold} or (prix HV + ${ABILITY_STONE_PHEONS} pheons ; taille en argent, non comptée)`,
+          ? `${m.bought} uncut stones bought × ${m.stoneGold} g (auction-house price + ${ABILITY_STONE_PHEONS} pheons${m.kits ? `, after your ${m.kits} setting kit${m.kits > 1 ? 's' : ''}` : ''}; faceting in silver, not counted)`
+          : `${m.bought} pierres non taillées achetées × ${m.stoneGold} or (prix HV + ${ABILITY_STONE_PHEONS} pheons${m.kits ? `, après tes ${m.kits} kit${m.kits > 1 ? 's' : ''} de réglage` : ''} ; taille en argent, non comptée)`,
         category: 'stone'
       }));
     } else if (d.id === 'dyn_karma') {
