@@ -785,7 +785,7 @@ function updateActiveCharacterCard(key, customProfile = null) {
       const [e1, e2] = stone.positives;
       const name = e => (isEn ? e.en : e.fr);
       const hasApBonus = e1.level + e2.level >= 5;
-      const up = getAbilityStoneUpgrade(p, isSupport);
+      const up = getAbilityStoneUpgrade(p, isSupport, true);
       let html = isEn
         ? `Stone <strong>${e1.nodes}/${e2.nodes}</strong>`
         : `Pierre <strong>${e1.nodes}/${e2.nodes}</strong>`;

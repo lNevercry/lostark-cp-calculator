@@ -7624,6 +7624,16 @@ body.no-character .main-content {
   padding: 0;
   min-width: 0;
 }
+/* Pierres d'aptitude possibles (sous le tableau GPD) : même tableau que le GPD, prix HV par paire en dessous */
+.stone-options {
+  margin: 16px 0 0;
+}
+.stone-options .eff-table-wrapper {
+  margin: 0 0 12px;
+}
+.stone-options-table .col-name {
+  min-width: 200px;
+}
 .bound-mats-group legend {
   padding: 0 0 6px;
   font-size: 12px;

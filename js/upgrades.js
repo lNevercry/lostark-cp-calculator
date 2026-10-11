@@ -3,8 +3,19 @@
 'use strict';
 
 // --- Pierre d'aptitude T4 (Grande pierre d'envol : 10 nœuds par ligne) ---
-// Prix (gold) d'une pierre non taillée : 9 pheons, au prix du pheon réglable dans l'onglet GPD (défaut Loseii)
-const abilityStonePrice = () => ABILITY_STONE_PHEONS * gpdUnitPrice('pheon');
+// Prix HV d'une pierre non taillée selon sa paire de gravures (relevé en jeu de l'utilisateur, HV EUC, 2026-10-11) :
+// la plupart de 200 à 500 or, paires recherchées plus chères. Réglables par paire sous le tableau GPD
+// (`stone:<paire>` dans lostark_gpd_prices). L'achat coûte en plus 9 pheons (ABILITY_STONE_PHEONS).
+const STONE_PAIR_PRICES = { 'adrenaline|grudge': 1000, 'cursed doll|hit master': 750 };
+const STONE_PAIR_PRICE_OTHER = 350;
+const stonePairKey = (a, b) => [a.key, b.key].sort().join('|');
+const stonePairDefaultPrice = pair => STONE_PAIR_PRICES[pair] || STONE_PAIR_PRICE_OTHER;
+function stonePairPrice(pair) {
+  const v = state.gpdPrices && state.gpdPrices[`stone:${pair}`];
+  return v > 0 ? v : stonePairDefaultPrice(pair);
+}
+// Or par pierre non taillée achetée : prix HV de la paire + 9 pheons au prix réglable (défaut Loseii)
+const abilityStonePrice = pair => stonePairPrice(pair) + ABILITY_STONE_PHEONS * gpdUnitPrice('pheon');
 // Niveau de pierre 1…4 atteint à 6 / 7 / 9 / 10 nœuds
 const STONE_LEVEL_NODES = [6, 7, 9, 10];
 // Somme des niveaux positifs >= 5 : Puissance d'attaque de base +1,5 %
@@ -14,8 +25,8 @@ const STONE_BASE_AP_BONUS = 0.015;
 // Repli quand le profil ne se lit pas (otherAttackPowerPct).
 const REF_OTHER_AP_PCT = 20.48;
 const stoneSuccessCache = new Map();
-// Au-delà de ce nombre de pierres, un palier n'est plus un achat réaliste (un 10/x s'achète taillé à l'hôtel
-// des ventes, sans prix connu) : pas de ligne GPD. Loseii ne chiffre que le palier niveau 5 (1 sur ~725).
+// Au-delà de ce nombre de pierres, un palier n'est plus un achat réaliste (une pierre taillée se trouve rarement
+// à l'hôtel des ventes, sans prix connu) : pas de ligne GPD. Loseii ne chiffre que le palier niveau 5 (1 sur ~725).
 const STONE_GPD_MAX_STONES = 5000;
 
 function stoneLevelFromNodes(nodes) {
@@ -140,6 +151,13 @@ function getKarmaBonus(charObj) {
   return { evolution: pct(8), leap: pct(9) };
 }
 
+// Gravure par son ID de pierre (gravure équipée = même ID + 1000) : noms anglais / français, clé d'ABILITY_STONE_EFFECTS
+function stoneEngravingOf(id) {
+  const label = BIBLE_ENGRAVINGS[String(id)] || '';
+  const en = label.split(' (')[0];
+  return en ? { id, en, fr: (label.match(/\(([^)]+)\)/) || [])[1] || en, key: en.toLowerCase() } : null;
+}
+
 // Pierre équipée, lue sur le profil importé : deux gravures positives + la ligne négative
 function getAbilityStone(charObj) {
   const raw = (charObj && charObj.rawProfile) || charObj || {};
@@ -148,10 +166,8 @@ function getAbilityStone(charObj) {
   const engr = stone && stone.data && Array.isArray(stone.data.engravings) ? stone.data.engravings : null;
   if (!engr) return null;
   const lines = engr.map(e => {
-    const label = BIBLE_ENGRAVINGS[String(e.id)] || '';
-    const en = label.split(' (')[0];
-    const fr = (label.match(/\(([^)]+)\)/) || [])[1] || en;
-    return { id: e.id, en, fr, key: en.toLowerCase(), nodes: e.nodes || 0, level: stoneLevelFromNodes(e.nodes || 0), negative: /Reduction/.test(en) };
+    const g = stoneEngravingOf(e.id) || { id: e.id, en: '', fr: '', key: '' };
+    return Object.assign(g, { nodes: e.nodes || 0, level: stoneLevelFromNodes(e.nodes || 0), negative: /Reduction/.test(g.en) });
   });
   const positives = lines.filter(l => !l.negative && l.en);
   if (positives.length !== 2) return null;
@@ -212,11 +228,14 @@ function engravingBonusGain(kind, base, addOld, addNew, otherAp = REF_OTHER_AP_P
   return 100 * Math.log(next / ref);
 }
 
-// Gain (%) de la gravure quand la pierre passe du niveau lvlFrom à lvlTo
-function stoneEngravingGain(charObj, key, lvlFrom, lvlTo, isSupport) {
+// Gain (100 × ln) d'une gravure dont le niveau de pierre passe de lvlFrom à lvlTo, négatif si le niveau baisse.
+// Supports : 0 (leur buff ne dépend que de la PA de base +1,5 % de la pierre).
+function stoneEngravingGain(key, lvlFrom, lvlTo, isSupport, otherAp) {
   const eff = window.ABILITY_STONE_EFFECTS && window.ABILITY_STONE_EFFECTS[key];
-  if (isSupport || !eff || lvlTo <= lvlFrom) return 0;
-  return engravingBonusGain(eff.kind, eff.base, lvlFrom > 0 ? eff.stone[lvlFrom - 1] : 0, eff.stone[lvlTo - 1], otherAttackPowerPct(charObj));
+  if (isSupport || !eff || lvlTo === lvlFrom) return 0;
+  const add = l => (l > 0 ? eff.stone[l - 1] : 0);
+  const g = engravingBonusGain(eff.kind, eff.base, add(Math.min(lvlFrom, lvlTo)), add(Math.max(lvlFrom, lvlTo)), otherAp);
+  return lvlTo > lvlFrom ? g : -g;
 }
 
 // Gain (%) de la PA de base +1,5 % (somme des niveaux >= 5). DPS : profil de référence de bracelet-model.js.
@@ -235,47 +254,93 @@ function stoneBaseApGain(charObj, isSupport) {
   return 100 * Math.log(window.Bracelet.attackPower(prof) / window.Bracelet.attackPower(without));
 }
 
+const STONE_ANY_ORDER = [[3, 2], [2, 3], [4, 1], [1, 4]];
+
 /**
- * Meilleure amélioration de pierre : monter UNE des deux gravures d'un niveau, l'autre gardée à son niveau.
- * Coût = prix d'une pierre / probabilité exacte de réussir la taille visée.
+ * Toutes les pierres que le joueur peut viser (2 gravures par pierre au plus, idée de loa-sim) : chaque paire de
+ * gravures équipées (DPS : celles dont la pierre change les dégâts ; support : la paire portée, seule la PA de base
+ * compte) × chaque profil de niveaux 0 à 4, plus « 5 niveaux dans n'importe quel ordre » (9/7 · 7/9 · 10/6 · 6/10,
+ * PA de base +1,5 %, gain de la pire des quatre). Gain depuis la pierre portée : niveaux perdus des gravures qui la
+ * quittent et PA de base perdue comptés ; une gravure de la pierre non équipée ne compte pas. Coût = pierres à
+ * tailler (1 / probabilité exacte, taille optimale) × (prix HV de la paire + 9 pheons). Triées par or / gain.
  */
-function getAbilityStoneUpgrade(charObj, isSupport) {
+function abilityStoneOptions(charObj, isSupport) {
   const stone = getAbilityStone(charObj);
-  if (!stone) return null;
+  if (!stone) return [];
   const [e1, e2] = stone.positives;
-  const nodesFor = lvl => (lvl > 0 ? STONE_LEVEL_NODES[lvl - 1] : 0);
-  const candidates = [];
-  [[e1, e2], [e2, e1]].forEach(([up, keep]) => {
-    if (up.level >= 4) return;
-    const upTo = up.level + 1;
-    const target = [nodesFor(upTo), nodesFor(keep.level)];
-    const p = stoneSuccessProbability(target[0], target[1]);
-    if (!(p > 0)) return;
-    const sumFrom = e1.level + e2.level;
-    const apBonus = sumFrom < 5 && sumFrom + 1 >= 5 ? stoneBaseApGain(charObj, isSupport) : 0;
-    const engGain = stoneEngravingGain(charObj, up.key, up.level, upTo, isSupport);
-    const gain = engGain + apBonus; // 100 × ln : les deux effets se multiplient
-    const cost = abilityStonePrice() / p;
-    candidates.push({ up, keep, upTo, target, p, stones: 1 / p, cost, gain, apBonus });
+  const raw = (charObj && charObj.rawProfile) || charObj || {};
+  const equippedList = (raw.engravings || (raw.loadout && raw.loadout.engravings) || [])
+    .map(e => stoneEngravingOf(e.id - 1000)).filter(Boolean);
+  const equipped = new Set(equippedList.map(g => g.key));
+  const active = key => !equipped.size || equipped.has(key);
+  const choices = [e1, e2];
+  if (!isSupport) equippedList.forEach(g => {
+    if (window.ABILITY_STONE_EFFECTS && window.ABILITY_STONE_EFFECTS[g.key] && !choices.some(c => c.key === g.key)) choices.push(g);
   });
-  // PA de base seule (gravures sans gain chiffré, ou supports) : n'importe quelle pierre à 5 niveaux convient
-  if (e1.level + e2.level < 5) {
-    const apBonus = stoneBaseApGain(charObj, isSupport);
-    const p = stoneLevelSumProbability(5);
-    if (apBonus > 0 && p > 0) {
-      candidates.push({ up: e1, keep: e2, upTo: e1.level, anyOrder: true, p, stones: 1 / p,
-        cost: abilityStonePrice() / p, gain: apBonus, apBonus });
+  const otherAp = isSupport ? 0 : otherAttackPowerPct(charObj);
+  const apGain = stoneBaseApGain(charObj, isSupport);
+  const curSum = e1.level + e2.level;
+  const cur = new Map([e1, e2].filter(e => active(e.key)).map(e => [e.key, { eng: e, lvl: e.level }]));
+  const nodesFor = lvl => (lvl > 0 ? STONE_LEVEL_NODES[lvl - 1] : 0);
+  const engDelta = (x, lx, y, ly) => {
+    const next = new Map([[x, lx], [y, ly]].filter(([e]) => active(e.key)).map(([e, l]) => [e.key, { eng: e, lvl: l }]));
+    let gain = 0;
+    const changes = [];
+    new Set([...cur.keys(), ...next.keys()]).forEach(k => {
+      const from = cur.has(k) ? cur.get(k).lvl : 0, to = next.has(k) ? next.get(k).lvl : 0;
+      if (from === to) return;
+      gain += stoneEngravingGain(k, from, to, isSupport, otherAp);
+      changes.push({ eng: (next.get(k) || cur.get(k)).eng, from, to });
+    });
+    return { gain, changes };
+  };
+  const apDelta = sum => ((sum >= 5 ? 1 : 0) - (curSum >= 5 ? 1 : 0)) * apGain;
+  const fromLabel = `${e1.nodes}/${e2.nodes}`;
+  const out = [];
+  for (let i = 0; i < choices.length; i++) for (let j = i + 1; j < choices.length; j++) {
+    const x = choices[i], y = choices[j];
+    const pair = stonePairKey(x, y);
+    const stonePrice = abilityStonePrice(pair);
+    const same = i === 0 && j === 1;
+    const push = o => {
+      if (!(o.gain >= 1e-4) || !(o.p > 0)) return;
+      out.push(Object.assign(o, { x, y, pair, same, stone, fromLabel, stonePrice, stones: 1 / o.p, cost: stonePrice / o.p }));
+    };
+    for (let lx = 0; lx <= 4; lx++) for (let ly = 0; ly <= 4; ly++) {
+      if (!lx && !ly) continue;
+      const nx = nodesFor(lx), ny = nodesFor(ly);
+      const d = engDelta(x, lx, y, ly);
+      const ap = apDelta(lx + ly);
+      push({ lx, ly, nx, ny, toLabel: `${nx}/${ny}`, p: stoneSuccessProbability(nx, ny), gain: d.gain + ap, apBonus: ap, changes: d.changes });
+    }
+    if (curSum < 5 && apGain > 0) {
+      const worst = Math.min(...STONE_ANY_ORDER.map(([a, b]) => engDelta(x, a, y, b).gain));
+      push({ anyOrder: true, toLabel: '9/7 · 10/6', p: stoneLevelSumProbability(5), gain: worst + apGain, apBonus: apGain, changes: [] });
     }
   }
-  const scored = candidates.filter(c => c.gain > 0);
-  if (!scored.length) return null;
-  scored.sort((x, y) => x.cost / x.gain - y.cost / y.gain);
-  const best = scored[0];
-  const nodesOf = (eng, lvl) => (eng === best.up ? nodesFor(best.upTo) : nodesFor(lvl));
-  best.fromLabel = `${e1.nodes}/${e2.nodes}`;
-  best.toLabel = best.anyOrder ? '9/7 · 10/6' : `${nodesOf(e1, e1.level)}/${nodesOf(e2, e2.level)}`;
-  best.stone = stone;
-  return best;
+  out.sort((a, b) => a.cost / a.gain - b.cost / b.gain);
+  return out;
+}
+
+/**
+ * Meilleure pierre à viser (ratio or / gain) : GPD, Smart Advisor, feuille de route (au plus STONE_GPD_MAX_STONES
+ * pierres). samePair : paire portée seulement, sans plafond (fiche du personnage : chances du palier suivant).
+ */
+function getAbilityStoneUpgrade(charObj, isSupport, samePair = false) {
+  return abilityStoneOptions(charObj, isSupport).find(o => (samePair ? o.same : o.stones <= STONE_GPD_MAX_STONES)) || null;
+}
+
+// Texte d'une pierre visée : gravures et nœuds visés, niveaux qui changent par rapport à la pierre portée
+function stoneOptionText(o, isEn) {
+  const nm = e => (isEn ? e.en : e.fr);
+  const nodes = n => (n > 0 ? n : '<6');
+  return {
+    target: o.anyOrder
+      ? `${nm(o.x)} / ${nm(o.y)} 9/7 · 10/6`
+      : `${nm(o.x)} ${nodes(o.nx)} / ${nm(o.y)} ${nodes(o.ny)}`,
+    current: `${nm(o.stone.positives[0])} ${o.stone.positives[0].nodes} / ${nm(o.stone.positives[1])} ${o.stone.positives[1].nodes}`,
+    changes: o.changes.map(c => `${nm(c.eng)} ${isEn ? 'Lv.' : 'niv.'} ${c.from} ➔ ${c.to}`).join(', ')
+  };
 }
 
 // --- Livres de gravure reliques T4 : 5 livres par niveau, 4 niveaux ---

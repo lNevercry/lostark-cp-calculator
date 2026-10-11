@@ -738,23 +738,28 @@ function getDynamicGpdTable(charObj, role, isEn) {
       { state: brac.cur.band, from: brac.cur.band, to: st.to, score: brac.cur.score, curTotal: brac.cur.total });
   }
 
-  // 9. Pierre d'aptitude : taille exacte (chaîne de Markov), pierre non taillée = 9 pheons au prix réglable
-  // La taille coûte de l'argent (non comptée) ; l'or = pierres non taillées achetées
+  // 9. Pierre d'aptitude : meilleure pierre à viser parmi les paires de gravures équipées (abilityStoneOptions), taille
+  // exacte ; or = pierres non taillées achetées (prix HV de la paire + 9 pheons), la taille coûte de l'argent (non comptée)
   const stoneUp = getAbilityStoneUpgrade(charObj, isSupport);
-  if (stoneUp && stoneUp.stones <= STONE_GPD_MAX_STONES) {
-    const upName = isEn ? stoneUp.up.en : stoneUp.up.fr;
+  if (stoneUp) {
     const odds = Math.round(stoneUp.stones);
-    const stoneGold = formatNumber(Math.round(abilityStonePrice()));
+    const stoneGold = formatNumber(Math.round(stoneUp.stonePrice));
+    const txt = stoneOptionText(stoneUp, isEn);
+    const toLabel = stoneUp.same ? stoneUp.toLabel : txt.target;
+    const what = [
+      !stoneUp.same && (isEn ? `new pair (now ${txt.current})` : `nouvelle paire (actuelle : ${txt.current})`),
+      stoneUp.anyOrder && (isEn ? '5 levels in total (base Atk. Power +1.5%)' : '5 niveaux au total (PA de base +1,5 %)'),
+      stoneUp.same && !stoneUp.anyOrder && txt.changes
+    ].filter(Boolean).join(', ');
+    const move = stoneUp.same ? `${stoneUp.fromLabel} ➔ ${toLabel}` : `➔ ${toLabel}`;
     pushRow('dyn_stone',
-      isEn ? `Ability stone ${stoneUp.fromLabel} ➔ ${stoneUp.toLabel}` : `Pierre d'aptitude ${stoneUp.fromLabel} ➔ ${stoneUp.toLabel}`,
-      stoneUp.anyOrder
-        ? (isEn ? `5 levels in total (base Atk. Power +1.5%), 1 stone in ${formatNumber(odds)}` : `5 niveaux au total (PA de base +1,5 %), 1 pierre sur ${formatNumber(odds)}`)
-        : (isEn ? `${upName} Lv. ${stoneUp.up.level} ➔ ${stoneUp.upTo}, 1 stone in ${formatNumber(odds)}` : `${upName} niv. ${stoneUp.up.level} ➔ ${stoneUp.upTo}, 1 pierre sur ${formatNumber(odds)}`),
+      isEn ? `Ability stone ${move}` : `Pierre d'aptitude ${move}`,
+      isEn ? `${what}, 1 stone in ${formatNumber(odds)}` : `${what}, 1 pierre sur ${formatNumber(odds)}`,
       stoneUp.gain, stoneUp.cost,
       isEn
-        ? `Exact odds with optimal faceting: 1 stone in ${formatNumber(odds)} reaches ${stoneUp.toLabel} (${(stoneUp.p * 100).toFixed(3)}%). Cost = ${formatNumber(odds)} uncut stones × ${stoneGold} g (${ABILITY_STONE_PHEONS} pheons each); faceting costs silver, not counted.${stoneUp.apBonus > 0 ? ' Includes the +1.5% base Atk. Power at 5 levels.' : ''}`
-        : `Probabilité exacte avec une taille optimale : 1 pierre sur ${formatNumber(odds)} atteint ${stoneUp.toLabel} (${(stoneUp.p * 100).toFixed(3)} %). Coût = ${formatNumber(odds)} pierres non taillées × ${stoneGold} or (${ABILITY_STONE_PHEONS} pheons chacune) ; la taille coûte de l'argent, non comptée.${stoneUp.apBonus > 0 ? ' Inclut la PA de base +1,5 % à 5 niveaux.' : ''}`,
-      { state: stoneUp.fromLabel, from: stoneUp.fromLabel, to: stoneUp.toLabel, engraving: stoneUp.anyOrder ? (isEn ? 'base Atk. Power' : 'PA de base') : upName, odds, stoneGold });
+        ? `Exact odds with optimal faceting: 1 stone in ${formatNumber(odds)} reaches ${txt.target} (${(stoneUp.p * 100).toFixed(3)}%). Cost = ${formatNumber(odds)} uncut stones × ${stoneGold} g (auction-house price of the pair + ${ABILITY_STONE_PHEONS} pheons, set below the table; a farmed stone counts the same); faceting costs silver, not counted. Gain measured from the stone you wear${stoneUp.changes.length ? ` (${txt.changes})` : ''}.${stoneUp.apBonus > 0 ? ' Includes the +1.5% base Atk. Power at 5 levels.' : ''} All the stones you could aim for are ranked below the table.`
+        : `Probabilité exacte avec une taille optimale : 1 pierre sur ${formatNumber(odds)} atteint ${txt.target} (${(stoneUp.p * 100).toFixed(3)} %). Coût = ${formatNumber(odds)} pierres non taillées × ${stoneGold} or (prix HV de la paire + ${ABILITY_STONE_PHEONS} pheons, réglables sous le tableau ; une pierre farmée compte autant) ; la taille coûte de l'argent, non comptée. Gain mesuré depuis ta pierre actuelle${stoneUp.changes.length ? ` (${txt.changes})` : ''}.${stoneUp.apBonus > 0 ? ' Inclut la PA de base +1,5 % à 5 niveaux.' : ''} Toutes les pierres possibles sont classées sous le tableau.`,
+      { state: stoneUp.fromLabel, from: stoneUp.fromLabel, to: toLabel, current: txt.current, odds, stoneGold });
   }
 
   // 10. Karma d'Illumination : niveau suivant, 900 or par essai
@@ -956,6 +961,90 @@ function renderEfficiencyTable() {
     }
     dom.effTableBody.innerHTML = rowsHtml;
   }
+  renderStoneOptionsPanel(document.getElementById('gpdStoneOptions'), activeChar, isSupport, isEn);
+}
+
+const STONE_PANEL_ROWS = 12;
+
+/**
+ * Panneau « Pierres d'aptitude » sous le tableau GPD : toutes les pierres que le joueur peut viser avec ses gravures
+ * équipées (abilityStoneOptions), classées par or / gain comme le GPD, jusqu'à STONE_GPD_MAX_STONES pierres à tailler ;
+ * prix HV réglable pour chaque paire listée (vide = relevé HV EUC par défaut).
+ */
+function renderStoneOptionsPanel(box, charObj, isSupport, isEn) {
+  if (!box) return;
+  const all = charObj ? abilityStoneOptions(charObj, isSupport) : [];
+  if (!all.length) { box.innerHTML = ''; return; }
+  const opts = all.filter(o => o.stones <= STONE_GPD_MAX_STONES);
+  const shown = opts.slice(0, STONE_PANEL_ROWS);
+  const unit = isSupport ? 100 : 1;
+  const tierText = t => (isEn ? GPD_TIER_LABELS[t].replace('Rang', 'Tier') : GPD_TIER_LABELS[t]);
+  const nm = e => (isEn ? e.en : e.fr);
+  const stone = all[0].stone;
+  const pairs = [];
+  [{ pair: stonePairKey(stone.positives[0], stone.positives[1]), x: stone.positives[0], y: stone.positives[1] }, ...shown]
+    .forEach(o => { if (!pairs.some(p => p.pair === o.pair)) pairs.push({ pair: o.pair, label: `${nm(o.x)} + ${nm(o.y)}` }); });
+  const best = opts[0];
+  const wasOpen = !!(box.querySelector('details') && box.querySelector('details').open);
+  const rows = shown.map(o => {
+    const txt = stoneOptionText(o, isEn);
+    const tier = getTierFromRatio(o.cost / o.gain);
+    const detail = [
+      o.same ? (isEn ? 'your pair' : 'ta paire') : (isEn ? 'new pair' : 'nouvelle paire'),
+      o.anyOrder ? (isEn ? '5 levels in any order, worst case counted' : '5 niveaux dans n\'importe quel ordre, pire cas compté') : txt.changes,
+      o.apBonus > 0 ? (isEn ? 'base Atk. Power +1.5%' : 'PA de base +1,5 %') : o.apBonus < 0 ? (isEn ? 'loses base Atk. Power +1.5%' : 'perd la PA de base +1,5 %') : ''
+    ].filter(Boolean).join(' · ');
+    return `
+          <tr class="eff-row${best === o ? ' top-pick' : ''}">
+            <td class="col-name"><div><strong>${escapeHtml(txt.target)}</strong></div><span class="eff-subtext">${escapeHtml(detail)}</span></td>
+            <td class="col-cost">${isEn ? '1 in' : '1 sur'} ${formatNumber(Math.round(o.stones))}<span class="eff-subtext">× ${formatNumber(Math.round(o.stonePrice))} g</span></td>
+            <td class="col-gain">+${o.gain.toFixed(2)}% ${isSupport ? 'Buff' : 'DPS'}</td>
+            <td class="col-cost">${formatNumber(Math.round(o.cost))} g</td>
+            <td class="col-ratio">${formatNumber(Math.round(o.cost / (o.gain * unit)))} g</td>
+            <td class="col-prio"><span class="prio-badge ${tier}">${tierText(tier)}</span></td>
+          </tr>`;
+  }).join('');
+  const beyond = all.length - opts.length;
+  box.innerHTML = `
+      <details class="bound-mats stone-options"${wasOpen ? ' open' : ''}>
+        <summary>${isEn ? 'Ability stones you could aim for' : 'Pierres d\'aptitude possibles'} <span class="bound-mats-count">· ${isEn ? `now ${escapeHtml(stoneOptionText(all[0], true).current)}` : `actuelle ${escapeHtml(stoneOptionText(all[0], false).current)}`}${best ? ` · ${opts.length} ${isEn ? 'priced' : 'chiffrées'}` : ''}</span></summary>
+        <p class="bound-mats-note">${isSupport
+          ? (isEn ? 'Supports: only the +1.5% base Atk. Power at 5 levels moves the buff, so only your own pair is listed. ' : 'Supports : seule la PA de base +1,5 % à 5 niveaux change le buff, seule ta paire est listée. ')
+          : (isEn ? 'Every pair of your equipped engravings (a stone carries two), every level pattern. Gain measured from the stone you wear: levels lost by engravings leaving the stone and the +1.5% base Atk. Power count. ' : 'Toutes les paires de tes gravures équipées (une pierre en porte deux), tous les profils de niveaux. Gain mesuré depuis ta pierre actuelle : les niveaux perdus des gravures qui la quittent et la PA de base +1,5 % comptent. ')}${isEn
+          ? `Cost = stones to facet (exact odds, optimal faceting) × (auction-house price of the pair + ${ABILITY_STONE_PHEONS} pheons); a farmed stone counts the same. Best ${shown.length} of ${opts.length} within ${formatNumber(STONE_GPD_MAX_STONES)} stones${beyond ? `; ${beyond} beyond, not listed` : ''}.`
+          : `Coût = pierres à tailler (probabilité exacte, taille optimale) × (prix HV de la paire + ${ABILITY_STONE_PHEONS} pheons) ; une pierre farmée compte autant. Les ${shown.length} meilleures sur ${opts.length} à moins de ${formatNumber(STONE_GPD_MAX_STONES)} pierres${beyond ? ` ; ${beyond} au-delà, non listées` : ''}.`}</p>
+        ${shown.length ? `<div class="eff-table-wrapper">
+          <table class="eff-table stone-options-table">
+            <thead><tr>
+              <th class="col-name">${isEn ? 'Stone' : 'Pierre visée'}</th>
+              <th class="col-cost">${isEn ? 'Stones' : 'Pierres'}</th>
+              <th class="col-gain">Gain</th>
+              <th class="col-cost">${isEn ? 'Cost' : 'Coût'}</th>
+              <th class="col-ratio">${isSupport ? (isEn ? 'Cost / 0.01% Buff' : 'Coût / 0.01% Buff') : (isEn ? 'Cost / 1% DPS' : 'Coût / 1% DPS')}</th>
+              <th class="col-prio">${isEn ? 'Tier' : 'Rang'}</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>` : `<p class="bound-mats-note">${isEn ? 'No stone within reach.' : 'Aucune pierre à portée.'}</p>`}
+        <div class="gpd-price-inputs">${pairs.map(p => `
+          <label class="gpd-price-field">
+            <span>${escapeHtml(p.label)} ${isEn ? '(gold, uncut)' : '(or, non taillée)'}</span>
+            <input type="number" min="0" step="1" inputmode="numeric" data-stone-pair="${escapeHtml(p.pair)}"
+              value="${state.gpdPrices && state.gpdPrices[`stone:${p.pair}`] > 0 ? state.gpdPrices[`stone:${p.pair}`] : ''}"
+              placeholder="${formatNumber(stonePairDefaultPrice(p.pair))} (${isEn ? 'EUC AH' : 'HV EUC'})">
+          </label>`).join('')}
+        </div>
+      </details>`;
+  box.querySelectorAll('input[data-stone-pair]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const v = Number(inp.value);
+      const k = `stone:${inp.dataset.stonePair}`;
+      state.gpdPrices = state.gpdPrices || {};
+      if (v > 0) state.gpdPrices[k] = v; else delete state.gpdPrices[k];
+      saveGpdPrices();
+      refreshGpdViews();
+    });
+  });
 }
 
 // Prix hors marché réglables (pheon, bracelet non relancé, avatar légendaire) au-dessus du tableau GPD ;

@@ -258,17 +258,18 @@ function supportGpdCpModel(charObj) {
     const up = getAbilityStoneUpgrade(charObj, true);
     if (!up) return null;
     let cp = up.apBonus > 0 ? br.A * STONE_BASE_AP_BONUS / (1 + pool) : 0;
-    if (!up.anyOrder && bpSupportTable) {
+    if (bpSupportTable) {
       const lo = (charObj.rawProfile && charObj.rawProfile.loadout) || {};
-      const e = (lo.engravings || []).find(x => x.id === 1000 + up.up.id);
-      const books = !e ? null : (e.grade === 'engrave_grade05' ? 13 : (e.grade === 'engrave_grade04' ? 9 + Math.floor((e.progress || 0) / 5) : null));
-      if (books !== null) {
+      up.changes.forEach(ch => {
+        const e = (lo.engravings || []).find(x => x.id === 1000 + ch.eng.id);
+        const books = !e ? null : (e.grade === 'engrave_grade05' ? 13 : (e.grade === 'engrave_grade04' ? 9 + Math.floor((e.progress || 0) / 5) : null));
+        if (books === null) return;
         [10, 11].forEach(t => {
           const val = lvl => ((bpSupportTable[t] || []).find(v => v[0] === e.id && v[1] === 20 * lvl + books) || [])[2];
-          const v0 = val(up.up.level), v1 = val(up.upTo);
+          const v0 = val(ch.from), v1 = val(ch.to);
           if (Number.isFinite(v0) && Number.isFinite(v1)) cp += (t === 10 ? br.A : br.D) * ((1 + v1 / 1e4) / (1 + v0 / 1e4) - 1);
         });
-      }
+      });
     }
     return cp > 0 ? cp : null;
   };
@@ -461,13 +462,13 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
       rows.push(dynToMaster(d, {
         icon: '',
         system: isEn ? 'Ability stone' : 'Pierre d\'aptitude',
-        whatItReads: `${m.from} · ${m.engraving}`,
+        whatItReads: m.current,
         wherePutsYou: m.from,
         lastStep: '—',
         nextStep: `${m.from} ➔ ${m.to}`,
         stepDetail: isEn
-          ? `${formatNumber(m.odds)} uncut stones × ${m.stoneGold} g (faceting in silver, not counted)`
-          : `${formatNumber(m.odds)} pierres non taillées × ${m.stoneGold} or (taille en argent, non comptée)`,
+          ? `${formatNumber(m.odds)} uncut stones × ${m.stoneGold} g (auction-house price + ${ABILITY_STONE_PHEONS} pheons; faceting in silver, not counted)`
+          : `${formatNumber(m.odds)} pierres non taillées × ${m.stoneGold} or (prix HV + ${ABILITY_STONE_PHEONS} pheons ; taille en argent, non comptée)`,
         category: 'stone'
       }));
     } else if (d.id === 'dyn_karma') {
