@@ -266,7 +266,9 @@ function dpsGemDetails(charObj) {
     return {
       index: i, level: g.level, kind: g.kind, share, group: g.group,
       name: g.group || (named ? shares.skills[named][1] : null),
-      offClass: own.size > 0 && g.skills.length > 0 && !g.skills.some(id => own.has(id))
+      // Autre classe : aucune compétence du personnage ni de la spé (les formes transformées, ex. Blood Demonic Clone,
+      // sont dans les logs de la spé mais pas dans la liste des compétences du profil)
+      offClass: own.size > 0 && g.skills.length > 0 && !g.skills.some(id => own.has(id) || shares.skills[id])
     };
   });
 }

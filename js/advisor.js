@@ -878,6 +878,7 @@ function renderAdvisorView() {
 
   // 4. Vue d'ensemble de la progression
   renderProgressOverview(curChar, isSupport, isEn);
+  renderGemPlacement(curChar, isSupport, isEn);
 
   // 5. Render Piece by Piece
   if (dom.gpdPiecesTableBody) {
