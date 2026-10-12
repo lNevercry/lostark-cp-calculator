@@ -6799,6 +6799,7 @@ select optgroup {
    ========================================================================== */
 
 .advisor-hero-card,
+.gpd-overview-card,
 .gpd-table-card,
 .gpd-pieces-card {
   background: transparent;
@@ -6811,6 +6812,7 @@ select optgroup {
   gap: 16px;
 }
 
+.gpd-overview-card .card-header,
 .gpd-table-card .card-header,
 .gpd-pieces-card .card-header {
   padding: 0;
@@ -6818,6 +6820,7 @@ select optgroup {
   border: 0;
 }
 
+.gpd-overview-card h3,
 .gpd-table-card h3,
 .gpd-pieces-card h3 {
   font-size: 18px;
@@ -7117,6 +7120,11 @@ select optgroup {
 
 .gpd-gain-val {
   color: var(--gain);
+}
+
+/* Vue d'ensemble : catégorie déjà au maximum */
+.ov-maxed {
+  color: var(--text-dim);
 }
 
 .gpd-cp-val {

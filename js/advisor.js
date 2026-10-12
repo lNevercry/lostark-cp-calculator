@@ -876,7 +876,10 @@ function renderAdvisorView() {
     dom.gpdMasterTableBody.innerHTML = rowsHtml;
   }
 
-  // 4. Render Piece by Piece
+  // 4. Vue d'ensemble de la progression
+  renderProgressOverview(curChar, isSupport, isEn);
+
+  // 5. Render Piece by Piece
   if (dom.gpdPiecesTableBody) {
     const pieceData = buildPieceByPieceData(curChar, isSupport, isEn);
     let pRowsHtml = '';

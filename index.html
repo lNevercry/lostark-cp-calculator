@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=28.7">
+  <link rel="stylesheet" href="style.css?v=28.8">
 </head>
 <body>
   <div class="app-container">
@@ -437,6 +437,34 @@
                   <span data-i18n="adv_btn_apply_plan">Appliquer au Simulateur</span>
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- 2. Vue d'ensemble de la progression (js/overview.js) -->
+          <div class="card gpd-overview-card">
+            <div class="card-header">
+              <div>
+                <h3 data-i18n="gpd_overview_title">Vue d'ensemble de la progression</h3>
+                <p class="subtitle" data-i18n="gpd_overview_sub">
+                  Où en est le personnage dans chaque catégorie, et ce qu'il reste à gagner jusqu'au maximum. Trié du plus gros gain restant au plus petit.
+                </p>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="gpd-master-table gpd-overview-table" id="gpdOverviewTable">
+                <thead>
+                  <tr>
+                    <th data-i18n="gpd_ov_th_cat">Catégorie</th>
+                    <th data-i18n="gpd_ov_th_state">État</th>
+                    <th class="col-rate" data-i18n="gpd_ov_th_progress">Progression</th>
+                    <th class="col-num" data-i18n="gpd_ov_th_remain">Reste jusqu'au max</th>
+                  </tr>
+                </thead>
+                <tbody id="gpdOverviewBody">
+                  <!-- Injecté dynamiquement par js/overview.js -->
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -1910,37 +1938,38 @@
   <script src="bracelet-model.js?v=1.0"></script>
   <script src="subrank.js?v=1.0"></script>
   <!-- Appli : scripts de js/, dans cet ordre (ils partagent leurs déclarations de premier niveau) -->
-  <script src="js/core.js?v=55.20"></script>
-  <script src="js/app-state.js?v=55.20"></script>
-  <script src="js/game-tables.js?v=55.20"></script>
-  <script src="js/models.js?v=55.20"></script>
-  <script src="js/honing.js?v=55.20"></script>
-  <script src="js/upgrades.js?v=55.20"></script>
-  <script src="js/tab-predictor.js?v=55.20"></script>
-  <script src="js/optimization.js?v=55.20"></script>
-  <script src="js/gpd.js?v=55.20"></script>
-  <script src="js/ark-grid.js?v=55.20"></script>
-  <script src="js/bracelet.js?v=55.20"></script>
-  <script src="js/advisor.js?v=55.20"></script>
-  <script src="js/ark-passive.js?v=55.20"></script>
-  <script src="js/astrogem-grader.js?v=55.20"></script>
-  <script src="js/bible-import.js?v=55.20"></script>
-  <script src="js/oauth-roster.js?v=55.20"></script>
-  <script src="js/app-ui.js?v=55.20"></script>
-  <script src="js/raid-tracker.js?v=55.20"></script>
-  <script src="js/benchmark-core.js?v=55.20"></script>
-  <script src="js/accessories.js?v=55.20"></script>
-  <script src="js/benchmark-systems.js?v=55.20"></script>
-  <script src="js/benchmark-gains.js?v=55.20"></script>
-  <script src="js/breakdown-acc-bracelet.js?v=55.20"></script>
-  <script src="js/breakdown-character.js?v=55.20"></script>
-  <script src="js/breakdown-cores.js?v=55.20"></script>
-  <script src="js/benchmark-peers.js?v=55.20"></script>
-  <script src="js/benchmark-tab.js?v=55.20"></script>
-  <script src="js/market.js?v=55.20"></script>
-  <script src="js/belgardin.js?v=55.20"></script>
-  <script src="js/tab-rotation.js?v=55.20"></script>
-  <script src="js/main.js?v=55.20"></script>
+  <script src="js/core.js?v=55.21"></script>
+  <script src="js/app-state.js?v=55.21"></script>
+  <script src="js/game-tables.js?v=55.21"></script>
+  <script src="js/models.js?v=55.21"></script>
+  <script src="js/honing.js?v=55.21"></script>
+  <script src="js/upgrades.js?v=55.21"></script>
+  <script src="js/tab-predictor.js?v=55.21"></script>
+  <script src="js/optimization.js?v=55.21"></script>
+  <script src="js/gpd.js?v=55.21"></script>
+  <script src="js/ark-grid.js?v=55.21"></script>
+  <script src="js/bracelet.js?v=55.21"></script>
+  <script src="js/advisor.js?v=55.21"></script>
+  <script src="js/overview.js?v=55.21"></script>
+  <script src="js/ark-passive.js?v=55.21"></script>
+  <script src="js/astrogem-grader.js?v=55.21"></script>
+  <script src="js/bible-import.js?v=55.21"></script>
+  <script src="js/oauth-roster.js?v=55.21"></script>
+  <script src="js/app-ui.js?v=55.21"></script>
+  <script src="js/raid-tracker.js?v=55.21"></script>
+  <script src="js/benchmark-core.js?v=55.21"></script>
+  <script src="js/accessories.js?v=55.21"></script>
+  <script src="js/benchmark-systems.js?v=55.21"></script>
+  <script src="js/benchmark-gains.js?v=55.21"></script>
+  <script src="js/breakdown-acc-bracelet.js?v=55.21"></script>
+  <script src="js/breakdown-character.js?v=55.21"></script>
+  <script src="js/breakdown-cores.js?v=55.21"></script>
+  <script src="js/benchmark-peers.js?v=55.21"></script>
+  <script src="js/benchmark-tab.js?v=55.21"></script>
+  <script src="js/market.js?v=55.21"></script>
+  <script src="js/belgardin.js?v=55.21"></script>
+  <script src="js/tab-rotation.js?v=55.21"></script>
+  <script src="js/main.js?v=55.21"></script>
 
   <!-- Cloudflare Web Analytics -->
   <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ab628174dd6d4aec9cb0a47449a6b62f"}'></script>

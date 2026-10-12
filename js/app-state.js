@@ -478,6 +478,7 @@ const dom = {
   gpdMasterTableBody: document.getElementById('gpdMasterTableBody'),
   gpdPiecesTable: document.getElementById('gpdPiecesTable'),
   gpdPiecesTableBody: document.getElementById('gpdPiecesTableBody'),
+  gpdOverviewBody: document.getElementById('gpdOverviewBody'),
   dispAdvisorBudget: document.getElementById('dispAdvisorBudget'),
   dispAdvisorIlvl: document.getElementById('dispAdvisorIlvl'),
   dispAdvisorCp: document.getElementById('dispAdvisorCp'),
