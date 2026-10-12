@@ -6801,6 +6801,7 @@ select optgroup {
 .advisor-hero-card,
 .gpd-overview-card,
 .gpd-gemplace-card,
+.gpd-corecmp-card,
 .gpd-table-card,
 .gpd-pieces-card {
   background: transparent;
@@ -6815,6 +6816,7 @@ select optgroup {
 
 .gpd-overview-card .card-header,
 .gpd-gemplace-card .card-header,
+.gpd-corecmp-card .card-header,
 .gpd-table-card .card-header,
 .gpd-pieces-card .card-header {
   padding: 0;
@@ -6824,6 +6826,7 @@ select optgroup {
 
 .gpd-overview-card h3,
 .gpd-gemplace-card h3,
+.gpd-corecmp-card h3,
 .gpd-table-card h3,
 .gpd-pieces-card h3 {
   font-size: 18px;
