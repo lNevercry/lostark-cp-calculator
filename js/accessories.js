@@ -36,6 +36,16 @@ const accessoryKind = slot => (slot === 'neck' ? 'neck' : (slot.startsWith('ear'
 const ACC_UPGRADE_COST_AVG = ACC_PACKAGES[0].price.neck;
 
 const ACC_SLOTS = ['neck', 'ear1', 'ear2', 'finger1', 'finger2'];
+// Bijoux portés (objets bruts lostark.bible ou import), [] sans données
+function accessoryItemsOf(c) {
+  const pick = items => items.filter(i => ACC_SLOTS.includes(i.slot));
+  const raw = (c && c.rawProfile) || {};
+  return (c && c.accessories)
+    || raw.accessories
+    || (raw.loadout && raw.loadout.items && pick(raw.loadout.items))
+    || (c && c.loadout && c.loadout.items && pick(c.loadout.items))
+    || [];
+}
 // Bijou cible d'un remplacement : 2 lignes principales du rôle en High + PA d'arme plate Mid
 const ACC_TARGET_LINES = {
   dps: {
@@ -124,7 +134,9 @@ function computeAccessoryLinesBonus(lines, isSupport) {
 // Remplacement de bijou au meilleur ratio : chaque slot × chaque gamme au prix connu,
 // en plaçant le High sur la ligne principale où il rapporte le plus
 // onlyKind ('neck' | 'ear' | 'ring') : limite la recherche à ce type de bijou
-function findBestAccessoryUpgrade(slotLines, isSupport, onlyKind) {
+// cpOf(slot, lignes) : CP du remplacement, départage deux emplacements au même ratio (ex. deux boucles au même roll de
+// PA d'arme %, l'une avec un bouclier et des PV que le buff ignore mais que le CP compte) : on garde le plus de CP
+function findBestAccessoryUpgrade(slotLines, isSupport, onlyKind, cpOf) {
   if (!slotLines) return null;
   const role = isSupport ? 'support' : 'dps';
   const curPct = computeAccessoryLinesBonus(ACC_SLOTS.flatMap(s => slotLines[s] || []), isSupport);
@@ -143,11 +155,66 @@ function findBestAccessoryUpgrade(slotLines, isSupport, onlyKind) {
         const nextPct = computeAccessoryLinesBonus(others.concat(target), isSupport);
         const gain = 100 * Math.log((1 + nextPct / 100) / (1 + curPct / 100)); // même échelle que l'affinage
         if (!(gain >= 1e-4)) return;
-        if (!best || cost / gain < best.cost / best.gain) best = { slot, kind, pkg, gain, cost, curPct, nextPct, lines: [m1, m2], tiers: [a, b] };
+        const ratio = cost / gain;
+        const bestRatio = best ? best.cost / best.gain : Infinity;
+        const tie = cpOf && best && best.slot !== slot && Math.abs(ratio - bestRatio) <= bestRatio * 1e-9;
+        if (tie ? cpOf(slot, target) > cpOf(best.slot, best.target) : ratio < bestRatio) {
+          best = { slot, kind, pkg, gain, cost, curPct, nextPct, lines: [m1, m2], tiers: [a, b], target };
+        }
       });
     });
   });
   return best;
+}
+
+// Ligne (clé, quantité) d'un bijou acheté en stat brute du profil, pour la table du Battle Point support ; null si
+// la ligne n'y a pas d'équivalent
+function accLineStat(l) {
+  if (l.key === 'identity') {
+    const tier = ACC_LINE_TIERS.identity.indexOf(l.amount);
+    return tier >= 0 ? { type: 29, index: 6000 + tier, value: 0 } : null;
+  }
+  if (l.key === 'wpFlat') return { type: 2, index: 151, value: l.amount };
+  const stat = { brand: [2, 46], wpPct: [2, 152], allyAp: [54, 0], allyDmg: [59, 16000001], heal: [50, 0], shield: [51, 0] }[l.key];
+  return stat ? { type: stat[0], index: stat[1], value: Math.round(l.amount * 100) } : null;
+}
+
+/**
+ * CP du jeu d'un remplacement de bijoux d'un support, ligne par ligne sur la table du Battle Point support.
+ * changes = { slot: lignes du bijou acheté ({ key, amount }, 3e ligne morte) }. Branche buff : parties 15 (lignes
+ * support, marque) et 17 (jauge d'identité, ex. Low +0,8 %, High +3 %) de chaque ligne, puissance d'arme sous la racine
+ * de l'attaque de base (% des boucles amplifié comme le Karma et le cœur, fixe × amplification) ; branche défense :
+ * soins / boucliers (partie 16) et PV max fixes (stat 27). Les lignes du bijou remplacé sont lues sur le profil : une
+ * ligne perdue compte (bouclier d'une boucle, PA d'arme fixe d'un collier). Peut être négatif. null sans table, sans
+ * branches ou sans les lignes brutes d'un bijou remplacé.
+ */
+function supportAccessoryCp(charObj, changes) {
+  const br = supportBpBranches(charObj);
+  const ctx = gearStatContext(charObj);
+  if (!bpSupportTable || !br || !ctx) return null;
+  const t2 = battlePointPartsOf(charObj).find(p => p.type === 2);
+  const maxHp = t2 && t2.maxHp > 0 ? t2.maxHp : null;
+  const items = accessoryItemsOf(charObj);
+  let buff = 1, def = 1, dWp = 0, dHp = 0;
+  const apply = (stats, sign) => stats.forEach(st => {
+    supportAccLineParts(st).forEach(p => {
+      const m = Math.pow(1 + p.value / 1e4, sign);
+      if (BP_DEF_TYPES.includes(p.type)) def *= m; else buff *= m;
+    });
+    if (st.type !== 2) return;
+    if (st.index === 152) dWp += sign * (ctx.wp / ctx.wpAmp) * st.value / 1e4;
+    else if (st.index === 151) dWp += sign * st.value * ctx.wpAmp;
+    else if (st.index === 27) dHp += sign * st.value;
+  });
+  for (const slot of Object.keys(changes)) {
+    const item = items.find(i => i.slot === slot);
+    if (!item || !item.data || !Array.isArray(item.data.stats)) return null;
+    apply(item.data.stats.filter(st => st.base === false), -1);
+    apply(changes[slot].map(accLineStat).filter(Boolean), 1);
+  }
+  const atk = Math.sqrt((ctx.wp + dWp) / ctx.wp);
+  const hp = maxHp ? (maxHp + dHp) / maxHp : 1;
+  return br.A * (buff * atk - 1) + br.D * (def * hp - 1);
 }
 
 // Bonus accessoires maximal pour le rôle : les 5 bijoux avec leurs 2 lignes principales High
@@ -323,14 +390,7 @@ function evaluateCharacterAccessories(playerChar, isSupport = false, isEn = fals
   const canon = (playerChar.rawProfile ? playerChar : null);
   const pIlvl = playerChar.ilvl || (canon && canon.ilvl) || 1750;
 
-  let pAccItems = (playerChar && playerChar.accessories)
-    || (playerChar && playerChar.rawProfile && playerChar.rawProfile.accessories)
-    || (playerChar && playerChar.rawProfile && playerChar.rawProfile.loadout && playerChar.rawProfile.loadout.items && playerChar.rawProfile.loadout.items.filter(i => ['neck', 'ear1', 'ear2', 'finger1', 'finger2'].includes(i.slot)))
-    || (playerChar && playerChar.loadout && playerChar.loadout.items && playerChar.loadout.items.filter(i => ['neck', 'ear1', 'ear2', 'finger1', 'finger2'].includes(i.slot)))
-    || (canon && canon.rawProfile && canon.rawProfile.accessories)
-    || (canon && canon.rawProfile && canon.rawProfile.loadout && canon.rawProfile.loadout.items && canon.rawProfile.loadout.items.filter(i => ['neck', 'ear1', 'ear2', 'finger1', 'finger2'].includes(i.slot)))
-    || (canon && canon.loadout && canon.loadout.items && canon.loadout.items.filter(i => ['neck', 'ear1', 'ear2', 'finger1', 'finger2'].includes(i.slot)))
-    || [];
+  const pAccItems = accessoryItemsOf(playerChar);
 
 
   let highCount = 0;

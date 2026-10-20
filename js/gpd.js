@@ -703,7 +703,9 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const slotNames = accessorySlotNames(isEn);
     const accGrade = accessoryGrade(accEval.bonusPct || 0, isSupport).grade;
     [['neck', isEn ? 'Necklace' : 'Collier'], ['ear', isEn ? 'Earring' : 'Boucle d\'oreille'], ['ring', isEn ? 'Ring' : 'Anneau']].forEach(([kind, kindName]) => {
-      const best = findBestAccessoryUpgrade(accEval.slotLines, isSupport, kind);
+      // Support : à ratio égal, le bijou dont le remplacement rapporte le plus de CP (lignes de défense gardées)
+      const best = findBestAccessoryUpgrade(accEval.slotLines, isSupport, kind,
+        isSupport ? (slot, lines) => supportAccessoryCp(charObj, { [slot]: lines }) : null);
       if (!best) return;
       // Gamme nommée ligne par ligne (« High / Mid » seul ne dit pas quelle ligne est High) et état actuel du bijou
       const lineName = k => (ACC_LINE_SHORT[k] || ACC_LINE_NAMES[k] || [k, k])[isEn ? 1 : 0];
@@ -717,9 +719,9 @@ function getDynamicGpdTable(charObj, role, isEn) {
         isEn ? `Now ${current} ➔ ${target} + 1 dead line` : `Actuel ${current} ➔ ${target} + 1 ligne morte`,
         best.gain, best.cost,
         isEn
-          ? `Best ${kindName.toLowerCase()} to replace (the weaker one when you wear two), lines valued with the Arsonistic slopes. Price per accessory type is an in-game estimate (no market source).`
-          : `Meilleur remplacement de ce type (le plus faible quand tu en portes deux), lignes valorisées avec les pentes Arsonistic. Prix par type de bijou estimé en jeu (pas de source marché).`,
-        { slot: best.slot, slotName: slotNames[best.slot], kind, curPct: best.curPct, pkg: best.pkg.label, target, current, state: accGrade });
+          ? `Best ${kindName.toLowerCase()} to replace (the weaker one when you wear two${isSupport ? '; on a tie, the one whose replacement keeps the most CP: shield, heal and HP lines count in the Battle Point' : ''}), lines valued with the Arsonistic slopes. Price per accessory type is an in-game estimate (no market source).`
+          : `Meilleur remplacement de ce type (le plus faible quand tu en portes deux${isSupport ? ' ; à égalité, celui dont le remplacement garde le plus de CP : bouclier, soins et PV comptent dans le Battle Point' : ''}), lignes valorisées avec les pentes Arsonistic. Prix par type de bijou estimé en jeu (pas de source marché).`,
+        { slot: best.slot, slotName: slotNames[best.slot], kind, curPct: best.curPct, pkg: best.pkg.label, target, current, state: accGrade, lines: best.target });
     });
   }
 

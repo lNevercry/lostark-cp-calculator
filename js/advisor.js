@@ -212,8 +212,10 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal, opts = {}) 
  * - affinage : gearCpGain (√(puissance d'arme × stat principale), PV ∝ Vitalité) ; Karma : même chose, puissance d'arme ;
  * - gemmes : partie type 22 (125 × niveau) et % de PA (supportGemCpDelta) ;
  * - pierre : valeur de la gravure dans la table support (+20 au code par niveau de pierre) et PA de base +1,5 % ;
- * - bijoux (parties 15 / 17), bracelet (19 / 20), astrogemmes (29 / 31) : parties réelles du système au prorata
- *   du buff Loseii actuel du système, soit le rapport CP / buff propre au personnage ; cœurs bornés à leur dernier palier.
+ * - bijoux : ligne par ligne sur la table du Battle Point support (supportAccessoryCp : lignes support, jauge d'identité,
+ *   puissance d'arme, lignes de défense perdues), peut être négatif ;
+ * - bracelet (19 / 20), astrogemmes (29 / 31) : parties réelles du système au prorata du buff Loseii actuel du système,
+ *   soit le rapport CP / buff propre au personnage ; cœurs bornés à leur dernier palier ; bijoux sans lignes brutes : 15 / 17.
  * Repli (affinage avancé, système sans partie lisible) : rapport CP / buff de l'affinage de la même famille.
  * null sans Battle Point.
  */
@@ -295,7 +297,12 @@ function supportGpdRowCp(charObj, model, d, factors) {
     const ctx = gearStatContext(charObj);
     if (av && ctx) cp = gearCpGain(charObj, ctx, { dWp: 0, dMs: av.dMs, dVit: 0 }, true);
   }
-  else if (id.startsWith('dyn_acc')) cp = model.linesCp([15, 17], m.curPct, d.gainRaw);
+  else if (id.startsWith('dyn_acc')) {
+    // Calcul exact rendu tel quel, même ≤ 0 : le repli par l'affinage afficherait un gain que le bijou ne donne pas
+    const exact = m.lines ? supportAccessoryCp(charObj, { [m.slot]: m.lines }) : null;
+    if (Number.isFinite(exact)) return exact;
+    cp = model.linesCp([15, 17], m.curPct, d.gainRaw);
+  }
   else if (id === 'dyn_brac') cp = model.linesCp([19, 20], m.curTotal, d.gainRaw);
   else if (id.startsWith('dyn_astro_')) {
     const cur = astrogemGridDamage(true, { mean: m.mean, n: m.n });
@@ -310,7 +317,8 @@ function supportGpdRowCp(charObj, model, d, factors) {
 // CP d'une ligne, arrondi : décimale sous 10 CP (un support gagne souvent quelques CP par étape)
 function fmtCpGain(cp) {
   if (!Number.isFinite(cp)) return '—';
-  return `+${cp < 10 ? cp.toFixed(1) : formatNumber(Math.round(cp))}`;
+  const a = Math.abs(cp);
+  return `${cp < 0 ? '−' : '+'}${a < 10 ? a.toFixed(1) : formatNumber(Math.round(a))}`;
 }
 
 // CP du personnage pour la colonne +CP et l'objectif de la feuille de route : CP raid du profil, jamais le curseur

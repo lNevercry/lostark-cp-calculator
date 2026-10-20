@@ -41,7 +41,7 @@ for (const b of bibleFiles()) {
   // --- GPD ---
   let rows = [];
   try { rows = A.getDynamicGpdTable(c, role, true); } catch (e) { add('ERR', 'gpd-throw', e.stack.split('\n').slice(0, 3).join(' | ')); }
-  out.rows = rows.map(r => ({ id: r.id, gain: r.gainVal, cost: r.cost, ratio: r.ratioVal, tier: r.tier, name: r.name }));
+  out.rows = rows.map(r => ({ id: r.id, gain: r.gainVal, cost: r.cost, ratio: r.ratioVal, tier: r.tier, name: r.name, slot: r.meta && r.meta.slot }));
   rows.forEach(r => {
     if (!Number.isFinite(r.gainVal) || !Number.isFinite(r.cost)) add('HIGH', 'nan', `${r.id} gain ${r.gainVal} coût ${r.cost}`);
     const maxGain = isSup ? 2.5 : 6;
@@ -87,6 +87,7 @@ for (const b of bibleFiles()) {
   try {
     const master = A.buildMasterGpdData(c, isSup, true);
     const mids = new Set(master.map(m => m.id));
+    out.advisorCp = master.map(m => ({ id: m.id, cp: m.cpGain }));
     rows.forEach(r => { if (!mids.has(r.id)) add('MED', 'advisor-drop', `${r.id} absent du Smart Advisor`); });
     if (master.length && rows.length && master[0].id !== rows[0].id) add('LOW', 'advisor-order', `1er GPD ${rows[0].id}, 1er Advisor ${master[0].id}`);
   } catch (e) { add('ERR', 'advisor-throw', e.message); }
@@ -135,7 +136,8 @@ const snap = {};
 report.forEach(r => {
   snap[`${r.region}_${r.name}`] = {
     role: r.role, ilvl: r.ilvl, cp: r.cp,
-    rows: (r.rows || []).map(x => ({ id: x.id, gain: x.gain, cost: x.cost, ratio: x.ratio, tier: x.tier })),
+    rows: (r.rows || []).map(x => ({ id: x.id, gain: x.gain, cost: x.cost, ratio: x.ratio, tier: x.tier, slot: x.slot })),
+    advisorCp: r.advisorCp,
     road100: r.road100, road500: r.road500, road0_5: r['road0.5'], road2: r.road2, cards: r.cards, extra: r.extra,
     issues: Object.fromEntries((r.issues || []).map(i => [`${i.sev} ${i.code}: ${i.msg}`, true]))
   };

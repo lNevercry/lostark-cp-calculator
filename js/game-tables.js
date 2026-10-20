@@ -44,6 +44,26 @@ const stoneLevelOfNodes = nodes => (nodes >= 10 ? 4 : nodes >= 9 ? 3 : nodes >= 
 // Clés de stat des lignes de bijoux et de bracelet dans la table (1 = stat type 2 + index)
 const SUPPORT_LINE_KEYS = { 15: { 2: [54], 3: [59] }, 16: { 2: [50], 3: [51] }, 19: { 2: [54], 3: [59] } };
 
+// Valeur (0,01 %) d'une ligne de bijou ou de bracelet dans la partie t du Battle Point support, 0 si elle n'y compte pas
+function supportLineBp(t, st) {
+  const r = ((bpSupportTable && bpSupportTable[t]) || []).find(([key, index]) => (key === 1
+    ? st.type === 2 && st.index === index
+    : ((SUPPORT_LINE_KEYS[t] || {})[key] || []).includes(st.type) || (key === 3 && t !== 16 && st.index === 16000001)));
+  return r ? st.value * r[2] / 1e4 : 0;
+}
+
+// Parties du Battle Point support d'une ligne de bijou : 15 (lignes support, marque), 16 (soins, boucliers : défense),
+// 17 (jauge d'identité du collier, valeur par roll)
+function supportAccLineParts(st) {
+  const out = [];
+  [15, 16].forEach(t => { const v = supportLineBp(t, st); if (v) out.push({ type: t, value: v }); });
+  if (st.type === 29) {
+    const r = ((bpSupportTable && bpSupportTable[17]) || []).find(v => v[1] === st.index);
+    if (r) out.push({ type: 17, value: r[2] });
+  }
+  return out;
+}
+
 /**
  * Battle Point support d'un loadout enregistré en mode DPS, ou null s'il n'y a rien à recalculer.
  * Reprend du profil ce qui ne dépend pas du mode (PA de base, PV, niveau, points d'Ark Passive, Karma, cartes, paradis,
@@ -83,22 +103,15 @@ function rebuildSupportBattlePoint(loadout) {
     });
   });
   // Lignes de bijoux et de bracelet
-  const lineValue = (t, st) => {
-    const r = (T[t] || []).find(([key, index]) => (key === 1
-      ? st.type === 2 && st.index === index
-      : ((SUPPORT_LINE_KEYS[t] || {})[key] || []).includes(st.type) || (key === 3 && t !== 16 && st.index === 16000001)));
-    return r ? st.value * r[2] / 1e4 : 0;
-  };
   (loadout.items || []).forEach(it => {
     const stats = (it.data && it.data.stats) || [];
     const isAcc = ACC_SLOTS.includes(it.slot);
     if (!isAcc && it.slot !== 'bracelet') return;
     stats.forEach(st => {
       if (isAcc) {
-        [15, 16].forEach(t => { const v = lineValue(t, st); if (v) parts.push({ type: t, value: v, slot: it.slot, stat: st, affectsBaseStats: false }); });
-        if (st.type === 29) { const r = row(17, v => v[1] === st.index); if (r) parts.push({ type: 17, value: r[2], slot: it.slot, stat: st, affectsBaseStats: false }); }
+        supportAccLineParts(st).forEach(p => parts.push({ type: p.type, value: p.value, slot: it.slot, stat: st, affectsBaseStats: false }));
       } else {
-        const v = lineValue(19, st);
+        const v = supportLineBp(19, st);
         if (v) parts.push({ type: 19, value: v, stat: st, affectsBaseStats: false });
         if (st.type === 3) [20, 21].forEach(t => { const r = row(t, x => x[1] === st.index); if (r) parts.push({ type: t, value: r[2], stat: st, affectsBaseStats: false }); });
       }

@@ -74,7 +74,8 @@ function accPackagePrice(kind, tiers) {
 
 /**
  * Résultat de la simulation sur le personnage : gain des bijoux et des gemmes (% DPS ou % de buff, 100 × ln), or
- * (gammes de bijoux achetées, montées de gemmes), CP (support : Battle Point, supportGpdCpModel). null sans personnage importé.
+ * (gammes de bijoux achetées, montées de gemmes), CP (support : Battle Point, supportAccessoryCp et supportGemCpDelta). null sans
+ * personnage importé.
  */
 function computeOptimizationSim(charObj, isSupport) {
   if (!charObj || !charObj.rawProfile) return null;
@@ -88,6 +89,7 @@ function computeOptimizationSim(charObj, isSupport) {
     const curAll = ACC_SLOTS.flatMap(s => slotLines[s] || []);
     const curPct = computeAccessoryLinesBonus(curAll, isSupport);
     const nextAll = [];
+    const changes = {};
     ACC_SLOTS.forEach(slot => {
       const lines = slotLines[slot];
       if (!lines) return;
@@ -102,6 +104,7 @@ function computeOptimizationSim(charObj, isSupport) {
       nextAll.push(...(changed ? simulatedSlotLines(lines, mains, targets) : lines));
       let price = null;
       if (changed) {
+        changes[slot] = simulatedSlotLines(lines, mains, targets);
         price = accPackagePrice(kind, targets.map((t, i) => (t >= 0 ? t : cur[i])));
         if (price === null) accUnpriced = true; else accGold += price;
       }
@@ -110,10 +113,12 @@ function computeOptimizationSim(charObj, isSupport) {
     });
     const nextPct = computeAccessoryLinesBonus(nextAll, isSupport);
     accGain = 100 * Math.log((1 + nextPct / 100) / (1 + curPct / 100));
-    // Support : CP par les parties bijoux du Battle Point, au prorata du buff (supportGpdCpModel)
-    if (isSupport && nextPct !== curPct) {
-      const model = supportGpdCpModel(charObj);
-      supCp.acc = model ? model.linesCp([15, 17], curPct, nextPct - curPct) : null;
+    // Support : CP ligne par ligne sur la table du Battle Point (supportAccessoryCp) ; sans lignes brutes, parties
+    // bijoux au prorata du buff (supportGpdCpModel)
+    if (isSupport && Object.keys(changes).length) {
+      const exact = supportAccessoryCp(charObj, changes);
+      const model = Number.isFinite(exact) ? null : supportGpdCpModel(charObj);
+      supCp.acc = Number.isFinite(exact) ? exact : (model && nextPct !== curPct ? model.linesCp([15, 17], curPct, nextPct - curPct) : null);
     }
   }
 
