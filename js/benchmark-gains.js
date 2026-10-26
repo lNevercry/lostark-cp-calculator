@@ -289,11 +289,30 @@ function battlePointPartsOf(c) {
   return (raw.loadout && raw.loadout.battlePoint && raw.loadout.battlePoint.parts) || (raw.battlePoint && raw.battlePoint.parts) || [];
 }
 
+/**
+ * PA fixe du brassard (stat 114) absente de la partie type 1 de lostark.bible : sa PA de base vaut
+ * √(stat × puissance d'arme ÷ 6) × (1 + % PA), alors que le CP du jeu compte la PA fixe (comme loa-sim ; 8 profils EU
+ * au brassard +10, CP ÷ CP reconstitué : 1,005-1,011 sans elle, 0,995-1,001 avec). 0 sans brassard, ou si la partie
+ * la contient déjà (elle ne suit plus la formule sans PA fixe). Facteur = (√(…) + PA fixe) ÷ √(…).
+ */
+function bracerBaseAttackFlat(loadout, t1) {
+  if (!loadout || !t1 || !(loadout.items || []).some(i => i.slot === 'bracer' || i.slot === 'vambrace')) return 0;
+  const flat = ((loadout.stats || []).find(s => s.type === 114) || {}).value;
+  const { mainStat: ms, weaponPower: wp, attackPowerMultiplier: k, baseAttackPower: base } = t1;
+  if (!(flat > 0) || !(ms > 0) || !(wp > 0) || typeof k !== 'number' || typeof base !== 'number') return 0;
+  return Math.abs(base - Math.sqrt(ms * wp / 6) * (1 + k / 100)) > 0.5 ? 0 : flat;
+}
+function bracerBaseAttackFactor(loadout, t1) {
+  const flat = bracerBaseAttackFlat(loadout, t1);
+  return flat > 0 ? 1 + flat / Math.sqrt(t1.mainStat * t1.weaponPower / 6) : 1;
+}
+
 function supportBpBranches(c) {
   const parts = battlePointPartsOf(c);
   const t1 = parts.find(p => p.type === 1), t2 = parts.find(p => p.type === 2);
   if (!t1 || !t2 || !(t1.value > 0) || !(t2.value > 0)) return null;
-  let A = t1.value / 1e4, D = t2.value / 1e4;
+  // PA fixe du brassard sur la branche buff (absente de la partie type 1 de lostark.bible)
+  let A = t1.value * bracerBaseAttackFactor(c.rawProfile && c.rawProfile.loadout, t1) / 1e4, D = t2.value / 1e4;
   parts.forEach(p => {
     if (p.type <= 2) return;
     const m = 1 + (p.value || 0) / 1e4;

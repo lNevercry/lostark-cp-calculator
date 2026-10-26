@@ -145,7 +145,8 @@ function battlePointCoherence(c, roleOverride) {
     return br && br.A + br.D > 0 ? cp / (br.A + br.D) : null;
   }
   const prod = parts.filter(p => p.type > 2).reduce((m, p) => m * (1 + ((('value' in p) ? p.value : p.min) || 0) / 1e4), 1);
-  return cp / (t1.value * prod / 1e4);
+  // PA fixe du brassard : comptée par le CP du jeu, absente de la partie type 1 de lostark.bible
+  return cp / (t1.value * bracerBaseAttackFactor(c.rawProfile && c.rawProfile.loadout, t1) * prod / 1e4);
 }
 const BP_COHERENCE_RANGE = { dps: [0.95, 1.08], support: [0.92, 1.06] };
 function hasIncompleteBattlePoint(c, roleOverride) {

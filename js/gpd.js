@@ -450,9 +450,10 @@ function getDynamicGpdTable(charObj, role, isEn) {
   // Support : gold par 0.01% de buff ; DPS : gold par 1% de dégâts.
   // Le tier est toujours évalué sur le coût par 1% pour garder les mêmes seuils.
   const ratioUnit = isSupport ? 100 : 1;
-  // Gain sous 0,0001 % : bruit d'arrondi (ex. bijou remplacé par un équivalent), ratio absurde sinon
+  // Gain sous 0,0001 % : bruit d'arrondi (ex. bijou remplacé par un équivalent), ratio absurde sinon.
+  // Coût nul seulement pour une étape sans or (meta.raidMats : déblocage du brassard, matériaux de raid)
   const pushRow = (id, name, sub, gain, cost, comment, meta) => {
-    if (!(gain >= 1e-4) || !(cost > 0)) return;
+    if (!(gain >= 1e-4) || !(cost > 0 || (meta && meta.raidMats && cost === 0))) return;
     const ratio = Math.round(cost / (gain * ratioUnit));
     const tier = getTierFromRatio(cost / gain);
     dynTable.push({
@@ -585,6 +586,42 @@ function getDynamicGpdTable(charObj, role, isEn) {
         advHoningComment(aAdv, isEn),
         { piece: 'armor', from: aAdv.from, to: aAdv.to, pieces: lagging.length, breath: aAdv.useBreath });
     }
+  }
+
+  // 2c. Brassard porté (Vambraces) : déblocage disponible (matériaux de raid, sans or) et prochain affinage
+  // (table de loa-sim, niveau 1 et taux officiels ; souffles de lave et de glacier, prix du marché)
+  const bracerCur = equippedBracer(charObj);
+  const bracerLb = bracerLimitBreakNow(charObj, isSupport);
+  if (bracerLb) {
+    const g = bracerGradeName(bracerLb.to.grade, isEn);
+    const mats = bracerLimitBreakText(bracerLb.from.level, isEn);
+    pushRow('dyn_bracer_lb',
+      isEn ? `Vambraces — limit break to ${g}` : `Brassard — déblocage ${g}`,
+      `+${bracerLb.from.level} · ${mats}`,
+      bracerLb.gain, 0,
+      isEn
+        ? `No gold: raid materials (Belgardin), ${mats}. Gain = base attack power +1% of the grade. Do it as soon as you have them; the vambraces honing row counts from the unlocked grade.`
+        : `Sans or : matériaux de raid (Belgardin), ${mats}. Gain = PA de base +1 % de la rareté. À faire dès que tu les as ; la ligne d'affinage du brassard compte depuis la rareté débloquée.`,
+      { state: bracerStateLabel(bracerCur, isEn), raidMats: mats, cpGain: bracerLb.sim.cpGain, from: bracerLb.from, to: bracerLb.to,
+        step: `${bracerStateLabel(bracerLb.from, isEn)} ➔ ${bracerStateLabel(bracerLb.to, isEn)}` });
+  }
+  const bracerStep = bracerHoningStep(charObj, isSupport, 1);
+  if (bracerStep) {
+    const t = bracerStepTexts(bracerStep, isEn);
+    const lbGain = bracerStep.lb ? (simulateBracerImpact(charObj, bracerStep.lb, isSupport, bracerStep.to) || {}) : null;
+    const lbPct = lbGain ? (isSupport ? lbGain.allyBuffPct : lbGain.dpsGainPct) : null;
+    pushRow('dyn_bracer',
+      isEn ? `Honing — Vambraces ${bracerGradeName(bracerStep.from.grade, isEn)} +${bracerStep.to.level}` : `Affinage — Brassard ${bracerGradeName(bracerStep.from.grade, isEn)} +${bracerStep.to.level}`,
+      (isEn ? `From +${bracerStep.from.level}` : `Depuis +${bracerStep.from.level}`) + ` · ${t.breath}` + (bracerStep.lb ? ` · ${t.lbTxt}` : ''),
+      bracerStep.gain, bracerStep.cost.cost,
+      (isEn ? 'Expected cost (average taps with artisan energy, market-priced materials' : 'Coût attendu (nombre moyen de tentatives avec artisanat, matériaux au prix du marché') +
+        honingBreathComment(t.breath, isEn) + ').' + honingPityComment(t.pity, isEn) +
+        (bracerStep.lb ? (isEn
+          ? ` Includes the limit break it unlocks (${lbPct.toFixed(2)}%, no gold: ${bracerLimitBreakText(bracerStep.to.level, isEn)}).`
+          : ` Compte le déblocage qu'il ouvre (${lbPct.toFixed(2)} %, sans or : ${bracerLimitBreakText(bracerStep.to.level, isEn)}).`) : '') +
+        (isEn ? ' Vambraces table and recipe from loa-sim.vercel.app (official values match); bound materials not used.' : ' Table et recette du brassard de loa-sim.vercel.app (identiques aux valeurs officielles) ; matériaux liés non utilisés.'),
+      { state: bracerStateLabel(bracerCur, isEn), from: bracerStep.from, to: bracerStep.lb || bracerStep.to, step: t.step, stepDetail: t.detail,
+        pity: Math.round(bracerStep.cost.pityCost), pityTaps: bracerStep.cost.pityTaps, breathPlan: t.breath, cpGain: bracerStep.sim.cpGain });
   }
 
   // 3. Gems : DPS avec les parts de dégâts de la spé, une ligne par gemme (une gemme sur une grosse compétence vaut bien
@@ -932,7 +969,8 @@ function renderEfficiencyTable() {
             <td class="col-state">${escapeHtml(gpdRowState(item, isEn))}</td>
             <td class="col-gain">${item.gainText}</td>
             <td class="col-cost">${formatNumber(item.cost)} g${item.meta && item.meta.pity > 0
-                ? `<span class="eff-subtext" title="${escapeHtml(isEn ? 'Worst case: success only at full artisan\'s energy' : 'Pire cas : réussite seulement à la jauge d\'artisan pleine')}">pity ${formatNumber(item.meta.pity)} g</span>` : ''}</td>
+                ? `<span class="eff-subtext" title="${escapeHtml(isEn ? 'Worst case: success only at full artisan\'s energy' : 'Pire cas : réussite seulement à la jauge d\'artisan pleine')}">pity ${formatNumber(item.meta.pity)} g</span>` : ''}${item.meta && item.meta.raidMats
+                ? `<span class="eff-subtext" title="${escapeHtml(item.meta.raidMats)}">${isEn ? '+ raid materials' : '+ matériaux de raid'}</span>` : ''}</td>
             <td class="col-ratio">${item.ratioText}</td>
             <td class="col-prio">
               <span class="prio-badge ${item.tier}">${itemTierLabel}</span>

@@ -89,6 +89,13 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const lbl = armorStepLabel(levels.map(x => x.l), k, isEn, sys.armors.avgArmor);
     return mk(lbl.step, cost, g1 - g0, { targetVal: Math.min(...levels.map(x => x.l)) + k, armorStep: k, stepDetail, honingSteps });
   }
+  if (base.id === 'dyn_bracer') {
+    // Brassard : affinage suivant au gain marginal, déblocage ouvert compris (bracerHoningStep)
+    const st = bracerHoningStep(charObj, isSupport, k);
+    if (!st) return null;
+    const t = bracerStepTexts(st, isEn);
+    return mk(t.step, st.cost.cost, st.gain, { stepDetail: t.detail });
+  }
   const gm = /^dyn_gems_(\d+)_\d+$/.exec(base.id);
   if (gm) {
     const L = +gm[1];
@@ -291,6 +298,8 @@ function supportGpdRowCp(charObj, model, d, factors) {
     const ctx = gearStatContext(charObj);
     if (st && ctx) cp = gearCpGain(charObj, ctx, { dWp: st.dWp, dMs: 0, dVit: 0 }, true);
   } else if (id === 'dyn_stone') cp = model.stoneCp();
+  // Brassard : branches buff (PA de base) et défense (Vitalité) du Battle Point, calculées avec la ligne
+  else if (id === 'dyn_bracer' || id === 'dyn_bracer_lb') cp = m.cpGain;
   else if (id === 'dyn_avatar') {
     // Stat principale seule : branche buff au rapport √(stat principale), comme l'affinage des armures
     const av = avatarGpdStep(charObj, true);
@@ -385,6 +394,18 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         category: 'gear',
         applyType: 'armors',
         targetVal: m.to
+      }));
+    } else if (d.id === 'dyn_bracer' || d.id === 'dyn_bracer_lb') {
+      // Déblocage : sans or (matériaux de raid) ; affinage : souffles, déblocage ouvert et pity en détail
+      rows.push(dynToMaster(d, {
+        icon: '',
+        system: isEn ? 'Vambraces' : 'Brassard',
+        whatItReads: m.state,
+        wherePutsYou: m.state,
+        lastStep: '—',
+        nextStep: d.id === 'dyn_bracer_lb' ? `${m.step} (${isEn ? 'limit break' : 'déblocage'})` : m.step,
+        stepDetail: d.id === 'dyn_bracer_lb' ? (isEn ? `no gold: ${m.raidMats}` : `sans or : ${m.raidMats}`) : m.stepDetail,
+        category: 'gear'
       }));
     } else if (d.id.startsWith('dyn_relic_')) {
       rows.push(dynToMaster(d, {

@@ -46,7 +46,8 @@ for (const b of bibleFiles()) {
     if (!Number.isFinite(r.gainVal) || !Number.isFinite(r.cost)) add('HIGH', 'nan', `${r.id} gain ${r.gainVal} coût ${r.cost}`);
     const maxGain = isSup ? 2.5 : 6;
     if (r.gainVal > maxGain && !/gems_|relic_/.test(r.id)) add('MED', 'gain-high', `${r.id} +${r.gainVal}% pour ${r.cost} g`);
-    if (r.cost < 5000 && r.id !== 'dyn_karma') add('MED', 'cost-low', `${r.id} ${r.cost} g`);
+    // Déblocage du brassard : sans or (matériaux de raid), coût nul voulu
+    if (r.cost < 5000 && r.id !== 'dyn_karma' && !(r.meta && r.meta.raidMats)) add('MED', 'cost-low', `${r.id} ${r.cost} g`);
   });
   const ids = new Set(rows.map(r => r.id));
   const sys = A.extractPlayerSystems(c, true);

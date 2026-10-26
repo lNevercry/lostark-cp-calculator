@@ -2,7 +2,7 @@
 // Compare la structure du flux (recettes d'affinage, tables itemLevel / itemQuality, matériaux) à une empreinte
 // de référence versionnée (tools/maxroll-baseline.json, flux du 2026-09-30, sans brassard). Une nouvelle recette,
 // une nouvelle table de stats ou un nouveau matériau d'affinage = le brassard est probablement arrivé : il faut alors
-// lire sa recette et sa table itemLevel dans tools/fetch-maxroll-honing.mjs et retirer l'estimation (data/bracer-t4.json).
+// lire sa recette et sa table itemLevel dans tools/fetch-maxroll-honing.mjs et remplacer la table de loa-sim (data/bracer-t4.json).
 //
 // Usage : node tools/watch-maxroll-bracer.mjs [--save-baseline] [stats.json local]
 // Code de sortie : 0 rien de nouveau, 2 nouveautés (rapport sur stdout), 1 erreur.
@@ -83,5 +83,5 @@ if (!lines.length) {
 }
 console.log(lines.join('\n'));
 console.log('\nÀ faire : identifier le brassard, lire sa recette et sa table itemLevel dans tools/fetch-maxroll-honing.mjs,');
-console.log('retirer l\'estimation (tools/build-bracer-estimate.mjs, data/bracer-t4.json), puis --save-baseline.');
+console.log('les comparer à la table de loa-sim (tools/build-bracer-table.mjs, data/bracer-t4.json) et la remplacer, puis --save-baseline.');
 process.exit(2);

@@ -80,6 +80,10 @@ function armorMainStatMult(charObj, gear, stat, ms) {
     if (v === null) return 1;
     base += v;
   }
+  // Brassard porté : stat principale seule, comme les armures (Neevercry : 1,151 sans lui, 1,089 avec = avatars 8 %
+  // + ranch ; Inven : × 1,09). Sans la table du brassard, pas de correction.
+  const br = typeof equippedBracer === 'function' ? calcBracerStats(equippedBracer(charObj)) : null;
+  if (br) base += br.mainStat;
   const m = (ms - Math.max(...others)) / base;
   return m >= 1 && m <= 1.2 ? m : 1;
 }

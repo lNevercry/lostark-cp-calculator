@@ -308,6 +308,21 @@ function parseBibleCharacter(dataNode, preferredRole = 'support') {
       type: isSupport ? 'Buff Power' : 'DPS Net',
       badge: 'base'
     });
+    // PA fixe du brassard : absente de la partie type 1 de lostark.bible, comptée par le CP du jeu
+    const bracerFlat = bracerBaseAttackFlat(loadout, atkPart);
+    if (bracerFlat > 0) {
+      const f = bracerBaseAttackFactor(loadout, atkPart);
+      atkMin *= f;
+      atkMax *= f;
+      items.push({
+        cat: 'Base',
+        label: trLang('PA fixe du brassard (absente de la partie type 1 de lostark.bible)', 'Vambraces flat attack power (missing from lostark.bible part type 1)'),
+        val: `+${formatNumber(bracerFlat)} AP`,
+        mult: `x${f.toFixed(4)}`,
+        type: isSupport ? 'Buff Power' : 'DPS Net',
+        badge: 'base'
+      });
+    }
   }
 
   if (hpPart && isSupport) {

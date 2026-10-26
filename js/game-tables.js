@@ -347,10 +347,16 @@ async function loadHoningT4() {
  * Résultat gardé par recette, prix et stock (appelé des milliers de fois par la feuille de route).
  */
 const recipeCostCache = new WeakMap();
+// Prix d'un souffle de la recette. Souffles réunis (brassard : lave et glacier sur le même essai, même taux et même
+// maximum chacun) : breath.slugs, un seul « souffle » au prix moyen des deux, maximum = somme des deux
+function breathUnitPrice(b) {
+  const slugs = b.slugs || [b.slug];
+  return slugs.reduce((s, slug) => s + (state.marketPrices[slug] || 0), 0) / slugs.length;
+}
 function recipeStepCost(recipe, owned) {
   const matGold = Object.entries(recipe.mats).reduce((sum, [slug, n]) => sum + n * (state.marketPrices[slug] || 0), 0);
   const baseTap = recipe.gold + matGold;
-  const breathPrice = recipe.breath ? (state.marketPrices[recipe.breath.slug] || 0) : 0;
+  const breathPrice = recipe.breath ? breathUnitPrice(recipe.breath) : 0;
   const own = recipeOwned(recipe, owned);
   const key = `${baseTap}|${breathPrice}${own ? '|' + JSON.stringify(own) : ''}`;
   let cache = recipeCostCache.get(recipe);
@@ -417,10 +423,11 @@ function recipeStepCost(recipe, owned) {
   return res;
 }
 
-// Stock utile à une recette (matériaux et souffle de la recette, quantités > 0) ; null si rien
+// Stock utile à une recette (matériaux et souffle de la recette, quantités > 0) ; null si rien.
+// Souffles réunis (breath.slugs, brassard) : jamais pris dans le stock
 function recipeOwned(recipe, owned) {
   if (!owned) return null;
-  const slugs = Object.keys(recipe.mats).concat(recipe.breath ? [recipe.breath.slug] : []);
+  const slugs = Object.keys(recipe.mats).concat(recipe.breath && recipe.breath.slug ? [recipe.breath.slug] : []);
   const out = {};
   slugs.forEach(slug => { if (owned[slug] > 0) out[slug] = owned[slug]; });
   return Object.keys(out).length ? out : null;

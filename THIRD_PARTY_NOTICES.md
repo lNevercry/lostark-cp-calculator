@@ -11,8 +11,8 @@ terms:
 - Game data (honing recipes, item stats, Battle Point and Ark Passive tables,
   item and core names, images) from Lost Ark, the property of Smilegate RPG and
   Amazon Games, obtained via the Maxroll.gg planner data, lostark.bible,
-  Lost Ark Codex, the Lost Ark Wiki and Korean community sources (Inven,
-  Arca.live, loa.kakao.gg).
+  loa-sim.vercel.app (T4 vambraces table), Lost Ark Codex, the Lost Ark Wiki
+  and Korean community sources (Inven, Arca.live, loa.kakao.gg).
 - Skill and boss metadata from LOA Logs (github.com/snoww/loa-logs).
 - SQLite WebAssembly (js/rotation/vendor/), see js/rotation/vendor/LICENSE.txt.
 - Quoted class guide content, credited to its authors where it appears.

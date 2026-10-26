@@ -52,6 +52,18 @@ function buildProgressOverview(charObj, isSupport, isEn) {
       advs.reduce((a, b) => a + b, 0) / (40 * advs.length), remain);
   }
 
+  // Brassard porté : jusqu'à Ancien +25, déblocages compris (simulateBracerImpact, table de loa-sim) ; barre = position
+  // dans les 29 états (Héroïque +0 … Ancien +25)
+  const bracer = equippedBracer(charObj);
+  if (bracerT4 && bracer) {
+    const chain = bracerChain();
+    const i = bracerIndex(bracer);
+    const last = chain.length - 1;
+    const s = i < last ? simulateBracerImpact(charObj, chain[last], isSupport, bracer) : null;
+    add('bracer', isEn ? 'Vambraces' : 'Brassard', `${bracerStateLabel(bracer, isEn)} / ${bracerStateLabel(chain[last], isEn)}`, i / last,
+      i < last ? (s ? (isSupport ? s.allyBuffPct : s.dpsGainPct) : null) : 0);
+  }
+
   // Gemmes T4 portées, toutes au niveau 10 (emplacements vides : signalés, non chiffrés)
   const gemLevels = isSupport ? (supportInputs(charObj).gems || null) : (realGems(charObj) || []).map(g => g.level);
   if (gemLevels && gemLevels.length) {
