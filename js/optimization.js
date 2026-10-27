@@ -74,7 +74,8 @@ function accPackagePrice(kind, tiers) {
 
 /**
  * Résultat de la simulation sur le personnage : gain des bijoux et des gemmes (% DPS ou % de buff, 100 × ln), or
- * (gammes de bijoux achetées, montées de gemmes), CP (support : Battle Point, supportAccessoryCp et supportGemCpDelta). null sans
+ * (gammes de bijoux achetées, montées de gemmes), CP (DPS : gemmes au Battle Point, dpsGemCpDelta ; support : Battle Point,
+ * supportAccessoryCp et supportGemCpDelta). null sans
  * personnage importé.
  */
 function computeOptimizationSim(charObj, isSupport) {
@@ -123,12 +124,14 @@ function computeOptimizationSim(charObj, isSupport) {
   }
 
   const gemLevels = isSupport ? realGemLevels(charObj) : (realGems(charObj) || []).map(g => g.level);
-  let gemGain = 0, gemGold = 0, gemCount = 0;
+  // DPS : CP des gemmes au Battle Point (niveau de la gemme, quelle que soit sa compétence), pas au gain de dégâts
+  let gemGain = 0, gemGold = 0, gemCount = 0, gemCp = 0;
   if (gemLevels && gemLevels.length && optSim.gemMin > 0) {
     const to = gemLevels.map(l => Math.max(l, optSim.gemMin));
     const g = isSupport ? supportGemSetGain(charObj, to) : dpsGemSetGain(charObj, to);
     if (Number.isFinite(g)) gemGain = g;
     if (isSupport) supCp.gems = supportGemCpDelta(charObj, gemLevels, to);
+    else gemCp = dpsGemCpDelta(charObj, gemLevels, to);
     gemLevels.forEach((l, i) => {
       if (to[i] > l) gemCount++;
       for (let k = l; k < to[i]; k++) gemGold += GEM_UPGRADE_COST[k] || 0;
@@ -143,7 +146,7 @@ function computeOptimizationSim(charObj, isSupport) {
     total, gold: accGold + gemGold,
     cpGain: isSupport
       ? (Number.isFinite(supCp.acc) && Number.isFinite(supCp.gems) ? supCp.acc + supCp.gems : null)
-      : (cp > 0 ? cp * (Math.exp(total / 100) - 1) : null),
+      : (cp > 0 ? cp * Math.exp(accGain / 100) * (1 + (Number.isFinite(gemCp) ? gemCp / cp : Math.exp(gemGain / 100) - 1)) - cp : null),
     bracelet: braceletBandOf(charObj, isSupport),
     braceletStep: braceletGpdStep(charObj, isSupport)
   };

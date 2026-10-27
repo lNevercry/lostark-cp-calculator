@@ -219,7 +219,8 @@ function buildGpdRoadmap(charObj, isSupport, isEn, masterRows, goal, opts = {}) 
     // Gain non arrondi (dmgGain est arrondi à 0,01 % pour l'affichage)
     const gain = row.gainRaw !== undefined ? row.gainRaw : row.dmgGain;
     if (it.k > 1 || row.cpGain === undefined) {
-      row.cpGain = isSupport
+      const gemCp = gemChainCp(charObj, row.chain, it.k, isSupport, currentCp);
+      row.cpGain = gemCp !== null ? gemCp : isSupport
         ? (row.cpPerGain ? row.cpPerGain * gain : null)
         : currentCp * (Math.exp(gain / 100) - 1);
     }
@@ -358,6 +359,20 @@ function fmtCpGain(cp) {
 function characterCp(charObj) {
   const cp = (charObj && (raidCombatPowerOf(charObj) || charObj.cp)) || 0;
   return cp > 0 ? cp : (state.currentCp || 0);
+}
+
+// CP du jeu de l'étape k d'une ligne de gemmes (dyn_gem_<i> : une gemme ; dyn_gems_<n>_<n+1> : toutes celles du niv. n),
+// écart entre les étapes k − 1 et k : partie gemmes du Battle Point (dpsGemCpDelta / supportGemCpDelta), qui compte
+// chaque gemme par son niveau quelle que soit sa compétence. null pour une autre ligne ou sans gemmes lisibles.
+function gemChainCp(charObj, id, k, isSupport, cp) {
+  const one = /^dyn_gem_(\d+)$/.exec(id), set = /^dyn_gems_(\d+)_\d+$/.exec(id);
+  if (!one && !set) return null;
+  const lv = isSupport ? realGemLevels(charObj) : (realGems(charObj) || []).map(g => g.level);
+  if (!lv || !lv.length) return null;
+  const at = j => lv.map((l, n) => (one ? (n === +one[1] ? l + j : l) : (l === +set[1] ? l + j : l)));
+  const delta = to => (isSupport ? supportGemCpDelta(charObj, lv, to) : dpsGemCpDelta(charObj, lv, to, cp));
+  const c1 = delta(at(k)), c0 = k > 1 ? delta(at(k - 1)) : 0;
+  return Number.isFinite(c1) && Number.isFinite(c0) ? c1 - c0 : null;
 }
 
 // Détail d'une étape d'affinage : souffles (stratégie la moins chère) et pire cas (jauge d'artisan pleine),
@@ -571,8 +586,9 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
     }
   });
 
-  // CP estimé : DPS, chaque système est un multiplicateur du Battle Point (CP × (e^(gain/100) − 1)) ;
-  // support, Battle Point système par système (supportGpdRowCp)
+  // CP estimé : DPS, chaque système est un multiplicateur du Battle Point (CP × (e^(gain/100) − 1)), sauf les gemmes
+  // (partie gemmes du Battle Point, quelle que soit la compétence : gemChainCp) ; support, Battle Point système par
+  // système (supportGpdRowCp)
   const supModel = isSupport && charObj ? supportGpdCpModel(charObj) : null;
   const factors = {};
   if (supModel) {
@@ -586,7 +602,8 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
       const d = dynRows.find(x => x.id === r.id);
       r.cpGain = supModel && d ? supportGpdRowCp(charObj, supModel, d, factors) : null;
     } else {
-      r.cpGain = currentCp * (Math.exp(r.gainRaw / 100) - 1);
+      const gemCp = gemChainCp(charObj, r.id, 1, false, currentCp);
+      r.cpGain = gemCp !== null ? gemCp : currentCp * (Math.exp(r.gainRaw / 100) - 1);
     }
     // Rapport CP / gain de la ligne, repris par les étapes suivantes de la feuille de route
     r.cpPerGain = r.cpGain > 0 && r.gainRaw > 0 ? r.cpGain / r.gainRaw : null;

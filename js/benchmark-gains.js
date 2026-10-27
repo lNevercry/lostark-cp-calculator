@@ -44,7 +44,10 @@ function benchGemGains(player, target, isSupport) {
   // Coût : chaque gemme relevée, niveau par niveau (mêmes coûts unitaires que le GPD)
   let cost = 0;
   pGems.forEach((g, i) => { for (let l = g.level; l < up[i]; l++) cost += GEM_UPGRADE_COST[l] || 0; });
-  return { net, buy, cost };
+  if (isSupport) return { net, buy, cost };
+  // DPS : CP au Battle Point (niveau des gemmes, quelle que soit leur compétence), pas au gain de dégâts
+  const lv = pGems.map(g => g.level);
+  return { net, buy, cost, netCp: dpsGemCpDelta(player, lv, both, player.cp), buyCp: dpsGemCpDelta(player, lv, up, player.cp) };
 }
 
 // Coût d'affinage d'une pièce jusqu'au niveau de la référence : recette de sa piste au niveau affiché ;
@@ -493,7 +496,8 @@ function computeDynamicGapsAndPlan(player, target, pSys, tSys, isEn) {
     if (estimated) {
       delta = 0; gapCp = 0;
     } else if (g && !g.buyOnly) {
-      delta = Number(g.net.toFixed(2)); gapCp = sCp !== undefined ? sCp : gpdGainToCp(g.net, player.cp); fromGpd = true; rowUnit = unit;
+      delta = Number(g.net.toFixed(2)); fromGpd = true; rowUnit = unit;
+      gapCp = sCp !== undefined ? sCp : Number.isFinite(g.netCp) ? g.netCp : gpdGainToCp(g.net, player.cp);
     } else if (sCp !== undefined) {
       gapCp = sCp; delta = Number((100 * sCp / cpBase).toFixed(2)); rowUnit = 'CP';
     } else if (m.key === 'baseAttackStat' && dpsRest !== null) {
@@ -609,7 +613,8 @@ function computeDynamicGapsAndPlan(player, target, pSys, tSys, isEn) {
     .sort((a, b) => a.ratio - b.ratio);
 
   const plan = planItems.slice(0, 5).map(({ g, pct, ratio }, idx) => {
-    const buyCp = gpdGainToCp(pct, player.cp);
+    const gemCp = g.key === 'gems' && gpd.gems && gpd.gems.buyCp;
+    const buyCp = g.buyFromGpd && Number.isFinite(gemCp) ? gemCp : gpdGainToCp(pct, player.cp);
     const estimate = g.buyFromGpd ? '' : (isEn ? ', estimate' : ', estimation');
     return {
       step: idx + 1,

@@ -47,8 +47,8 @@ function predictHoningPath(charObj, targetIlvl, isSupport, owned = getBoundMats(
 
 /**
  * CP du jeu si les gemmes T4 du personnage montaient au moins au niveau `minLevel` (les `count` plus faibles
- * seulement si count est donné). DPS : dégâts du GPD (dpsGemSetGain) ; support : partie gemmes du Battle Point
- * (125 × niveau, branche buff) et % de PA des gemmes. null sans gemmes lisibles.
+ * seulement si count est donné) : partie gemmes du Battle Point (DPS : 64 × (niveau + 1), dpsGemCpDelta ; support :
+ * 125 × niveau, branche buff) et % de PA des gemmes. null sans gemmes lisibles.
  */
 function gemCpBonus(charObj, minLevel, count, isSupport) {
   const cp = charObj && ((charObj.rawProfile && charObj.rawProfile.raidCombatPower) || charObj.cp);
@@ -57,11 +57,25 @@ function gemCpBonus(charObj, minLevel, count, isSupport) {
   const order = levels.map((l, i) => i).sort((a, b) => levels[a] - levels[b]);
   const pick = new Set(count ? order.slice(0, count) : order);
   const to = levels.map((l, i) => (pick.has(i) ? Math.max(l, minLevel) : l));
-  if (!isSupport) {
-    const gain = dpsGemSetGain(charObj, to);
-    return gain === null ? null : cp * (Math.exp(gain / 100) - 1);
-  }
+  if (!isSupport) return dpsGemCpDelta(charObj, levels, to, cp);
   return supportGemCpDelta(charObj, levels, to);
+}
+
+// Battle Point DPS d'une gemme T4 (table battlePoint du jeu, branche 1, partie type 22) : 64 × (niveau + 1), en 0,01 %
+// (niv. 8 = 576, niv. 9 = 640 ; identique aux profils en mode DPS, 60 sur 62, les 2 autres ont une gemme illisible).
+// Le jeu compte la gemme par son niveau, quelle que soit sa compétence (même d'une autre classe) : son CP ne suit pas
+// le gain de dégâts du GPD, pondéré par la part de la compétence.
+const DPS_GEM_BP_PER_LEVEL = 64;
+// CP DPS d'un changement de niveaux de gemmes : partie type 22 et % de PA des gemmes (type 1), CP × rapport.
+// Vérifié : Neevercry, gemme niv. 8 ➔ 9 = +0,79 %, comme loa-sim.vercel.app.
+function dpsGemCpDelta(charObj, levels, to, cp) {
+  const base = cp > 0 ? cp : (raidCombatPowerOf(charObj) || (charObj && charObj.cp));
+  const p1 = battlePointPartsOf(charObj).find(x => x.type === 1);
+  if (!(base > 0) || !p1 || !levels || !to) return null;
+  const apPool = (p1.attackPowerMultiplier || 0) / 100;
+  const gemBp = lv => lv.reduce((m, l) => m * (1 + DPS_GEM_BP_PER_LEVEL * (l + 1) / 1e4), 1);
+  const gemAp = lv => lv.reduce((sum, l) => sum + GEM_AP_PCT[l], 0) / 100;
+  return base * (gemBp(to) / gemBp(levels) * (1 + apPool + gemAp(to) - gemAp(levels)) / (1 + apPool) - 1);
 }
 
 // CP support d'un changement de niveaux de gemmes : partie type 22 (125 × niveau) et % de PA, branche buff
