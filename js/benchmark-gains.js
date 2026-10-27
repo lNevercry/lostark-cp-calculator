@@ -43,7 +43,7 @@ function benchGemGains(player, target, isSupport) {
   if (buy === null || net === null) return null;
   // Coût : chaque gemme relevée, niveau par niveau (mêmes coûts unitaires que le GPD)
   let cost = 0;
-  pGems.forEach((g, i) => { for (let l = g.level; l < up[i]; l++) cost += GEM_UPGRADE_COST[l] || 0; });
+  pGems.forEach((g, i) => { for (let l = g.level; l < up[i]; l++) cost += gemStepCost(l); });
   if (isSupport) return { net, buy, cost };
   // DPS : CP au Battle Point (niveau des gemmes, quelle que soit leur compétence), pas au gain de dégâts
   const lv = pGems.map(g => g.level);

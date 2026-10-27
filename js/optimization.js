@@ -21,7 +21,7 @@ function getCharacterClassKey(curChar) {
 
 // --- ONGLET OPTIMISATION : SIMULATEUR BIJOUX, GEMMES & BRACELET (personnage importé) ---
 // Mêmes modèles que le GPD : lignes de bijoux par les pentes Arsonistic (computeAccessoryLinesBonus), prix des gammes
-// ACC_PACKAGES ; gemmes réelles (dpsGemSetGain / supportGemSetGain, GEM_UPGRADE_COST) ; bracelet noté par Subrank et
+// ACC_PACKAGES ; gemmes réelles (dpsGemSetGain / supportGemSetGain, gemStepCost) ; bracelet noté par Subrank et
 // chiffré par braceletGpdStep. Rien n'est simulé sans personnage importé.
 
 const ACC_LINE_NAMES = {
@@ -134,7 +134,7 @@ function computeOptimizationSim(charObj, isSupport) {
     else gemCp = dpsGemCpDelta(charObj, gemLevels, to);
     gemLevels.forEach((l, i) => {
       if (to[i] > l) gemCount++;
-      for (let k = l; k < to[i]; k++) gemGold += GEM_UPGRADE_COST[k] || 0;
+      for (let k = l; k < to[i]; k++) gemGold += gemStepCost(k);
     });
   }
 

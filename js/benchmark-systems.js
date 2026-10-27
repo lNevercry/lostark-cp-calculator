@@ -577,7 +577,7 @@ function computeGemUpgradeCost(player, target) {
   };
   const getGemValue = (val) => {
     let total = 0;
-    for (let l = 7; l < levelOf(val); l++) total += GEM_UPGRADE_COST[l];
+    for (let l = 7; l < levelOf(val); l++) total += gemStepCost(l);
     return total;
   };
   

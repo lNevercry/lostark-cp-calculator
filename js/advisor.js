@@ -127,8 +127,9 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const n = baseLv.filter(l => l === L).length;
     const counts = {};
     at(k - 1).forEach(l => { counts[l] = (counts[l] || 0) + 1; });
-    return mk(`${n}× ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1} ➔ ${L + k}`, n * GEM_UPGRADE_COST[L + k - 1], g1 - g0,
-      { whatItReads: gemMixText(counts, isEn), wherePutsYou: `${n}/${baseLv.length} ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1}` });
+    return mk(`${n}× ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1} ➔ ${L + k}`, n * gemStepCost(L + k - 1), g1 - g0,
+      { whatItReads: gemMixText(counts, isEn), wherePutsYou: `${n}/${baseLv.length} ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1}`,
+        stepDetail: gemStepText(L + k - 1, isEn, n) });
   }
   // Gemme DPS seule (parts de dégâts de la spé) : niveaux suivants de la même gemme
   const gi = /^dyn_gem_(\d+)$/.exec(base.id);
@@ -141,7 +142,9 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const g1 = dpsGemSetGain(charObj, at(k)), g0 = dpsGemSetGain(charObj, at(k - 1));
     if (g1 === null || g0 === null) return null;
     const lv = `${isEn ? 'Lv.' : 'Niv.'} ${g.level + k - 1}`;
-    return mk(`${lv} ➔ ${g.level + k}`, GEM_UPGRADE_COST[g.level + k - 1], g1 - g0, { whatItReads: lv, wherePutsYou: lv });
+    const costText = gemStepText(g.level + k - 1, isEn);
+    return mk(`${lv} ➔ ${g.level + k}`, gemStepCost(g.level + k - 1), g1 - g0, { whatItReads: lv, wherePutsYou: lv,
+      stepDetail: base.gemSub ? `${base.gemSub} · ${costText}` : costText });
   }
   if (base.id === 'dyn_karma') {
     const lo = (charObj && charObj.rawProfile && charObj.rawProfile.loadout) || {};
@@ -476,6 +479,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         wherePutsYou: `${m.n}/${m.total} ${lvlWord} ${m.lvl}`,
         lastStep: '—',
         nextStep: `${m.n}× ${lvlWord} ${m.lvl} ➔ ${m.lvl + 1}`,
+        stepDetail: m.costText,
         category: 'gems',
         applyType: 'gems',
         targetVal: m.lvl + 1
@@ -490,7 +494,9 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         wherePutsYou: `${lvlWord} ${m.lvl}`,
         lastStep: '—',
         nextStep: `${lvlWord} ${m.lvl} ➔ ${m.lvl + 1}`,
-        stepDetail: d.sub,
+        // Part des dégâts, puis le coût de l'étape (gemSub : repris par les étapes suivantes de la feuille de route)
+        stepDetail: m.costText ? `${d.sub} · ${m.costText}` : d.sub,
+        gemSub: d.sub,
         category: 'gems',
         applyType: 'gems',
         targetVal: m.lvl + 1

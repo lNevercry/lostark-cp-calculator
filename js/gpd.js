@@ -4,9 +4,33 @@
 
 // Bonus CP% moyen par niveau de gemme T4 (même échelle que extractPlayerSystems)
 const GEM_LEVEL_BONUS_PCT = { 7: 31.5, 8: 36.0, 9: 40.5, 10: 48.0 };
-// Coût (gold) pour monter UNE gemme T4 du niveau clé au niveau suivant
-// Niv. 6 : trois gemmes niv. 6 font une niv. 7, donc 1/3 du coût du niveau 7
-const GEM_UPGRADE_COST = { 6: 92000, 7: 276000, 8: 813000, 9: 2415000 };
+// Prix d'une gemme T4 par niveau (or), réglables au-dessus du tableau GPD (`gem:<niveau>` dans lostark_gpd_prices).
+// Défauts sans source (estimation) : l'ancienne table de coûts relue en prix, une gemme valant ~3 fois celle du niveau
+// d'en dessous (3 gemmes niv. N fusionnent en une niv. N + 1) ; niv. 9 ≈ 1,2 M au relevé de l'utilisateur (HV EUC, 2026-10-27).
+const GEM_DEFAULT_PRICES = { 6: 46000, 7: 138000, 8: 406000, 9: 1210000, 10: 3560000 };
+function gemPrice(lvl) {
+  const v = state.gpdPrices && state.gpdPrices[`gem:${lvl}`];
+  return v > 0 ? v : (GEM_DEFAULT_PRICES[lvl] || 0);
+}
+// Coût de la montée d'UNE gemme du niveau lvl à lvl + 1 : gemme lvl + 1 achetée, ancienne revendue à l'hôtel des
+// ventes (taxe 5 %, marketNetSale). 0 au niveau 10 ou sans prix.
+function gemStepCost(lvl) {
+  const buy = gemPrice(lvl + 1), sell = gemPrice(lvl);
+  return buy > 0 && sell > 0 ? Math.max(0, buy - marketNetSale(sell)) : 0;
+}
+// Détail du coût d'une montée (sous l'étape) : « niv. 9 1 210 000 − ta niv. 8 revendue 385 700 », n gemmes : « n × (…) »
+function gemStepText(lvl, isEn, n = 1) {
+  const t = isEn
+    ? `Lv. ${lvl + 1} ${formatNumber(gemPrice(lvl + 1))} − your Lv. ${lvl} resold ${formatNumber(Math.round(marketNetSale(gemPrice(lvl))))}`
+    : `niv. ${lvl + 1} ${formatNumber(gemPrice(lvl + 1))} − ta niv. ${lvl} revendue ${formatNumber(Math.round(marketNetSale(gemPrice(lvl))))}`;
+  return n > 1 ? `${n} × (${t})` : t;
+}
+// Commentaire du coût d'une ligne de gemmes du GPD
+function gemCostComment(lvl, isEn, n) {
+  return isEn
+    ? `Cost: ${gemStepText(lvl, isEn, n)} (auction house tax 5%; gem prices set above the table).`
+    : `Coût : ${gemStepText(lvl, isEn, n)} (taxe de l'hôtel des ventes 5 % ; prix des gemmes réglables au-dessus du tableau).`;
+}
 // Bonus d'arme (échelle bonusPct de extractPlayerSystems) gagné par niveau d'affinage effectif
 const WEAPON_HONING_BONUS_PER_LVL = 1.20;
 // Bonus d'armure (échelle bonusPct) gagné par niveau moyen d'affinage effectif sur les 5 pièces
@@ -636,7 +660,7 @@ function getDynamicGpdTable(charObj, role, isEn) {
     const all = realGems(charObj);
     const fmt1 = x => (isEn ? x.toFixed(1) : x.toFixed(1).replace('.', ','));
     gemDetails.forEach(g => {
-      if (!(GEM_UPGRADE_COST[g.level] > 0)) return;
+      if (!(gemStepCost(g.level) > 0)) return;
       const gain = dpsGemSetGain(charObj, all.map((x, j) => (j === g.index ? x.level + 1 : x.level)));
       if (gain === null) return;
       const kind = g.kind === 'dmg' ? (isEn ? 'Damage gem' : 'Gemme de dégâts') : (isEn ? 'Cooldown gem' : 'Gemme de recharge');
@@ -651,11 +675,11 @@ function getDynamicGpdTable(charObj, role, isEn) {
         : (isEn ? '-2% cooldown, the skill being recast as soon as it is ready (best case)' : '−2 % de recharge, la compétence étant relancée dès qu\'elle est prête (meilleur cas)');
       pushRow(`dyn_gem_${g.index}`,
         `${kind} — ${who} ${isEn ? 'Lv.' : 'Niv.'} ${g.level} ➔ ${g.level + 1}`,
-        sub, gain, GEM_UPGRADE_COST[g.level],
+        sub, gain, gemStepCost(g.level),
         isEn
-          ? `Share of damage: median of ${shares.players} ${shares.spec} players (LOA Logs and lostark.bible raid logs, one vote per player). ${effect}, weighted by that share, plus the gem's base attack power.`
-          : `Part des dégâts : médiane de ${shares.players} joueurs ${shares.spec} (logs de raid LOA Logs et lostark.bible, une voix par joueur). ${effect}, au prorata de cette part, plus la PA de base de la gemme.`,
-        { gem: g.index, lvl: g.level, kind: g.kind, name: g.name, share: g.share, offClass: g.offClass, total: all.length });
+          ? `Share of damage: median of ${shares.players} ${shares.spec} players (LOA Logs and lostark.bible raid logs, one vote per player). ${effect}, weighted by that share, plus the gem's base attack power. ${gemCostComment(g.level, isEn, 1)}`
+          : `Part des dégâts : médiane de ${shares.players} joueurs ${shares.spec} (logs de raid LOA Logs et lostark.bible, une voix par joueur). ${effect}, au prorata de cette part, plus la PA de base de la gemme. ${gemCostComment(g.level, isEn, 1)}`,
+        { gem: g.index, lvl: g.level, kind: g.kind, name: g.name, share: g.share, offClass: g.offClass, total: all.length, costText: gemStepText(g.level, isEn) });
     });
   } else if (supGems) {
     const counts = { 6: 0, 7: 0, 8: 0, 9: 0, 10: 0 };
@@ -668,15 +692,15 @@ function getDynamicGpdTable(charObj, role, isEn) {
       pushRow(`dyn_gems_${lvl}_${lvl + 1}`,
         isEn ? `Skill gems — Lv. ${lvl} ➔ ${lvl + 1}` : `Gemmes de Compétences — Niv. ${lvl} ➔ ${lvl + 1}`,
         isEn ? `${n} gem(s) out of ${supGems.length}` : `${n} gemme(s) sur ${supGems.length}`,
-        gain, n * GEM_UPGRADE_COST[lvl],
+        gain, n * gemStepCost(lvl),
         isSupport
           ? (isEn
-            ? `Only the ${n} gem(s) currently at Lv. ${lvl} are priced. Buff (Loseii model): ally buffs +1 point per set level, real base AP per gem, cooldown turned into Specialization.`
-            : `Seules les ${n} gemme(s) actuellement Niv. ${lvl} sont comptées. Buff (modèle Loseii) : +1 point de buffs alliés par niveau du set, vraie PA de base par gemme, recharge convertie en Spécialisation.`)
+            ? `Only the ${n} gem(s) currently at Lv. ${lvl} are priced. Buff (Loseii model): ally buffs +1 point per set level, real base AP per gem, cooldown turned into Specialization. ${gemCostComment(lvl, isEn, n)}`
+            : `Seules les ${n} gemme(s) actuellement Niv. ${lvl} sont comptées. Buff (modèle Loseii) : +1 point de buffs alliés par niveau du set, vraie PA de base par gemme, recharge convertie en Spécialisation. ${gemCostComment(lvl, isEn, n)}`)
           : (isEn
-            ? `Only the ${n} gem(s) currently at Lv. ${lvl} are priced. Damage gems +4% skill damage, cooldown gems -2% cooldown (70% of damage on cooldown), plus each gem's base attack power.`
-            : `Seules les ${n} gemme(s) actuellement Niv. ${lvl} sont comptées. Gemmes de dégâts +4 % de dégâts de compétence, gemmes de recharge −2 % de recharge (70 % des dégâts sous recharge), plus la PA de base de chaque gemme.`),
-        { lvl, n, counts, total: supGems.length });
+            ? `Only the ${n} gem(s) currently at Lv. ${lvl} are priced. Damage gems +4% skill damage, cooldown gems -2% cooldown (70% of damage on cooldown), plus each gem's base attack power. ${gemCostComment(lvl, isEn, n)}`
+            : `Seules les ${n} gemme(s) actuellement Niv. ${lvl} sont comptées. Gemmes de dégâts +4 % de dégâts de compétence, gemmes de recharge −2 % de recharge (70 % des dégâts sous recharge), plus la PA de base de chaque gemme. ${gemCostComment(lvl, isEn, n)}`),
+        { lvl, n, counts, total: supGems.length, costText: gemStepText(lvl, isEn, n) });
     });
   }
   const gemParts = supGems ? null : extractCharacterGemParts(charObj);
@@ -694,9 +718,9 @@ function getDynamicGpdTable(charObj, role, isEn) {
       pushRow(`dyn_gems_${lvl}_${lvl + 1}`,
         isEn ? `Skill gems — Lv. ${lvl} ➔ ${lvl + 1}` : `Gemmes de Compétences — Niv. ${lvl} ➔ ${lvl + 1}`,
         isEn ? `${n} gem(s) out of ${totalGems}` : `${n} gemme(s) sur ${totalGems}`,
-        gain, n * GEM_UPGRADE_COST[lvl],
-        isEn ? `Only the ${n} gem(s) currently at Lv. ${lvl} are priced.` : `Seules les ${n} gemme(s) actuellement Niv. ${lvl} sont comptées.`,
-        { lvl, n, counts: gemCounts, total: totalGems });
+        gain, n * gemStepCost(lvl),
+        isEn ? `Only the ${n} gem(s) currently at Lv. ${lvl} are priced. ${gemCostComment(lvl, isEn, n)}` : `Seules les ${n} gemme(s) actuellement Niv. ${lvl} sont comptées. ${gemCostComment(lvl, isEn, n)}`,
+        { lvl, n, counts: gemCounts, total: totalGems, costText: gemStepText(lvl, isEn, n) });
     });
   }
 
@@ -1100,8 +1124,8 @@ function renderStoneOptionsPanel(box, charObj, isSupport, isEn) {
   });
 }
 
-// Prix hors marché réglables (pheon, bracelet non relancé, avatar légendaire) au-dessus du tableau GPD ;
-// vide = défaut Loseii (avatar : pas de défaut, ligne en attente)
+// Prix hors marché réglables (pheon, bracelet non relancé, avatar légendaire, gemmes niv. 6 à 10) au-dessus du
+// tableau GPD ; vide = défaut Loseii (avatar : pas de défaut, ligne en attente ; gemmes : estimation sans source)
 function renderGpdPriceInputs(isEn) {
   const box = document.getElementById('gpdPriceInputs');
   if (!box) return;
@@ -1109,7 +1133,7 @@ function renderGpdPriceInputs(isEn) {
     ['pheon', isEn ? 'Pheon (gold)' : 'Pheon (or)'],
     ['bracelet', isEn ? 'Unrolled 90/90 bracelet (gold)' : 'Bracelet 90/90 non relancé (or)'],
     ['avatar', isEn ? 'Legendary avatar, 1 piece (gold)' : 'Avatar légendaire, 1 pièce (or)']
-  ];
+  ].concat(Object.keys(GEM_DEFAULT_PRICES).map(l => [`gem:${l}`, isEn ? `Gem Lv. ${l} (gold)` : `Gemme niv. ${l} (or)`]));
   if (!box.dataset.bound) {
     box.innerHTML = fields.map(([k, label]) => `
         <label class="gpd-price-field">
@@ -1134,7 +1158,9 @@ function renderGpdPriceInputs(isEn) {
     if (!inp) return;
     const own = state.gpdPrices && state.gpdPrices[k] > 0 ? state.gpdPrices[k] : '';
     if (document.activeElement !== inp) inp.value = own;
-    inp.placeholder = GPD_DEFAULT_PRICES[k] > 0 ? `${formatNumber(GPD_DEFAULT_PRICES[k])} (Loseii)` : (isEn ? 'to enter' : 'à saisir');
+    const gemDef = k.startsWith('gem:') ? GEM_DEFAULT_PRICES[k.slice(4)] : 0;
+    inp.placeholder = gemDef > 0 ? `${formatNumber(gemDef)} (${isEn ? 'estimate' : 'estimation'})`
+      : GPD_DEFAULT_PRICES[k] > 0 ? `${formatNumber(GPD_DEFAULT_PRICES[k])} (Loseii)` : (isEn ? 'to enter' : 'à saisir');
   });
 }
 
