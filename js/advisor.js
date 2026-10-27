@@ -94,7 +94,8 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const st = bracerHoningStep(charObj, isSupport, k);
     if (!st) return null;
     const t = bracerStepTexts(st, isEn);
-    return mk(t.step, st.cost.cost, st.gain, { stepDetail: t.detail });
+    const fromState = bracerStateLabel(st.from, isEn);
+    return mk(t.step, st.cost.cost, st.gain, { stepDetail: t.detail, whatItReads: fromState, wherePutsYou: fromState });
   }
   const gm = /^dyn_gems_(\d+)_\d+$/.exec(base.id);
   if (gm) {
@@ -396,12 +397,13 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         targetVal: m.to
       }));
     } else if (d.id === 'dyn_bracer' || d.id === 'dyn_bracer_lb') {
-      // Déblocage : sans or (matériaux de raid) ; affinage : souffles, déblocage ouvert et pity en détail
+      // Déblocage : sans or (matériaux de raid) ; affinage : souffles, déblocage ouvert et pity en détail.
+      // État affiché = départ de l'étape : après un déblocage en attente, l'affinage part de la rareté débloquée
       rows.push(dynToMaster(d, {
         icon: '',
         system: isEn ? 'Vambraces' : 'Brassard',
-        whatItReads: m.state,
-        wherePutsYou: m.state,
+        whatItReads: m.fromState || m.state,
+        wherePutsYou: m.fromState || m.state,
         lastStep: '—',
         nextStep: d.id === 'dyn_bracer_lb' ? `${m.step} (${isEn ? 'limit break' : 'déblocage'})` : m.step,
         stepDetail: d.id === 'dyn_bracer_lb' ? (isEn ? `no gold: ${m.raidMats}` : `sans or : ${m.raidMats}`) : m.stepDetail,
