@@ -51,6 +51,20 @@ function extractCharacterGemParts(charObj) {
   return null;
 }
 
+// États affichés dans la colonne Système du Smart Advisor, au départ de l'étape (k = 1 : état du profil)
+// Gemmes par niveau : « 2× Niv. 9, 9× Niv. 8 »
+function gemMixText(counts, isEn) {
+  return [10, 9, 8, 7, 6].filter(l => counts[l] > 0).map(l => `${counts[l]}× ${isEn ? 'Lv.' : 'Niv.'} ${l}`).join(', ');
+}
+// Armures : « +X toutes pièces » si les 5 partent du même niveau, sinon niveau par pièce (pièces encore sous +25)
+function armorStateText(levels, k, isEn, avg) {
+  const cur = (levels || []).map(l => l + k - 1);
+  const uniform = !cur.length || (cur.length === GEAR_ARMOR_SLOTS.length && cur.every(l => l === cur[0]));
+  if (!uniform) return armorStepLabel(levels, k, isEn, avg).sub;
+  const from = cur.length ? cur[0] : Math.floor(avg || 12) + k - 1;
+  return isEn ? `+${from} all pieces` : `+${from} toutes pièces`;
+}
+
 /**
  * Étape k (k ≥ 2) d'une chaîne du GPD, une fois les k − 1 précédentes faites : affinage arme / armures (+1 niveau,
  * gain marginal du modèle sur le personnage réel), gemmes (le même groupe monte encore d'un niveau), Karma, échelles
@@ -83,11 +97,14 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const honingSteps = stepLevels.map(x => ({ piece, l: x.l, track: x.track }));
     if (isW) {
       const from = Math.floor(sys.weapon.wLvl) + k - 1;
-      return mk(`+${from} ➔ +${from + 1}`, cost, g1 - g0, { targetVal: from + 1, stepDetail, honingSteps });
+      return mk(`+${from} ➔ +${from + 1}`, cost, g1 - g0, { targetVal: from + 1, stepDetail, honingSteps,
+        whatItReads: isEn ? `+${from} T4 Weapon` : `+${from} Arme T4`, wherePutsYou: `+${from}` });
     }
     // Armures : pièces réelles encore sous +25 à cette étape (niveaux différents : « +1 sur n pièces »)
     const lbl = armorStepLabel(levels.map(x => x.l), k, isEn, sys.armors.avgArmor);
-    return mk(lbl.step, cost, g1 - g0, { targetVal: Math.min(...levels.map(x => x.l)) + k, armorStep: k, stepDetail, honingSteps });
+    const minFrom = Math.min(...levels.map(x => x.l)) + k - 1;
+    return mk(lbl.step, cost, g1 - g0, { targetVal: minFrom + 1, armorStep: k, stepDetail, honingSteps,
+      whatItReads: armorStateText(levels.map(x => x.l), k, isEn, sys.armors.avgArmor), wherePutsYou: `+${minFrom}` });
   }
   if (base.id === 'dyn_bracer') {
     // Brassard : affinage suivant au gain marginal, déblocage ouvert compris (bracerHoningStep)
@@ -108,7 +125,10 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const g1 = setGain(at(k)), g0 = setGain(at(k - 1));
     if (g1 === null || g0 === null) return null;
     const n = baseLv.filter(l => l === L).length;
-    return mk(`${n}× ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1} ➔ ${L + k}`, n * GEM_UPGRADE_COST[L + k - 1], g1 - g0);
+    const counts = {};
+    at(k - 1).forEach(l => { counts[l] = (counts[l] || 0) + 1; });
+    return mk(`${n}× ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1} ➔ ${L + k}`, n * GEM_UPGRADE_COST[L + k - 1], g1 - g0,
+      { whatItReads: gemMixText(counts, isEn), wherePutsYou: `${n}/${baseLv.length} ${isEn ? 'Lv.' : 'Niv.'} ${L + k - 1}` });
   }
   // Gemme DPS seule (parts de dégâts de la spé) : niveaux suivants de la même gemme
   const gi = /^dyn_gem_(\d+)$/.exec(base.id);
@@ -120,14 +140,16 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     const at = j => gems.map((x, n) => (n === i ? x.level + j : x.level));
     const g1 = dpsGemSetGain(charObj, at(k)), g0 = dpsGemSetGain(charObj, at(k - 1));
     if (g1 === null || g0 === null) return null;
-    return mk(`${isEn ? 'Lv.' : 'Niv.'} ${g.level + k - 1} ➔ ${g.level + k}`, GEM_UPGRADE_COST[g.level + k - 1], g1 - g0);
+    const lv = `${isEn ? 'Lv.' : 'Niv.'} ${g.level + k - 1}`;
+    return mk(`${lv} ➔ ${g.level + k}`, GEM_UPGRADE_COST[g.level + k - 1], g1 - g0, { whatItReads: lv, wherePutsYou: lv });
   }
   if (base.id === 'dyn_karma') {
     const lo = (charObj && charObj.rawProfile && charObj.rawProfile.loadout) || {};
     const lvl = lo.karma && lo.karma.enlightenment;
     if (!(lvl >= 0)) return null;
     const st = karmaGpdStep(charObj, isSupport, lvl + k - 1);
-    return st ? mk(`${st.lvl} ➔ ${st.lvl + 1}`, st.cost, st.gain) : null;
+    const state = st && (isEn ? `lv ${st.lvl}` : `niv. ${st.lvl}`);
+    return st ? mk(`${st.lvl} ➔ ${st.lvl + 1}`, st.cost, st.gain, { whatItReads: state, wherePutsYou: state }) : null;
   }
   if (base.id === 'dyn_brac' || base.id.startsWith('dyn_astro_')) {
     // Échelle de Loseii : paliers suivants, or et gain propres à chaque palier
@@ -143,7 +165,7 @@ function gpdFollowUp(charObj, isSupport, isEn, base, k) {
     }
     if (!row) return null;
     const gold = row.gold * (base.id === 'dyn_brac' ? loseiiRepriceRatio(row) : 1);
-    return mk(`${row.from} ➔ ${row.to}`, gold, row.damage);
+    return mk(`${row.from} ➔ ${row.to}`, gold, row.damage, { whatItReads: row.from, wherePutsYou: row.from });
   }
   return null;
 }
@@ -382,11 +404,10 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
     } else if (d.id === 'dyn_armor') {
       // Pièces à des niveaux différents : état et étape lus pièce par pièce (armorStepLabel)
       const lbl = armorStepLabel(m.levels, 1, isEn, m.from);
-      const mixed = m.levels && m.levels.length && !m.levels.every(l => l === m.levels[0]);
       rows.push(dynToMaster(d, {
         icon: '',
         system: isEn ? 'Armors honing' : 'Affinage Armures',
-        whatItReads: mixed ? lbl.sub : (isEn ? `+${m.from} all pieces` : `+${m.from} toutes pièces`),
+        whatItReads: armorStateText(m.levels, 1, isEn, m.from),
         wherePutsYou: `+${m.from}`,
         lastStep: `+${m.from - 1} ➔ +${m.from}`,
         nextStep: lbl.step,
@@ -432,7 +453,7 @@ function buildMasterGpdData(charObj, isSupport, isEn) {
         category: 'gear'
       }));
     } else if (d.id.startsWith('dyn_gems_')) {
-      const mix = [10, 9, 8, 7, 6].filter(l => m.counts[l] > 0).map(l => `${m.counts[l]}× ${lvlWord} ${l}`).join(', ');
+      const mix = gemMixText(m.counts, isEn);
       rows.push(dynToMaster(d, {
         icon: '',
         system: isEn ? 'Skill gems' : 'Gemmes de compétences',
