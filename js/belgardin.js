@@ -203,9 +203,12 @@ function getBracerHoningCumulativeCost(fromX, toX) {
 /**
  * Effet du brassard sur le personnage importé, de l'état from à l'état to (états ou +N après déblocage ; from omis =
  * brassard porté, null / -1 = sans brassard). Le brassard porté est retiré des stats du profil avant de poser les deux
- * états. DPS : dégâts = 100 × ln(rapport des PA de base), CP = CP × (rapport − 1) (partie type 1 = PA de base × 2,88).
- * Support : buff par supportContribution (canal ap), CP = branche buff × (rapport − 1) + branche défense × (rapport de
- * Vitalité − 1). PV max proportionnels à la Vitalité. null sans personnage lisible ou sans table.
+ * états. DPS : dégâts = 100 × ln(rapport des PA de base), CP = CP × écart de PA de base ÷ PA de base avec le brassard
+ * porté (partie type 1 = PA de base × 2,88) : le CP du profil compte le brassard porté, donc « Aucun ➔ Héroïque +10 (fait) »
+ * vaut CP × (1 − 1 ÷ rapport) et non CP × (rapport − 1) (Neevercry : +372 CP, 6 040 ➔ 6 410 en jeu ; avant +395), et les
+ * paliers se somment. Support : buff par supportContribution (canal ap), CP = branche buff × écart de PA de base ÷ PA
+ * portée + branche défense × écart de Vitalité ÷ Vitalité portée. PV max proportionnels à la Vitalité. null sans
+ * personnage lisible ou sans table.
  */
 function simulateBracerImpact(charObj, toX, isSupport, fromX) {
   const ctx = gearStatContext(charObj);
@@ -216,6 +219,7 @@ function simulateBracerImpact(charObj, toX, isSupport, fromX) {
   if (!to || (fromX !== undefined && fromX !== null && fromX !== -1 && !from) || bracerIndex(from) > bracerIndex(to)) return null;
   const apPool = (p1.attackPowerMultiplier || 0) / 100;
   const a = bracerAttackState(ctx, apPool, from, cur), b = bracerAttackState(ctx, apPool, to, cur);
+  const w = bracerAttackState(ctx, apPool, cur, cur);
   const ratio = b.atk / a.atk;
   const vitRatio = a.vit > 0 ? b.vit / a.vit : 1;
   const cp = (charObj.rawProfile && charObj.rawProfile.raidCombatPower) || charObj.cp;
@@ -229,13 +233,13 @@ function simulateBracerImpact(charObj, toX, isSupport, fromX) {
   };
   if (!isSupport) {
     out.dpsGainPct = 100 * Math.log(ratio);
-    out.cpGain = cp > 0 ? cp * (ratio - 1) : null;
+    out.cpGain = cp > 0 ? cp * (b.atk - a.atk) / w.atk : null;
   } else {
     const inp = supportInputs(charObj);
     out.allyBuffPct = 100 * Math.log(supportContribution(inp, b.wp, b.ms, inp.gemAvg, b.apPct, b.flat) /
       supportContribution(inp, a.wp, a.ms, inp.gemAvg, a.apPct, a.flat));
     const br = supportBpBranches(charObj);
-    out.cpGain = br ? br.A * (ratio - 1) + br.D * (vitRatio - 1) : null;
+    out.cpGain = br ? br.A * (b.atk - a.atk) / w.atk + (w.vit > 0 ? br.D * (b.vit - a.vit) / w.vit : 0) : null;
   }
   return out;
 }
