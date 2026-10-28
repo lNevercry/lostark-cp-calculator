@@ -872,8 +872,9 @@ function parseBibleCharacter(dataNode, preferredRole = 'support') {
   };
 }
 
-async function fetchBibleProfile(region, name, autoAdd = null) {
-  const statusEl = dom.importStatus;
+// quiet : relecture en arrière-plan (refreshActiveIfStale), rien dans la modale d'import
+async function fetchBibleProfile(region, name, autoAdd = null, quiet = false) {
+  const statusEl = quiet ? null : dom.importStatus;
   const cleanName = name ? name.trim() : '';
   if (!cleanName) return null;
 
@@ -1042,6 +1043,8 @@ function applyLoadedProfile(json, characterName = null, region = 'CE', autoAddTo
     loadout: profile.loadout || null,
     apPoints: profile.apPoints || (profile.ilvl >= 1740 ? { evolution: 140, enlightenment: 101, leap: 70 } : { evolution: 120, enlightenment: 88, leap: 50 }),
     opt: null,
+    // Heure de la lecture sur lostark.bible : le personnage actif est relu quand sa copie vieillit (refreshActiveIfStale)
+    fetchedAt: Date.now(),
     rawProfile: profile
   };
 

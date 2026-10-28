@@ -601,6 +601,55 @@ async function refreshAllUserRosterCharacters() {
   }
 }
 
+// Relecture automatique du personnage actif du roster quand sa copie a plus de ROSTER_STALE_MS (avant, un profil mis
+// à jour sur lostark.bible n'arrivait qu'avec « Tout réactualiser »). Un appel à la fois, BIBLE_FETCH_GAP_MS entre deux :
+// changer vite de personnage ne relit que le dernier. Rechargé (loadCharacter remet les simulations à zéro) seulement
+// si le profil raid a changé. Échec (lostark.bible indisponible) : nouvel essai ROSTER_STALE_MS plus tard.
+const ROSTER_STALE_MS = 15 * 60 * 1000;
+let staleRefreshTimer = null;
+let staleRefreshLast = 0;
+let staleRefreshBusy = false;
+const staleRefreshTried = {};
+
+function scheduleStaleRefresh() {
+  clearTimeout(staleRefreshTimer);
+  staleRefreshTimer = setTimeout(refreshActiveIfStale, Math.max(1500, staleRefreshLast + BIBLE_FETCH_GAP_MS - Date.now()));
+}
+
+async function refreshActiveIfStale() {
+  const id = activeCharacterId;
+  const c = (getUserRoster() || []).find(x => (x.id || x.name.toLowerCase()) === id);
+  const now = Date.now();
+  if (!c || staleRefreshBusy || now - (c.fetchedAt || 0) < ROSTER_STALE_MS || now - (staleRefreshTried[id] || 0) < ROSTER_STALE_MS) return;
+  staleRefreshBusy = true;
+  staleRefreshTried[id] = now;
+  try {
+    const updated = await fetchBibleProfile(characterRegion(c), c.name, 'silent', true);
+    if (!updated) return;
+    // Roster relu après l'appel : il a pu changer entre-temps
+    const list = getUserRoster() || [];
+    const i = list.findIndex(x => (x.id || x.name.toLowerCase()) === id);
+    if (i < 0) return;
+    const old = list[i];
+    const stamp = o => (o.rawProfile && o.rawProfile.loadout && o.rawProfile.loadout.lastUpdated) || 0;
+    const changed = stamp(updated) !== stamp(old) || updated.cp !== old.cp || updated.ilvl !== old.ilvl;
+    list[i] = { ...old, ...updated };
+    saveUserRoster(list);
+    if (!changed) return;
+    renderPresetsBar();
+    renderSavedRosterManager();
+    if (activeCharacterId === id) loadCharacter(list[i]);
+    const cp = v => formatNumber(Math.round(v));
+    const cpTxt = updated.cp !== old.cp ? `${cp(old.cp)} ➔ ${cp(updated.cp)} CP` : `${cp(updated.cp)} CP`;
+    showToast(trLang(`${updated.name} mis à jour depuis lostark.bible (${cpTxt}).`, `${updated.name} updated from lostark.bible (${cpTxt}).`));
+  } finally {
+    staleRefreshBusy = false;
+    staleRefreshLast = Date.now();
+    // Personnage changé pendant l'appel : à son tour
+    if (activeCharacterId !== id) scheduleStaleRefresh();
+  }
+}
+
 function renderSavedRosterManager() {
   if (!dom.userRosterManagerSection || !dom.modalUserRosterList) return;
   const roster = getUserRoster();

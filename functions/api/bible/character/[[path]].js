@@ -1,6 +1,7 @@
 // Profil lostark.bible pour le site (le navigateur ne peut pas l'appeler directement : CORS).
 // Pas un proxy ouvert : GET / HEAD seulement, un seul format de chemin (région connue, un pseudo, __data.json),
-// appelé par le site lui-même (même origine, aucun en-tête CORS), réponses gardées 15 min en cache.
+// appelé par le site lui-même (même origine, aucun en-tête CORS), réponses gardées 5 min en cache (comme lostark.bible,
+// max-age=300 : avec 15 min, un profil mis à jour sur lostark.bible arrivait jusqu'à 15 min plus tard).
 const REGIONS = new Set(['CE', 'NA', 'NAE', 'NAW', 'SA']);
 const PATH_RE = /^\/api\/bible\/character\/([A-Za-z]{2,3})\/([^/]+)\/__data\.json$/;
 
@@ -40,7 +41,7 @@ export async function onRequest(context) {
       status: upstream.status,
       headers: {
         'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
-        'Cache-Control': 'public, s-maxage=900, max-age=900',
+        'Cache-Control': 'public, s-maxage=300, max-age=300',
         'X-Content-Type-Options': 'nosniff'
       }
     });

@@ -1204,6 +1204,7 @@ function loadCharacter(c) {
   loadedCharacter = c;
   // Personnage actif retenu d'une visite à l'autre (main.js le recharge)
   try { lsSet('lostark_active_char', cId); } catch (e) {}
+  scheduleStaleRefresh();
 
   if (dom.presetsList) {
     dom.presetsList.querySelectorAll('.preset-chip').forEach(btn => {
