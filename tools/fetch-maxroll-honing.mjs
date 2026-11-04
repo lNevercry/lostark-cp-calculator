@@ -44,9 +44,9 @@ const common = stats.enhanceCommon;
 const quality = stats.itemQuality;
 const itemLevel = stats.itemLevel;
 
-// Taux d'un souffle en 0,01 % (comme success). Le flux les donne en 0,001 % depuis l'ajout du brassard (2026-10-30, un
-// souffle y vaut 0,375 %) : son calculateur divise la somme par 10. Arrêt si l'unité change encore : tous les souffles
-// pleins valent additiveMax, dans l'unité du flux.
+// Taux d'un souffle en 0,01 % (comme success). Le flux les donne en 0,001 % (constaté le 2026-11-04, × 10 par rapport au
+// 2026-09-30 ; un souffle du brassard vaut 0,375 %) : son calculateur divise la somme par 10. Arrêt si l'unité change
+// encore : tous les souffles pleins valent additiveMax, dans l'unité du flux.
 function breathRate(r, b) {
   if ((r.additive || []).some(a => a.rate * a.max * r.additive.length !== r.additiveMax)) throw new Error(`Unité des souffles inattendue : ${JSON.stringify(r.additive)} / ${r.additiveMax}`);
   return b.rate / 10;

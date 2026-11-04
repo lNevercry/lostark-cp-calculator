@@ -1,4 +1,4 @@
-// Surveillance du flux Maxroll, écrite pour attendre le brassard T4 (arrivé le 2026-10-30, lu par
+// Surveillance du flux Maxroll, écrite pour attendre le brassard T4 (détecté le 2026-10-29, lu par
 // tools/fetch-maxroll-honing.mjs), gardée pour les patchs suivants.
 // Compare la structure du flux (recettes d'affinage, tables itemLevel / itemQuality, matériaux) à une empreinte
 // de référence versionnée (tools/maxroll-baseline.json). Une nouvelle recette, une nouvelle table de stats ou un nouveau
