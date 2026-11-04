@@ -52,7 +52,7 @@ function buildProgressOverview(charObj, isSupport, isEn) {
       advs.reduce((a, b) => a + b, 0) / (40 * advs.length), remain);
   }
 
-  // Brassard porté : jusqu'à Ancien +25, déblocages compris (simulateBracerImpact, table de loa-sim) ; barre = position
+  // Brassard porté : jusqu'à Ancien +25, déblocages compris (simulateBracerImpact) ; barre = position
   // dans les 29 états (Héroïque +0 … Ancien +25)
   const bracer = equippedBracer(charObj);
   if (bracerT4 && bracer) {

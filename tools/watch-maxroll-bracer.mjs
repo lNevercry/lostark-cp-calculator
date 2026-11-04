@@ -1,8 +1,8 @@
-// Surveillance du flux Maxroll en attendant le brassard T4 (완갑, Belgardin) en EU.
+// Surveillance du flux Maxroll, écrite pour attendre le brassard T4 (arrivé le 2026-10-30, lu par
+// tools/fetch-maxroll-honing.mjs), gardée pour les patchs suivants.
 // Compare la structure du flux (recettes d'affinage, tables itemLevel / itemQuality, matériaux) à une empreinte
-// de référence versionnée (tools/maxroll-baseline.json, flux du 2026-09-30, sans brassard). Une nouvelle recette,
-// une nouvelle table de stats ou un nouveau matériau d'affinage = le brassard est probablement arrivé : il faut alors
-// lire sa recette et sa table itemLevel dans tools/fetch-maxroll-honing.mjs et remplacer la table de loa-sim (data/bracer-t4.json).
+// de référence versionnée (tools/maxroll-baseline.json). Une nouvelle recette, une nouvelle table de stats ou un nouveau
+// matériau d'affinage = nouveauté à lire dans tools/fetch-maxroll-honing.mjs.
 //
 // Usage : node tools/watch-maxroll-bracer.mjs [--save-baseline] [stats.json local]
 // Code de sortie : 0 rien de nouveau, 2 nouveautés (rapport sur stdout), 1 erreur.
@@ -78,10 +78,9 @@ for (const [key, label] of Object.entries(LABELS)) {
 
 console.log(`Flux Maxroll ${version || '(fichier local)'} comparé à la référence du ${base.savedAt.slice(0, 10)}`);
 if (!lines.length) {
-  console.log('Rien de nouveau : le brassard n\'est pas encore dans le flux.');
+  console.log('Rien de nouveau dans le flux.');
   process.exit(0);
 }
 console.log(lines.join('\n'));
-console.log('\nÀ faire : identifier le brassard, lire sa recette et sa table itemLevel dans tools/fetch-maxroll-honing.mjs,');
-console.log('les comparer à la table de loa-sim (tools/build-bracer-table.mjs, data/bracer-t4.json) et la remplacer, puis --save-baseline.');
+console.log('\nÀ faire : voir ce que change le patch, lancer node tools/fetch-maxroll-honing.mjs, puis --save-baseline.');
 process.exit(2);

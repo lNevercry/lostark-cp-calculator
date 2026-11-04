@@ -44,6 +44,14 @@ const common = stats.enhanceCommon;
 const quality = stats.itemQuality;
 const itemLevel = stats.itemLevel;
 
+// Taux d'un souffle en 0,01 % (comme success). Le flux les donne en 0,001 % depuis l'ajout du brassard (2026-10-30, un
+// souffle y vaut 0,375 %) : son calculateur divise la somme par 10. Arrêt si l'unité change encore : tous les souffles
+// pleins valent additiveMax, dans l'unité du flux.
+function breathRate(r, b) {
+  if ((r.additive || []).some(a => a.rate * a.max * r.additive.length !== r.additiveMax)) throw new Error(`Unité des souffles inattendue : ${JSON.stringify(r.additive)} / ${r.additiveMax}`);
+  return b.rate / 10;
+}
+
 function statAt(levelOption, ilvl, statId) {
   const row = itemLevel[`${levelOption}#${ilvl}`];
   const s = row && row.find(x => x.stat === statId);
@@ -85,7 +93,7 @@ for (const [track, pieces] of Object.entries(TRACKS)) {
         gold: (r.money && r.money['2']) || 0,
         shards: (r.money && r.money['18']) || 0,
         mats: matsFor(key),
-        breath: breath ? { slug: BREATH_SLUGS[breath.id], rate: breath.rate, max: breath.max } : null
+        breath: breath ? { slug: BREATH_SLUGS[breath.id], rate: breathRate(r, breath), max: breath.max } : null
       };
     }
     data.tracks[track][piece] = levels;
@@ -184,3 +192,61 @@ for (const [key, opts] of Object.entries(stats.itemRandom)) {
 const GEM_GROUPS_OUT = new URL('../data/gem-skill-groups.json', import.meta.url);
 writeFileSync(GEM_GROUPS_OUT, JSON.stringify({ source: FEED, generatedAt: new Date().toISOString(), groups: gemGroups }));
 console.log(`data/gem-skill-groups.json écrit (${Object.keys(gemGroups).length} groupes)`);
+
+// Brassard T4 (Vambraces, raid Belgardin). Recette commune 411102, stats par niveau
+// portées par l'objet (itemQuality 11675016 / 026 / 036 : même table, seul l'ID de la stat principale change), stats de
+// base par rareté (itemStatic 1167501x6 … 1167531x6, stat 150 = % de PA de base, même pool que les gemmes).
+// levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 %. Jauge du niveau (shardsOnce) : exp du flux,
+// cumulée, moins celle du niveau précédent, comme le calculateur de Maxroll ; chaque point coûte 1 fragment et
+// feedSubCost d'argent. Déblocage : portée par la recette du niveau suivant (#111 = +10 ➔ Légendaire), itemAmount de
+// itemId ou itemAmount ÷ replaceRatio de replaceItemId.
+const BRACER_RECIPE = '411102', BRACER_STATS = '11675026', BRACER_MAIN = 4;
+const BRACER_GRADE_KEYS = ['heroic', 'legendary', 'relic', 'ancient'];
+const SPECTRAL_SHADE = 52810001, DEATHLY_HAND = 52810002;
+const pick = (rows, id) => ((rows || []).find(x => x.stat === id) || {}).value || 0;
+const bracerStatic = g => stats.itemStatic[`${BRACER_STATS.slice(0, 5)}${g}${BRACER_STATS.slice(6)}#${g + 3}`];
+if (!bracerStatic(0)) throw new Error('Brassard absent du flux');
+const bracerLevels = Array.from({ length: 26 }, (_, l) => {
+  const q = l ? quality[`${BRACER_STATS}#${100 + l}`] : null;
+  if (l && !q) throw new Error(`Niveau +${l} du brassard absent`);
+  const base = bracerStatic(0), up = q ? q.stats : [];
+  const sum = id => pick(base, id) + pick(up, id);
+  return { mainStat: sum(BRACER_MAIN), weaponPower: sum(151), vitality: sum(6), flatAp: sum(114) };
+});
+const bracerSteps = [], bracerLimitBreak = {}, bracerMaxes = [];
+for (let l = 0; l < 25; l++) {
+  const key = `${BRACER_RECIPE}#${101 + l}`;
+  const r = common[key];
+  if (!r) throw new Error(`Recette absente : ${key}`);
+  const once = r.exp - (l ? common[`${BRACER_RECIPE}#${100 + l}`].exp : 0);
+  bracerSteps.push({
+    success: r.success, failBonus: r.failBonus, failMax: r.failMax, threshold: r.threshold,
+    gold: r.money['2'], silver: r.money['1'], shards: r.money['18'],
+    shardsOnce: once / r.feedExp, silverOnce: once / r.feedExp * r.feedSubCost,
+    mats: matsFor(key),
+    breaths: r.additive.map(b => ({ slug: BREATH_SLUGS[b.id], rate: breathRate(r, b), max: b.max }))
+  });
+  const lb = r.limitBreak;
+  if (lb) {
+    const shade = lb.itemId === SPECTRAL_SHADE;
+    if (!shade && lb.itemId !== DEATHLY_HAND) throw new Error(`Matériau de déblocage inconnu ${lb.itemId}`);
+    bracerMaxes.push(l);
+    bracerLimitBreak[l] = {
+      grade: BRACER_GRADE_KEYS[bracerMaxes.length],
+      remnant: shade ? lb.itemAmount : null,
+      deathHand: shade ? lb.itemAmount / lb.replaceRatio : lb.itemAmount
+    };
+  }
+}
+if (bracerMaxes.length !== 3) throw new Error(`Déblocages du brassard : ${bracerMaxes}`);
+const BRACER_OUT = new URL('../data/bracer-t4.json', import.meta.url);
+writeFileSync(BRACER_OUT, JSON.stringify({
+  source: FEED, generatedAt: new Date().toISOString(),
+  note: 'levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 % ; % de PA = rareté, gagné au déblocage',
+  // Rareté : niveaux possibles et % de PA de base. Le brassard ne donne ni iLvl, ni qualité, ni points d'Ark Passive.
+  grades: BRACER_GRADE_KEYS.map((key, g) => ({ key, min: g ? bracerMaxes[g - 1] : 0, max: bracerMaxes[g] ?? 25, apPct: pick(bracerStatic(g), 150) / 100 })),
+  limitBreak: bracerLimitBreak,
+  limitBreakItems: { remnant: { ko: '사령의 잔영', en: 'Spectral Shade' }, deathHand: { ko: '죽음의 손', en: 'Deathly Hand' } },
+  levels: bracerLevels, steps: bracerSteps
+}, null, 1));
+console.log('data/bracer-t4.json écrit (+0 → +25)');

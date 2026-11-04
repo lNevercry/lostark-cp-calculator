@@ -52,6 +52,9 @@ function gearStatContext(charObj) {
   const wp = stat(151);
   const ms = Math.max(stat(3), stat(4), stat(5));
   if (!(wp > 0) || !(ms > 0)) return null;
+  // % de la stat principale du profil (stats 7 / 8 / 9 = Force / Dextérité / Intelligence : avatars, ranch) : le multiplicateur
+  // exact d'une stat d'équipement (Neevercry, avatars 8 %, Légendaire +15 : +51 050 pour 47 268, × 1,080)
+  const msPct = stat(7 + [3, 4, 5].findIndex(t => stat(t) === ms)) / 1e4;
   const parts = (lo.battlePoint && lo.battlePoint.parts) || (raw.battlePoint && raw.battlePoint.parts) || [];
   const earringPct = parts.filter(p => p.stat && p.stat.index === 152).reduce((s, p) => s + (p.stat.value || 0) / 100, 0);
   const karmaPct = ((lo.karma && lo.karma.enlightenment) || 0) * 0.1;
@@ -60,7 +63,7 @@ function gearStatContext(charObj) {
   const wcb = wc && wc.id.toString().startsWith(WEAPON_CORE_PREFIX) ? weaponCoreBonus(wc.id, wc.points) : null;
   const corePct = wcb ? wcb.pct : 0;
   // Vitalité (stat 6) : les PV max suivent la Vitalité (branche défense du CP support)
-  return { wp, ms, vit: stat(6), wpAmp: 1 + (earringPct + karmaPct + corePct) / 100, msMult: armorMainStatMult(charObj, gear, stat, ms), gear };
+  return { wp, ms, vit: stat(6), wpAmp: 1 + (earringPct + karmaPct + corePct) / 100, msMult: armorMainStatMult(charObj, gear, stat, ms), msPct: msPct >= 1 ? msPct : 1, gear };
 }
 
 /**
@@ -80,8 +83,8 @@ function armorMainStatMult(charObj, gear, stat, ms) {
     if (v === null) return 1;
     base += v;
   }
-  // Brassard porté : stat principale seule, comme les armures (Neevercry : 1,151 sans lui, 1,089 avec = avatars 8 %
-  // + ranch ; Inven : × 1,09). Sans la table du brassard, pas de correction.
+  // Brassard porté : stat principale seule, comme les armures (Neevercry : 1,151 sans lui, 1,089 avec). Sans la table
+  // du brassard, pas de correction.
   const br = typeof equippedBracer === 'function' ? calcBracerStats(equippedBracer(charObj)) : null;
   if (br) base += br.mainStat;
   const m = (ms - Math.max(...others)) / base;

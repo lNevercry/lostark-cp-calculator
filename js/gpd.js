@@ -613,7 +613,7 @@ function getDynamicGpdTable(charObj, role, isEn) {
   }
 
   // 2c. Brassard porté (Vambraces) : déblocage disponible (matériaux de raid, sans or) et prochain affinage
-  // (table de loa-sim, niveau 1 et taux officiels ; souffles de lave et de glacier, prix du marché)
+  // (recette du jeu ; souffles de lave et de glacier, prix du marché)
   const bracerCur = equippedBracer(charObj);
   const bracerLb = bracerLimitBreakNow(charObj, isSupport);
   if (bracerLb) {
@@ -643,7 +643,7 @@ function getDynamicGpdTable(charObj, role, isEn) {
         (bracerStep.lb ? (isEn
           ? ` Includes the limit break it unlocks (${lbPct.toFixed(2)}%, no gold: ${bracerLimitBreakText(bracerStep.to.level, isEn)}).`
           : ` Compte le déblocage qu'il ouvre (${lbPct.toFixed(2)} %, sans or : ${bracerLimitBreakText(bracerStep.to.level, isEn)}).`) : '') +
-        (isEn ? ' Vambraces table and recipe from loa-sim.vercel.app (official values match); bound materials not used.' : ' Table et recette du brassard de loa-sim.vercel.app (identiques aux valeurs officielles) ; matériaux liés non utilisés.'),
+        (isEn ? ' Bound materials not used.' : ' Matériaux liés non utilisés.'),
       // fromState : départ de l'étape (rareté débloquée comprise), affiché par le Smart Advisor à la place du brassard porté
       { state: bracerStateLabel(bracerCur, isEn), fromState: bracerStateLabel(bracerStep.from, isEn), from: bracerStep.from, to: bracerStep.lb || bracerStep.to, step: t.step, stepDetail: t.detail,
         pity: Math.round(bracerStep.cost.pityCost), pityTaps: bracerStep.cost.pityTaps, breathPlan: t.breath, cpGain: bracerStep.sim.cpGain });

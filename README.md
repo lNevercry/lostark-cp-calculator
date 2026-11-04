@@ -63,7 +63,7 @@ Every way to improve your character, priced in gold and ranked like [Loseii's GP
 - **Live EUC market prices** used by every calculation, with the time of the last update.
 - **Stronghold fusion** profitability (Abidos / Superior Abidos), with your own bonuses.
 - **Raids & Gold Tracker**, optionally synced with LOA Logs by a local companion (see below).
-- **Belgardin Projection**: an estimate of the upcoming T4 bracer (완갑) before its EU release, with every value's source shown.
+- **Belgardin**: raid readiness for the whole roster, and the T4 vambraces (완갑) simulated on your character, with a storage plan and gold per gain by tier.
 
 ### 🌐 Roster & languages
 - **OAuth roster sync** with lostark.bible, multi-region (NAE / EUC…), shareable character links (`?char=…&region=…`).
@@ -118,7 +118,7 @@ See [`tools/audit/README.md`](tools/audit/README.md).
 ### 🔄 Refreshing game data
 | Command | Updates |
 |---|---|
-| `node tools/fetch-maxroll-honing.mjs` | Honing recipes, item level stats, Karma, Battle Point tables (after a game patch) |
+| `node tools/fetch-maxroll-honing.mjs` | Honing recipes, item level stats, vambraces, Karma, Battle Point tables (after a game patch) |
 | `node tools/fetch-maxroll-names.mjs` | Ark Grid core names |
 | `node tools/harvest-live-peers.mjs` | Pool of real players for the Benchmark (~weekly) |
 | `node tools/rotation/build-ref.mjs` | Rotation references (see [`tools/rotation/README.md`](tools/rotation/README.md)) |
@@ -175,15 +175,15 @@ This project stands on the shoulders of the Lost Ark theorycrafting community. A
 | **[Maxroll.gg](https://maxroll.gg/lost-ark)** (Lost Ark planner data) | The game's own tables: honing recipes (Aegir & Serka), item level stats, Illumination Karma, Battle Point values (DPS & support), Ark Passive values, Ark Grid core options and item names. |
 | **Lost Ark Wiki** (community wiki) | Weapon quality upgrade odds, advanced honing, ability stone and relic book bonuses per engraving. |
 | **[Lost Ark Codex](https://lostarkcodex.com/)** | Stronghold fusion recipes. |
-| **[Smilegate / Stove](https://m-lostark.game.onstove.com/News/GMNote/Views/1225)** (official KR GM note) | Official Belgardin bracer honing rates and costs. |
-| **[Inven](https://lostark.inven.co.kr/)**, **[Arca.live](https://arca.live/b/lostark)**, **[loa.kakao.gg](https://www.loa.kakao.gg/)** (Korean community) | Belgardin bracer measurements and community estimates, early Tier 4 data mining. Every estimated value in the Belgardin tab links back to its post. |
+| **[Smilegate / Stove](https://m-lostark.game.onstove.com/News/GMNote/Views/1225)** (official KR GM note) | Official Belgardin vambraces note. |
+| **[Inven](https://lostark.inven.co.kr/)**, **[Arca.live](https://arca.live/b/lostark)**, **[loa.kakao.gg](https://www.loa.kakao.gg/)** (Korean community) | Vambraces attack formula, Belgardin raid thresholds, early Tier 4 data mining. The Belgardin tab links back to its posts. |
 
 ### 🔧 Tools & services
 | Source | Used for |
 |---|---|
 | **Loa-Buddy** market API | Live EUC Auction House prices used by every gold calculation. |
 | **[LOA Logs](https://github.com/snoww/loa-logs)** (snoww) | The open-source DPS meter whose `encounters.db` powers the Rotation Analysis and the Raid Tracker; skill and boss metadata come from its `meter-data`. |
-| **[loa-sim](https://loa-sim.vercel.app/)** | Ideas reused with our own data: pity cost, breaths on the first N taps, bound materials used before buying, avatar line, DPS gems weighted by the damage share of their skill. T4 vambraces stats per level and honing recipe (`data/bracer-t4.json`, checked against every official value), until the Maxroll feed has them. |
+| **[loa-sim](https://loa-sim.vercel.app/)** | Ideas reused with our own data: pity cost, breaths on the first N taps, bound materials used before buying, avatar line, DPS gems weighted by the damage share of their skill. |
 | **[SQLite WebAssembly](https://sqlite.org/wasm)** | Reading LOA Logs databases directly in the browser (bundled, see its license in `js/rotation/vendor/`). |
 | **Class guide authors** | Rotation targets quoted from community guides, each one cited in the app, e.g. *Dimensionalist – Community Advanced Guide* by Mariabetaniah & Hhôpe (Nexus Discord). |
 

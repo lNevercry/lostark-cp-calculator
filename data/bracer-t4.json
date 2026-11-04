@@ -1,15 +1,7 @@
 {
- "generatedAt": "2026-10-26T01:05:19.870Z",
- "sources": {
-  "official": "https://m-lostark.game.onstove.com/News/GMNote/Views/1225",
-  "officialTooltips": "https://www.inven.co.kr/board/lostark/6271/3953370",
-  "mainStatMult": "https://www.inven.co.kr/board/lostark/6271/3790814",
-  "loaSim": "https://loa-sim.vercel.app/sim",
-  "raid": "https://www.loa.kakao.gg/guides/로스트아크-완갑-효율-공략-10강20강25강-강화-우선순위와-준비-재료",
-  "limitItem": "https://lostark.inven.co.kr/dataninfo/item/?code=52810002"
- },
- "note": "levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 % ; src = official | loa-sim ; % de PA = rareté (grades), gagné au déblocage",
- "mainStatMult": 1.09,
+ "source": "https://assets-ng.maxroll.gg/laplanner/game/stats.json",
+ "generatedAt": "2026-11-04T07:46:42.629Z",
+ "note": "levels[N] = brassard +N ; steps[N] = passage de +N à +N+1, taux en 0,01 % ; % de PA = rareté, gagné au déblocage",
  "grades": [
   {
    "key": "heroic",
@@ -63,193 +55,162 @@
    "en": "Deathly Hand"
   }
  },
- "raidGates": {
-  "normal": 1750,
-  "hard": 1770,
-  "nightmare": 1780
- },
  "levels": [
   {
    "mainStat": 10500,
    "weaponPower": 3500,
    "vitality": 900,
-   "flatAp": 0,
-   "src": "loa-sim"
+   "flatAp": 0
   },
   {
    "mainStat": 10500,
    "weaponPower": 5350,
    "vitality": 1440,
-   "flatAp": 0,
-   "src": "loa-sim"
+   "flatAp": 0
   },
   {
    "mainStat": 16500,
    "weaponPower": 5350,
    "vitality": 1440,
-   "flatAp": 0,
-   "src": "loa-sim"
+   "flatAp": 0
   },
   {
    "mainStat": 16500,
    "weaponPower": 7210,
    "vitality": 1982,
-   "flatAp": 0,
-   "src": "loa-sim"
+   "flatAp": 0
   },
   {
    "mainStat": 22530,
    "weaponPower": 7210,
    "vitality": 1982,
-   "flatAp": 0,
-   "src": "loa-sim"
+   "flatAp": 0
   },
   {
    "mainStat": 22530,
    "weaponPower": 7210,
    "vitality": 1982,
-   "flatAp": 850,
-   "src": "loa-sim"
+   "flatAp": 850
   },
   {
    "mainStat": 22530,
    "weaponPower": 9077,
    "vitality": 2526,
-   "flatAp": 850,
-   "src": "loa-sim"
+   "flatAp": 850
   },
   {
    "mainStat": 28608,
    "weaponPower": 9077,
    "vitality": 2526,
-   "flatAp": 850,
-   "src": "loa-sim"
+   "flatAp": 850
   },
   {
    "mainStat": 28608,
    "weaponPower": 10969,
    "vitality": 3072,
-   "flatAp": 850,
-   "src": "loa-sim"
+   "flatAp": 850
   },
   {
    "mainStat": 34746,
    "weaponPower": 10969,
    "vitality": 3072,
-   "flatAp": 850,
-   "src": "loa-sim"
+   "flatAp": 850
   },
   {
    "mainStat": 34746,
    "weaponPower": 10969,
    "vitality": 3072,
-   "flatAp": 2030,
-   "src": "official"
+   "flatAp": 2030
   },
   {
    "mainStat": 34746,
    "weaponPower": 12873,
    "vitality": 3621,
-   "flatAp": 2030,
-   "src": "loa-sim"
+   "flatAp": 2030
   },
   {
    "mainStat": 40962,
    "weaponPower": 12873,
    "vitality": 3621,
-   "flatAp": 2030,
-   "src": "loa-sim"
+   "flatAp": 2030
   },
   {
    "mainStat": 40962,
    "weaponPower": 14817,
    "vitality": 4173,
-   "flatAp": 2030,
-   "src": "loa-sim"
+   "flatAp": 2030
   },
   {
    "mainStat": 47268,
    "weaponPower": 14817,
    "vitality": 4173,
-   "flatAp": 2030,
-   "src": "loa-sim"
+   "flatAp": 2030
   },
   {
    "mainStat": 47268,
    "weaponPower": 14817,
    "vitality": 4173,
-   "flatAp": 3690,
-   "src": "official"
+   "flatAp": 3690
   },
   {
    "mainStat": 47268,
    "weaponPower": 16778,
    "vitality": 4728,
-   "flatAp": 3690,
-   "src": "loa-sim"
+   "flatAp": 3690
   },
   {
    "mainStat": 53682,
    "weaponPower": 16778,
    "vitality": 4728,
-   "flatAp": 3690,
-   "src": "loa-sim"
+   "flatAp": 3690
   },
   {
    "mainStat": 53682,
    "weaponPower": 18794,
    "vitality": 5286,
-   "flatAp": 3690,
-   "src": "loa-sim"
+   "flatAp": 3690
   },
   {
    "mainStat": 60216,
    "weaponPower": 18794,
    "vitality": 5286,
-   "flatAp": 3690,
-   "src": "loa-sim"
+   "flatAp": 3690
   },
   {
    "mainStat": 60216,
    "weaponPower": 18794,
    "vitality": 5286,
-   "flatAp": 5980,
-   "src": "official"
+   "flatAp": 5980
   },
   {
    "mainStat": 60216,
    "weaponPower": 20832,
    "vitality": 5848,
-   "flatAp": 5980,
-   "src": "loa-sim"
+   "flatAp": 5980
   },
   {
    "mainStat": 66888,
    "weaponPower": 20832,
    "vitality": 5848,
-   "flatAp": 5980,
-   "src": "loa-sim"
+   "flatAp": 5980
   },
   {
    "mainStat": 66888,
    "weaponPower": 22940,
    "vitality": 6414,
-   "flatAp": 5980,
-   "src": "loa-sim"
+   "flatAp": 5980
   },
   {
    "mainStat": 73710,
    "weaponPower": 22940,
    "vitality": 6414,
-   "flatAp": 5980,
-   "src": "loa-sim"
+   "flatAp": 5980
   },
   {
    "mainStat": 73710,
    "weaponPower": 22940,
    "vitality": 6414,
-   "flatAp": 9050,
-   "src": "official"
+   "flatAp": 9050
   }
  ],
  "steps": [
@@ -259,13 +220,15 @@
    "failMax": 1500,
    "threshold": 21500,
    "gold": 5200,
+   "silver": 80000,
    "shards": 14500,
    "shardsOnce": 145000,
+   "silverOnce": 1450000,
    "mats": {
+    "superior-abidos-fusion-material": 22,
     "destiny-crystallized-destruction-stone": 600,
     "destiny-crystallized-guardian-stone": 1800,
-    "great-destiny-leapstone": 30,
-    "superior-abidos-fusion-material": 22
+    "great-destiny-leapstone": 30
    },
    "breaths": [
     {
@@ -278,9 +241,7 @@
      "rate": 37.5,
      "max": 20
     }
-   ],
-   "src": "official",
-   "silver": 80000
+   ]
   },
   {
    "success": 1500,
@@ -288,13 +249,15 @@
    "failMax": 1500,
    "threshold": 21500,
    "gold": 5400,
+   "silver": 80000,
    "shards": 15000,
    "shardsOnce": 145000,
+   "silverOnce": 1450000,
    "mats": {
+    "superior-abidos-fusion-material": 23,
     "destiny-crystallized-destruction-stone": 620,
     "destiny-crystallized-guardian-stone": 1860,
-    "great-destiny-leapstone": 31,
-    "superior-abidos-fusion-material": 23
+    "great-destiny-leapstone": 31
    },
    "breaths": [
     {
@@ -307,8 +270,7 @@
      "rate": 37.5,
      "max": 20
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1500,
@@ -316,13 +278,15 @@
    "failMax": 1500,
    "threshold": 21500,
    "gold": 5610,
+   "silver": 80000,
    "shards": 15630,
    "shardsOnce": 145000,
+   "silverOnce": 1450000,
    "mats": {
+    "superior-abidos-fusion-material": 24,
     "destiny-crystallized-destruction-stone": 640,
     "destiny-crystallized-guardian-stone": 1925,
-    "great-destiny-leapstone": 32,
-    "superior-abidos-fusion-material": 24
+    "great-destiny-leapstone": 32
    },
    "breaths": [
     {
@@ -335,8 +299,7 @@
      "rate": 37.5,
      "max": 20
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1500,
@@ -344,13 +307,15 @@
    "failMax": 1500,
    "threshold": 21500,
    "gold": 5830,
+   "silver": 80000,
    "shards": 16280,
    "shardsOnce": 145000,
+   "silverOnce": 1450000,
    "mats": {
+    "superior-abidos-fusion-material": 25,
     "destiny-crystallized-destruction-stone": 660,
     "destiny-crystallized-guardian-stone": 1990,
-    "great-destiny-leapstone": 33,
-    "superior-abidos-fusion-material": 25
+    "great-destiny-leapstone": 33
    },
    "breaths": [
     {
@@ -363,8 +328,7 @@
      "rate": 37.5,
      "max": 20
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1500,
@@ -372,13 +336,15 @@
    "failMax": 1500,
    "threshold": 21500,
    "gold": 6060,
+   "silver": 80000,
    "shards": 16960,
    "shardsOnce": 145000,
+   "silverOnce": 1450000,
    "mats": {
+    "superior-abidos-fusion-material": 26,
     "destiny-crystallized-destruction-stone": 680,
     "destiny-crystallized-guardian-stone": 2055,
-    "great-destiny-leapstone": 34,
-    "superior-abidos-fusion-material": 26
+    "great-destiny-leapstone": 34
    },
    "breaths": [
     {
@@ -391,8 +357,7 @@
      "rate": 37.5,
      "max": 20
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1000,
@@ -400,13 +365,15 @@
    "failMax": 1000,
    "threshold": 21500,
    "gold": 6300,
+   "silver": 80000,
    "shards": 17670,
    "shardsOnce": 148000,
+   "silverOnce": 1480000,
    "mats": {
+    "superior-abidos-fusion-material": 27,
     "destiny-crystallized-destruction-stone": 700,
     "destiny-crystallized-guardian-stone": 2125,
-    "great-destiny-leapstone": 36,
-    "superior-abidos-fusion-material": 27
+    "great-destiny-leapstone": 36
    },
    "breaths": [
     {
@@ -419,8 +386,7 @@
      "rate": 20,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1000,
@@ -428,13 +394,15 @@
    "failMax": 1000,
    "threshold": 21500,
    "gold": 6550,
+   "silver": 88000,
    "shards": 18410,
    "shardsOnce": 166000,
+   "silverOnce": 1660000,
    "mats": {
+    "superior-abidos-fusion-material": 28,
     "destiny-crystallized-destruction-stone": 720,
     "destiny-crystallized-guardian-stone": 2195,
-    "great-destiny-leapstone": 38,
-    "superior-abidos-fusion-material": 28
+    "great-destiny-leapstone": 38
    },
    "breaths": [
     {
@@ -447,8 +415,7 @@
      "rate": 20,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1000,
@@ -456,13 +423,15 @@
    "failMax": 1000,
    "threshold": 21500,
    "gold": 6810,
+   "silver": 88000,
    "shards": 19180,
    "shardsOnce": 166000,
+   "silverOnce": 1660000,
    "mats": {
+    "superior-abidos-fusion-material": 29,
     "destiny-crystallized-destruction-stone": 745,
     "destiny-crystallized-guardian-stone": 2270,
-    "great-destiny-leapstone": 40,
-    "superior-abidos-fusion-material": 29
+    "great-destiny-leapstone": 40
    },
    "breaths": [
     {
@@ -475,8 +444,7 @@
      "rate": 20,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1000,
@@ -484,13 +452,15 @@
    "failMax": 1000,
    "threshold": 21500,
    "gold": 7080,
+   "silver": 88000,
    "shards": 19980,
    "shardsOnce": 169000,
+   "silverOnce": 1690000,
    "mats": {
+    "superior-abidos-fusion-material": 30,
     "destiny-crystallized-destruction-stone": 770,
     "destiny-crystallized-guardian-stone": 2345,
-    "great-destiny-leapstone": 42,
-    "superior-abidos-fusion-material": 30
+    "great-destiny-leapstone": 42
    },
    "breaths": [
     {
@@ -503,8 +473,7 @@
      "rate": 20,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 1000,
@@ -512,13 +481,15 @@
    "failMax": 1000,
    "threshold": 21500,
    "gold": 7360,
+   "silver": 88000,
    "shards": 20810,
    "shardsOnce": 204000,
+   "silverOnce": 2040000,
    "mats": {
+    "superior-abidos-fusion-material": 31,
     "destiny-crystallized-destruction-stone": 795,
     "destiny-crystallized-guardian-stone": 2425,
-    "great-destiny-leapstone": 44,
-    "superior-abidos-fusion-material": 31
+    "great-destiny-leapstone": 44
    },
    "breaths": [
     {
@@ -531,8 +502,7 @@
      "rate": 20,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 500,
@@ -540,13 +510,15 @@
    "failMax": 500,
    "threshold": 21500,
    "gold": 7650,
+   "silver": 88000,
    "shards": 21680,
    "shardsOnce": 207000,
+   "silverOnce": 2070000,
    "mats": {
+    "superior-abidos-fusion-material": 32,
     "destiny-crystallized-destruction-stone": 820,
     "destiny-crystallized-guardian-stone": 2505,
-    "great-destiny-leapstone": 46,
-    "superior-abidos-fusion-material": 32
+    "great-destiny-leapstone": 46
    },
    "breaths": [
     {
@@ -559,8 +531,7 @@
      "rate": 10,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 500,
@@ -568,13 +539,15 @@
    "failMax": 500,
    "threshold": 21500,
    "gold": 7950,
+   "silver": 88000,
    "shards": 22590,
    "shardsOnce": 227000,
+   "silverOnce": 2270000,
    "mats": {
+    "superior-abidos-fusion-material": 33,
     "destiny-crystallized-destruction-stone": 845,
     "destiny-crystallized-guardian-stone": 2590,
-    "great-destiny-leapstone": 48,
-    "superior-abidos-fusion-material": 33
+    "great-destiny-leapstone": 48
    },
    "breaths": [
     {
@@ -587,8 +560,7 @@
      "rate": 10,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 500,
@@ -596,13 +568,15 @@
    "failMax": 500,
    "threshold": 21500,
    "gold": 8260,
+   "silver": 88000,
    "shards": 23530,
    "shardsOnce": 253000,
+   "silverOnce": 2530000,
    "mats": {
+    "superior-abidos-fusion-material": 34,
     "destiny-crystallized-destruction-stone": 870,
     "destiny-crystallized-guardian-stone": 2680,
-    "great-destiny-leapstone": 50,
-    "superior-abidos-fusion-material": 34
+    "great-destiny-leapstone": 50
    },
    "breaths": [
     {
@@ -615,8 +589,7 @@
      "rate": 10,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 500,
@@ -624,13 +597,15 @@
    "failMax": 500,
    "threshold": 21500,
    "gold": 8590,
+   "silver": 88000,
    "shards": 24510,
    "shardsOnce": 275000,
+   "silverOnce": 2750000,
    "mats": {
+    "superior-abidos-fusion-material": 36,
     "destiny-crystallized-destruction-stone": 900,
     "destiny-crystallized-guardian-stone": 2770,
-    "great-destiny-leapstone": 53,
-    "superior-abidos-fusion-material": 36
+    "great-destiny-leapstone": 53
    },
    "breaths": [
     {
@@ -643,8 +618,7 @@
      "rate": 10,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 500,
@@ -652,13 +626,15 @@
    "failMax": 500,
    "threshold": 21500,
    "gold": 8930,
+   "silver": 88000,
    "shards": 25530,
    "shardsOnce": 306000,
+   "silverOnce": 3060000,
    "mats": {
+    "superior-abidos-fusion-material": 38,
     "destiny-crystallized-destruction-stone": 930,
     "destiny-crystallized-guardian-stone": 2865,
-    "great-destiny-leapstone": 56,
-    "superior-abidos-fusion-material": 38
+    "great-destiny-leapstone": 56
    },
    "breaths": [
     {
@@ -671,8 +647,7 @@
      "rate": 10,
      "max": 25
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 300,
@@ -680,13 +655,15 @@
    "failMax": 300,
    "threshold": 21500,
    "gold": 9280,
+   "silver": 88000,
    "shards": 26600,
    "shardsOnce": 328000,
+   "silverOnce": 3280000,
    "mats": {
+    "superior-abidos-fusion-material": 40,
     "destiny-crystallized-destruction-stone": 960,
     "destiny-crystallized-guardian-stone": 2965,
-    "great-destiny-leapstone": 59,
-    "superior-abidos-fusion-material": 40
+    "great-destiny-leapstone": 59
    },
    "breaths": [
     {
@@ -699,8 +676,7 @@
      "rate": 5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 300,
@@ -708,13 +684,15 @@
    "failMax": 300,
    "threshold": 21500,
    "gold": 9650,
+   "silver": 104000,
    "shards": 27710,
    "shardsOnce": 360000,
+   "silverOnce": 3600000,
    "mats": {
+    "superior-abidos-fusion-material": 42,
     "destiny-crystallized-destruction-stone": 990,
     "destiny-crystallized-guardian-stone": 3065,
-    "great-destiny-leapstone": 62,
-    "superior-abidos-fusion-material": 42
+    "great-destiny-leapstone": 62
    },
    "breaths": [
     {
@@ -727,8 +705,7 @@
      "rate": 5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 300,
@@ -736,13 +713,15 @@
    "failMax": 300,
    "threshold": 21500,
    "gold": 10030,
+   "silver": 104000,
    "shards": 28870,
    "shardsOnce": 388000,
+   "silverOnce": 3880000,
    "mats": {
+    "superior-abidos-fusion-material": 44,
     "destiny-crystallized-destruction-stone": 1020,
     "destiny-crystallized-guardian-stone": 3170,
-    "great-destiny-leapstone": 65,
-    "superior-abidos-fusion-material": 44
+    "great-destiny-leapstone": 65
    },
    "breaths": [
     {
@@ -755,8 +734,7 @@
      "rate": 5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 300,
@@ -764,13 +742,15 @@
    "failMax": 300,
    "threshold": 21500,
    "gold": 10430,
+   "silver": 104000,
    "shards": 30080,
    "shardsOnce": 420000,
+   "silverOnce": 4200000,
    "mats": {
+    "superior-abidos-fusion-material": 46,
     "destiny-crystallized-destruction-stone": 1055,
     "destiny-crystallized-guardian-stone": 3280,
-    "great-destiny-leapstone": 68,
-    "superior-abidos-fusion-material": 46
+    "great-destiny-leapstone": 68
    },
    "breaths": [
     {
@@ -783,8 +763,7 @@
      "rate": 5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 300,
@@ -792,13 +771,15 @@
    "failMax": 300,
    "threshold": 21500,
    "gold": 10840,
+   "silver": 144000,
    "shards": 31340,
    "shardsOnce": 447000,
+   "silverOnce": 4470000,
    "mats": {
+    "superior-abidos-fusion-material": 48,
     "destiny-crystallized-destruction-stone": 1090,
     "destiny-crystallized-guardian-stone": 3390,
-    "great-destiny-leapstone": 72,
-    "superior-abidos-fusion-material": 48
+    "great-destiny-leapstone": 72
    },
    "breaths": [
     {
@@ -811,8 +792,7 @@
      "rate": 5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 150,
@@ -820,13 +800,15 @@
    "failMax": 150,
    "threshold": 21500,
    "gold": 11270,
+   "silver": 144000,
    "shards": 32650,
    "shardsOnce": 480000,
+   "silverOnce": 4800000,
    "mats": {
+    "superior-abidos-fusion-material": 50,
     "destiny-crystallized-destruction-stone": 1125,
     "destiny-crystallized-guardian-stone": 3505,
-    "great-destiny-leapstone": 76,
-    "superior-abidos-fusion-material": 50
+    "great-destiny-leapstone": 76
    },
    "breaths": [
     {
@@ -839,8 +821,7 @@
      "rate": 2.5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 150,
@@ -848,13 +829,15 @@
    "failMax": 150,
    "threshold": 21500,
    "gold": 11720,
+   "silver": 192000,
    "shards": 34020,
    "shardsOnce": 513000,
+   "silverOnce": 5130000,
    "mats": {
+    "superior-abidos-fusion-material": 53,
     "destiny-crystallized-destruction-stone": 1160,
     "destiny-crystallized-guardian-stone": 3625,
-    "great-destiny-leapstone": 80,
-    "superior-abidos-fusion-material": 53
+    "great-destiny-leapstone": 80
    },
    "breaths": [
     {
@@ -867,8 +850,7 @@
      "rate": 2.5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 150,
@@ -876,13 +858,15 @@
    "failMax": 150,
    "threshold": 21500,
    "gold": 12180,
+   "silver": 192000,
    "shards": 35440,
    "shardsOnce": 541000,
+   "silverOnce": 5410000,
    "mats": {
+    "superior-abidos-fusion-material": 56,
     "destiny-crystallized-destruction-stone": 1200,
     "destiny-crystallized-guardian-stone": 3750,
-    "great-destiny-leapstone": 84,
-    "superior-abidos-fusion-material": 56
+    "great-destiny-leapstone": 84
    },
    "breaths": [
     {
@@ -895,8 +879,7 @@
      "rate": 2.5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 150,
@@ -904,13 +887,15 @@
    "failMax": 150,
    "threshold": 21500,
    "gold": 12660,
+   "silver": 240000,
    "shards": 36920,
    "shardsOnce": 574000,
+   "silverOnce": 5740000,
    "mats": {
+    "superior-abidos-fusion-material": 59,
     "destiny-crystallized-destruction-stone": 1240,
     "destiny-crystallized-guardian-stone": 3880,
-    "great-destiny-leapstone": 89,
-    "superior-abidos-fusion-material": 59
+    "great-destiny-leapstone": 89
    },
    "breaths": [
     {
@@ -923,8 +908,7 @@
      "rate": 2.5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   },
   {
    "success": 150,
@@ -932,13 +916,15 @@
    "failMax": 150,
    "threshold": 21500,
    "gold": 13160,
+   "silver": 240000,
    "shards": 38470,
    "shardsOnce": 607000,
+   "silverOnce": 6070000,
    "mats": {
+    "superior-abidos-fusion-material": 62,
     "destiny-crystallized-destruction-stone": 1280,
     "destiny-crystallized-guardian-stone": 4015,
-    "great-destiny-leapstone": 94,
-    "superior-abidos-fusion-material": 62
+    "great-destiny-leapstone": 94
    },
    "breaths": [
     {
@@ -951,8 +937,7 @@
      "rate": 2.5,
      "max": 30
     }
-   ],
-   "src": "loa-sim"
+   ]
   }
  ]
 }

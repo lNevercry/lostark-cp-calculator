@@ -3,9 +3,8 @@
 'use strict';
 
 // === Brassard T4 (완갑, Vambraces en EU, raid Belgardin) ===
-// data/bracer-t4.json (tools/build-bracer-table.mjs) : stats par niveau et recette d'affinage de loa-sim.vercel.app,
-// contrôlées contre tout ce qui est officiel (infobulles +10 / 15 / 20 / 25, taux, coût du niveau 1 : src official) ;
-// le flux Maxroll n'a pas encore le brassard. Un état du brassard = { grade (0 héroïque … 3 ancien), level } : la
+// data/bracer-t4.json (tools/fetch-maxroll-honing.mjs) : stats par niveau et recette d'affinage, tables du jeu du flux
+// Maxroll. Un état du brassard = { grade (0 héroïque … 3 ancien), level } : la
 // rareté donne le % de PA de base (0 / 1 / 2 / 3 %) et change au déblocage de +10 / +15 / +20 (matériaux de raid,
 // sans or). Le brassard ne donne ni iLvl, ni qualité, ni points d'Ark Passive.
 let bracerT4 = null;
@@ -63,7 +62,7 @@ function bracerState(x) {
 
 /**
  * Brassard porté, lu sur le profil raid lostark.bible (emplacement « bracer ») : ID 134GxxNNN, rareté = chiffre des
- * centaines de mille − 3 (3 héroïque … 6 ancien, comme loa-sim), niveau = affinage. flatAp : PA fixe du profil
+ * centaines de mille − 3 (3 héroïque … 6 ancien, champ grade du flux Maxroll), niveau = affinage. flatAp : PA fixe du profil
  * (stat 114, celle du brassard ; 2 030 sur les profils EU au brassard +10 héroïque). null sans brassard lisible.
  */
 function equippedBracer(charObj) {
@@ -80,7 +79,7 @@ function equippedBracer(charObj) {
 }
 
 // Stats du brassard dans un état (ou à +N après déblocage) : stat principale, puissance d'arme, Vitalité, PA fixe,
-// % de PA de la rareté, source
+// % de PA de la rareté
 function calcBracerStats(x) {
   const s = bracerState(x);
   const l = s && bracerT4 && bracerT4.levels[s.level];
@@ -88,18 +87,15 @@ function calcBracerStats(x) {
   return l && g ? Object.assign({ grade: s.grade, level: s.level }, l, { apPct: g.apPct }) : null;
 }
 
-// Multiplicateur de la stat principale du brassard : mesuré sur le profil (comme les armures), sinon Inven (× 1,09)
-const bracerMainStatMult = ctx => (ctx.msMult > 1 ? ctx.msMult : (bracerT4 && bracerT4.mainStatMult) || 1);
-
 // Attaque du personnage avec le brassard dans l'état s (null = sans brassard), le brassard porté (cur) retiré du profil.
 // Formule d'Inven #3790814 : PA de base = (√(stat × puissance d'arme ÷ 6) + PA fixe) × (1 + % de PA) ; stat du brassard
-// × multiplicateur du profil, puissance d'arme × (1 + % boucles + Karma + cœur) comme celle de l'arme.
+// × % de stat principale du profil, puissance d'arme × (1 + % boucles + Karma + cœur) comme celle de l'arme.
 function bracerAttackState(ctx, apPool, s, cur) {
   const to = s ? calcBracerStats(s) : null, from = cur ? calcBracerStats(cur) : null;
   const d = k => (to ? to[k] : 0) - (from ? from[k] : 0);
   const st = {
     wp: ctx.wp + d('weaponPower') * ctx.wpAmp,
-    ms: ctx.ms + d('mainStat') * bracerMainStatMult(ctx),
+    ms: ctx.ms + d('mainStat') * ctx.msPct,
     flat: to ? to.flatAp : 0,
     apPct: apPool + d('apPct') / 100,
     vit: ctx.vit + d('vitality')
@@ -163,9 +159,9 @@ function bracerLimitBreakText(level, isEn) {
 /**
  * Ressources pour monter le brassard d'un état à un autre (from null = sans brassard : le premier, Héroïque +0, est
  * offert au premier clear de la porte 2) : essais attendus par étape (bracerStepCost : souffles les moins chers, règle
- * d'artisan des recettes T4), or, argent (connu au niveau 1 seulement), fragments (jauge comprise), matériaux,
- * souffles, valeur en or au marché (or + matériaux + souffles, comme le GPD ; fragments et argent hors valeur),
- * pire cas, et déblocages franchis (matériaux de raid, sans or). loaSim = au moins une étape de la table de loa-sim.
+ * d'artisan des recettes T4), or, argent et fragments (jauge comprise), matériaux, souffles, valeur en or au marché
+ * (or + matériaux + souffles, comme le GPD ; fragments et argent hors valeur), pire cas, et déblocages franchis
+ * (matériaux de raid, sans or).
  */
 function getBracerHoningCumulativeCost(fromX, toX) {
   if (!bracerT4) return null;
@@ -173,7 +169,7 @@ function getBracerHoningCumulativeCost(fromX, toX) {
   const from = bracerState(fromX), to = bracerState(toX);
   const i0 = from ? bracerIndex(from) : 0, i1 = bracerIndex(to);
   if (i0 < 0 || i1 < 0 || i0 > i1) return null;
-  const out = { gold: 0, silver: 0, silverKnown: true, shards: 0, mats: {}, breaths: {}, value: 0, pity: 0, taps: 0, steps: 0, loaSim: false, limitBreaks: [] };
+  const out = { gold: 0, silver: 0, shards: 0, mats: {}, breaths: {}, value: 0, pity: 0, taps: 0, steps: 0, limitBreaks: [] };
   for (let i = i0; i < i1; i++) {
     const a = chain[i], b = chain[i + 1];
     if (bracerIsLimitBreak(a, b)) {
@@ -188,14 +184,13 @@ function getBracerHoningCumulativeCost(fromX, toX) {
     out.value += c.cost;
     out.pity += c.pityCost;
     out.gold += st.gold * c.taps;
-    if (st.silver !== undefined) out.silver += st.silver * c.taps; else out.silverKnown = false;
-    out.shards += st.shards * c.taps + (st.shardsOnce || 0);
+    out.silver += st.silver * c.taps + st.silverOnce;
+    out.shards += st.shards * c.taps + st.shardsOnce;
     Object.entries(st.mats).forEach(([slug, n]) => { out.mats[slug] = (out.mats[slug] || 0) + n * c.taps; });
     if (c.breath) {
       const slugs = c.breath.slugs || [c.breath.slug];
       slugs.forEach(slug => { out.breaths[slug] = (out.breaths[slug] || 0) + c.breathsUsed / slugs.length; });
     }
-    if (st.src !== 'official') out.loaSim = true;
   }
   return out;
 }
@@ -223,10 +218,8 @@ function simulateBracerImpact(charObj, toX, isSupport, fromX) {
   const ratio = b.atk / a.atk;
   const vitRatio = a.vit > 0 ? b.vit / a.vit : 1;
   const cp = (charObj.rawProfile && charObj.rawProfile.raidCombatPower) || charObj.cp;
-  const used = [to, from].filter(Boolean).map(calcBracerStats);
   const out = {
     to, from, current: cur, stats: calcBracerStats(to),
-    statsLoaSim: used.some(s => s.src !== 'official'),
     hpGainPct: (vitRatio - 1) * 100,
     costs: getBracerHoningCumulativeCost(from, to),
     dpsGainPct: null, allyBuffPct: null, cpGain: null
@@ -296,7 +289,7 @@ function bracerStepTexts(st, isEn) {
 
 // === ONGLET BELGARDIN (brassard T4) ===
 // Simulation sur le personnage importé (simulateBracerImpact), du brassard porté (ou d'un point de départ choisi) à
-// l'état visé. Niveaux officiels (+10 / 15 / 20 / 25) signalés comme tels, les autres viennent de loa-sim.
+// l'état visé.
 // belgState.idx : état visé (index de bracerChain), null = suivant du brassard porté ; from : index, -1 = sans brassard,
 // undefined = brassard porté
 const belgState = { idx: null, from: undefined };
@@ -334,8 +327,7 @@ function updateBracerView() {
   const charObj = getCurrentActiveCharacter();
   const fmt = (v, d = 0) => Number(v).toLocaleString(isEn ? 'en-US' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
   const signed = (v, d = 2) => `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v), d)}`;
-  const simBadge = `<span class="belg-src belg-src-est">${isEn ? 'loa-sim table' : 'Table loa-sim'}</span>`;
-  const officialBadge = `<span class="belg-src belg-src-off">${isEn ? 'Official (Stove)' : 'Officiel (Stove)'}</span>`;
+  const srcBadge = `<span class="belg-src belg-src-off">${isEn ? 'Game data (Maxroll)' : 'Données du jeu (Maxroll)'}</span>`;
 
   if (!bracerT4) {
     results.innerHTML = `<p class="belg-empty">${isEn ? 'Loading the vambraces table…' : 'Chargement de la table du brassard…'}</p>`;
@@ -401,24 +393,22 @@ function updateBracerView() {
       html += card(isEn ? 'Ally buff' : 'Buff allié', `${signed(sim.allyBuffPct)} %`, isEn ? 'damage of each ally (GPD scale)' : 'dégâts de chaque allié (échelle du GPD)')
         + card(isEn ? 'Max HP' : 'PV max', `${signed(sim.hpGainPct)} %`, isEn ? 'Vitality of the vambraces' : 'Vitalité du brassard') + cpCard;
     }
-    html += `</div><p class="belg-note">${isEn ? `From ${bracerStateLabel(from, isEn)} to ${bracerStateLabel(target, isEn)}.` : `De ${bracerStateLabel(from, isEn)} à ${bracerStateLabel(target, isEn)}.`} ${sim.statsLoaSim ? simBadge : officialBadge}</p>`;
+    html += `</div><p class="belg-note">${isEn ? `From ${bracerStateLabel(from, isEn)} to ${bracerStateLabel(target, isEn)}.` : `De ${bracerStateLabel(from, isEn)} à ${bracerStateLabel(target, isEn)}.`} ${srcBadge}</p>`;
   }
 
   // 2. Stats du brassard dans l'état visé
   const ctxB = charObj ? gearStatContext(charObj) : null;
-  const measured = !!(ctxB && ctxB.msMult > 1);
-  const mm = measured ? ctxB.msMult : (bracerT4.mainStatMult || 1);
-  const mmTxt = measured ? (isEn ? 'measured on the profile, like the armors' : 'mesuré sur le profil, comme les armures') : (isEn ? 'avatars and pet ranch, Inven' : 'avatars et ranch, Inven');
+  const mmTxt = ctxB ? ` <span class="belg-dim">(× ${fmt(ctxB.msPct, 3)}, ${isEn ? 'main stat % of the profile' : '% de stat principale du profil'})</span>` : '';
   html += `<table class="market-table belg-table"><thead><tr><th>${isEn ? 'Vambraces' : 'Brassard'} ${bracerStateLabel(target, isEn)}</th><th>${isEn ? 'Value' : 'Valeur'}</th></tr></thead><tbody>
-      <tr><td>${isEn ? 'Main stat' : 'Stat principale'} <span class="belg-dim">(× ${fmt(mm, 3)}, ${mmTxt})</span></td><td class="market-num">${fmt(stats.mainStat)}</td></tr>
+      <tr><td>${isEn ? 'Main stat' : 'Stat principale'}${mmTxt}</td><td class="market-num">${fmt(stats.mainStat)}</td></tr>
       <tr><td>${isEn ? 'Weapon power' : "Puissance d'arme"} <span class="belg-dim">(× ${isEn ? 'earrings and Karma' : 'boucles et Karma'})</span></td><td class="market-num">${fmt(stats.weaponPower)}</td></tr>
       <tr><td>${isEn ? 'Vitality' : 'Vitalité'}</td><td class="market-num">${fmt(stats.vitality)}</td></tr>
       <tr><td>${isEn ? 'Base attack power (flat)' : 'PA de base (fixe)'}</td><td class="market-num">+${fmt(stats.flatAp)}</td></tr>
       <tr><td>${isEn ? 'Base attack power' : 'PA de base'} <span class="belg-dim">(${isEn ? 'grade' : 'rareté'})</span></td><td class="market-num">+${fmt(stats.apPct, 1)} %</td></tr>
     </tbody></table>
-    <p class="belg-note">${stats.src === 'official' ? officialBadge : simBadge} ${isEn
-      ? 'Official tooltips at Heroic +10, +15, +20 and +25 (developer letter); the other levels come from loa-sim.vercel.app, identical to every official value (a step table: one stat goes up at each level, flat attack power every 5 levels). Attack power % follows the grade (0 / 1 / 2 / 3 %), gained at each limit break. No item level, quality or Ark Passive points: the character\'s item level stays the average of its 6 pieces.'
-      : "Infobulles officielles à Héroïque +10, +15, +20 et +25 (lettre des développeurs) ; les autres niveaux viennent de loa-sim.vercel.app, identique à toutes les valeurs officielles (en escalier : une stat monte à chaque niveau, la PA fixe tous les 5 niveaux). Le % de PA suit la rareté (0 / 1 / 2 / 3 %), gagnée à chaque déblocage. Ni iLvl, ni qualité, ni points d'Ark Passive : l'iLvl du personnage reste la moyenne de ses 6 pièces."}</p>`;
+    <p class="belg-note">${srcBadge} ${isEn
+      ? 'Step table of the game: one stat goes up at each level, flat attack power every 5 levels. Attack power % follows the grade (0 / 1 / 2 / 3 %), gained at each limit break. No item level, quality or Ark Passive points: the character\'s item level stays the average of its 6 pieces.'
+      : "Table du jeu, en escalier : une stat monte à chaque niveau, la PA fixe tous les 5 niveaux. Le % de PA suit la rareté (0 / 1 / 2 / 3 %), gagnée à chaque déblocage. Ni iLvl, ni qualité, ni points d'Ark Passive : l'iLvl du personnage reste la moyenne de ses 6 pièces."}</p>`;
   results.innerHTML = html;
 
   // 3. Plan de stockage
@@ -439,26 +429,25 @@ function updateBracerView() {
       if (cost.steps) {
         c += row(isEn ? 'Attempts' : 'Essais', fmt(cost.taps, 1));
         c += row(isEn ? 'Gold' : 'Or', fmt(Math.round(cost.gold)));
-        if (cost.silverKnown) c += row(isEn ? 'Silver' : 'Argent', fmt(Math.round(cost.silver)));
+        c += row(isEn ? 'Silver' : 'Argent', fmt(Math.round(cost.silver)));
         c += row(isEn ? 'Destiny shards (gauge included)' : 'Fragments de destin (jauge comprise)', fmt(Math.round(cost.shards)));
         Object.entries(cost.mats).forEach(([slug, n]) => { c += row(escapeHtml(matName(slug)), fmt(Math.round(n))); });
         Object.entries(cost.breaths).forEach(([slug, n]) => { c += row(escapeHtml(matName(slug)), fmt(Math.round(n))); });
       }
       cost.limitBreaks.forEach(lb => {
-        c += row(`${isEn ? 'Limit break' : 'Déblocage'} +${lb.level} → ${bracerGradeName(lb.grade, isEn)} ${officialBadge}`, escapeHtml(bracerLimitBreakText(lb.level, isEn)), 'belg-lb-row');
+        c += row(`${isEn ? 'Limit break' : 'Déblocage'} +${lb.level} → ${bracerGradeName(lb.grade, isEn)} ${srcBadge}`, escapeHtml(bracerLimitBreakText(lb.level, isEn)), 'belg-lb-row');
       });
       if (cost.steps) {
         c += row(`<strong>${isEn ? 'Market value (gold + materials + breaths)' : 'Valeur au marché (or + matériaux + souffles)'}</strong>`, `<strong>${fmt(Math.round(cost.value))}</strong>`);
         c += row(isEn ? 'Worst case (full artisan\'s energy on every level)' : 'Pire cas (jauge d\'artisan pleine à chaque niveau)', fmt(Math.round(cost.pity)));
       }
       c += `</tbody></table>`;
-      c += `<p class="belg-note">${cost.loaSim ? simBadge : officialBadge} ${isEn
-          ? 'Recipe from loa-sim.vercel.app (level 1 cost and success rates match the official ones), artisan rule of the other T4 recipes. Lava\'s and Glacier\'s breaths can go on the same tap: the cheapest plan at market prices is kept for each level. Shards and silver outside the market value, as in the GPD. Limit break materials are raid drops, not priced.'
-          : "Recette de loa-sim.vercel.app (coût du niveau 1 et taux identiques aux officiels), règle d'artisan des autres recettes T4. Souffles de lave et de glacier possibles sur le même essai : le plan le moins cher aux prix du marché est retenu à chaque niveau. Fragments et argent hors valeur au marché, comme dans le GPD. Matériaux de déblocage tirés du raid, non chiffrés."}</p>`;
+      c += `<p class="belg-note">${srcBadge} ${isEn
+          ? 'Game recipe, artisan rule of the T4 recipes. Lava\'s and Glacier\'s breaths can go on the same tap: the cheapest plan at market prices is kept for each level. Shards and silver outside the market value, as in the GPD. Limit break materials are raid drops, not priced.'
+          : "Recette du jeu, règle d'artisan des recettes T4. Souffles de lave et de glacier possibles sur le même essai : le plan le moins cher aux prix du marché est retenu à chaque niveau. Fragments et argent hors valeur au marché, comme dans le GPD. Matériaux de déblocage tirés du raid, non chiffrés."}</p>`;
     }
-    // Taux officiels
     const rates = [[1, 5, 15], [6, 10, 10], [11, 15, 5], [16, 20, 3], [21, 25, 1.5]];
-    c += `<table class="market-table belg-table"><thead><tr><th>${isEn ? 'Success rate' : 'Taux de réussite'} ${officialBadge}</th><th></th></tr></thead><tbody>
+    c += `<table class="market-table belg-table"><thead><tr><th>${isEn ? 'Success rate' : 'Taux de réussite'} ${srcBadge}</th><th></th></tr></thead><tbody>
         ${rates.map(([a, b, p]) => `<tr><td>+${a} → +${b}</td><td class="market-num">${fmt(p, p % 1 ? 1 : 0)} %</td></tr>`).join('')}
       </tbody></table>`;
     costsEl.innerHTML = c;
@@ -673,8 +662,8 @@ function renderBelgardinReadiness() {
           : `Objectif hors de portée avec ces ${road.plan.length} étapes.`)}</p>`;
     }
     h += `<p class="belg-note">${isEn
-        ? `Same rows, costs and gains as the GPD and the Smart Advisor, chained on the current profile${honingDone ? ', honing continuing from step 1' : ''}; steps above 20 M gold per 1 % ${isSupport ? '(200 k per 0.01 %) ' : ''}left out. ${isSupport ? 'Support CP per step is an estimate from the support Battle Point. ' : ''}Worn vambraces included (limit breaks without gold, honing from the loa-sim table, see below).`
-        : `Mêmes lignes, coûts et gains que le GPD et le Smart Advisor, enchaînés sur le profil actuel${honingDone ? ", l'affinage repartant de l'étape 1" : ''} ; étapes au-delà de 20 M d'or par 1 % ${isSupport ? '(200 k par 0,01 %) ' : ''}écartées. ${isSupport ? 'CP support de chaque étape estimé par le Battle Point support. ' : ''}Brassard porté compris (déblocages sans or, affinage sur la table de loa-sim, voir plus bas).`}</p>`;
+        ? `Same rows, costs and gains as the GPD and the Smart Advisor, chained on the current profile${honingDone ? ', honing continuing from step 1' : ''}; steps above 20 M gold per 1 % ${isSupport ? '(200 k per 0.01 %) ' : ''}left out. ${isSupport ? 'Support CP per step is an estimate from the support Battle Point. ' : ''}Worn vambraces included (limit breaks without gold, see below).`
+        : `Mêmes lignes, coûts et gains que le GPD et le Smart Advisor, enchaînés sur le profil actuel${honingDone ? ", l'affinage repartant de l'étape 1" : ''} ; étapes au-delà de 20 M d'or par 1 % ${isSupport ? '(200 k par 0,01 %) ' : ''}écartées. ${isSupport ? 'CP support de chaque étape estimé par le Battle Point support. ' : ''}Brassard porté compris (déblocages sans or, voir plus bas).`}</p>`;
   }
   el.innerHTML = h;
 }
